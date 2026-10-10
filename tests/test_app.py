@@ -112,6 +112,49 @@ class TestAsistente(unittest.TestCase):
         self.a.ejecutar_comando(self._comando("terminar"))
         self.assertEqual(self.a.almacen.resumen_dia(datetime.now().date())[0], 1)
 
+    # ------------------------------------------------------------- v3.6
+    def test_saludo_del_dia_pausa_los_avisos(self):
+        self.ganchos["config_saludo"](hora=0)                     # que salude a cualquier hora
+        self.a.agregar("Pagar la luz", datetime.now() - timedelta(minutes=5), None)
+        self.assertTrue(self.a.saludar())
+        self.assertIn(", Miguel", self.a.burbuja.cabecera.text())
+        self.assertIn("vencida", self.dichos[-1])                  # lo dice en voz alta
+        self.a.revisar()
+        self.assertEqual(self.ganchos["cola"](), [])               # la tarea espera al saludo
+        self.assertFalse(self.a.saludar())                         # solo una vez por día
+        self.ganchos["terminar_saludo"]()
+        self.a.revisar()
+        self.assertEqual(self.ganchos["cola"](), [1])
+
+    def test_vencidas_en_panel_y_todas_a_manana(self):
+        ayer = datetime.now().replace(second=0, microsecond=0) - timedelta(days=1)
+        self.a.agregar("Pagar la luz", ayer, None)
+        self.a.agregar("Examen", datetime.now() + timedelta(days=3), None)
+        self.assertEqual(self.a.panel.lista.count(), 4)            # VENCIDAS, Pagar la luz, PRÓXIMAS, Examen
+        vencida = self.a.almacen.obtener(1)
+        self.assertEqual(self.a.panel.opciones_menu_reprogramar(vencida)[-1], ("Elegir fecha y hora…", None))
+        self.a.panel.reprogramar_vencidas_pedido.emit()
+        self.assertEqual(self.a.almacen.obtener(1).fecha, ayer + timedelta(days=2))   # mañana, misma hora
+        self.assertEqual(self.a.panel.lista.count(), 2)            # ya no hay secciones
+
+    def test_voz_vencidas(self):
+        self.a.agregar("Pagar la luz", datetime.now() - timedelta(hours=2), None)
+        self.decir_por_voz("qué tengo vencido")
+        self.assertEqual(self.dichos, ["Tienes 1 vencida: Pagar la luz."])
+        self.decir_por_voz("pasa las vencidas a mañana")
+        self.assertEqual(self.dichos, ["Listo, pasé 1 a mañana."])
+        self.assertEqual(self.a.almacen.vencidas(datetime.now()), [])
+
+    def test_semana_en_panel(self):
+        ahora = datetime.now()
+        self.a.almacen.guardar_sesion(ahora.replace(hour=0, minute=0), ahora, 2, 50, 0)
+        self.a.ejecutar_comando(self._comando("resumen semanal"))
+        self.assertTrue(self.a.panel.viendo_estudio)
+        self.assertEqual(self.a.panel.grafico.dias[-1].minutos, 50)
+        self.assertEqual(self.a.burbuja.cabecera.text(), "📊 Tu semana")
+        self.a.panel._cambiar_semana(+1)                            # ◀ semana anterior
+        self.assertEqual(self.a.panel.grafico.dias[-1].fecha, ahora.date() - timedelta(weeks=1))
+
     @staticmethod
     def _comando(texto):
         from nucleo.comandos import interpretar_comando
@@ -133,6 +176,8 @@ def puntos_de_enganche(a, modulo):
         "actualizar_estado": a.actualizar_estado,
         "cola": lambda: a.avisos.cola,
         "dialogo": lambda: a.voz.dialogo,
+        "config_saludo": lambda hora: setattr(modulo, "HORA_SALUDO", hora),
+        "terminar_saludo": lambda: setattr(a, "_avisos_en_pausa_hasta", None),
     }
 
 

@@ -42,8 +42,8 @@ _PEDIDO_TAREA = re.compile(r"^(?:recuerdame|recordarme|recordar|avisame|anota|an
                            r"nueva tarea|tarea)\b")
 
 # Acciones que resuelve este controlador (el resto las resuelve app.py)
-ACCIONES_DE_VOZ = {"abrir", "abrir_web", "buscar", "hora", "agenda", "apodo", "olvidar_apodo", "apodos",
-                   "escucha_on", "escucha_off"}
+ACCIONES_DE_VOZ = {"abrir", "abrir_web", "buscar", "hora", "agenda", "vencidas", "apodo", "olvidar_apodo",
+                   "apodos", "escucha_on", "escucha_off"}
 
 
 class NotificadorVoz(Notificador):
@@ -138,6 +138,8 @@ class ControladorVoz:
             self.responder(f"Son las {ahora:%H:%M}.", f"Son {hora_hablada(ahora, con_articulo=False)}.")
         elif accion == "agenda":
             self._decir_agenda()
+        elif accion == "vencidas":
+            self._decir_vencidas()
         elif accion == "apodo":
             self._aprender_apodo(c.texto or "", c.destino or "")
         elif accion == "olvidar_apodo":
@@ -269,15 +271,33 @@ class ControladorVoz:
 
     def _decir_agenda(self):
         ahora = datetime.now()
-        hoy = [t for t in self.a.almacen.pendientes() if t.fecha.date() == ahora.date()]
-        if not hoy:
-            self.responder("No tienes nada pendiente para hoy.")
+        pendientes = self.a.almacen.pendientes()
+        hoy = [t for t in pendientes if t.fecha > ahora and t.fecha.date() == ahora.date()]
+        vencidas = [t for t in pendientes if t.fecha <= ahora]
+        if hoy:
+            n = len(hoy)
+            lineas = "\n".join(f"• {t.fecha:%H:%M} {t.titulo}" for t in hoy[:6])
+            hablado = "; ".join(f"{t.titulo}, {hora_hablada(t.fecha)}" for t in hoy[:5])
+            texto, voz = f"Hoy tienes {n}:\n{lineas}", f"Hoy tienes {n} pendiente{'s' if n > 1 else ''}: {hablado}."
+        else:
+            texto = voz = "No tienes nada más para hoy."
+        if vencidas:
+            n = len(vencidas)
+            texto += f"\n⚠ Y {n} vencida{'s' if n > 1 else ''}. Di «vencidas» para escucharlas."
+            voz += f" Además tienes {n} vencida{'s' if n > 1 else ''}."
+        self.responder(texto, voz)
+
+    def _decir_vencidas(self):
+        vencidas = self.a.almacen.vencidas(datetime.now())
+        if not vencidas:
+            self.responder("No tienes tareas vencidas. 👌", "No tienes tareas vencidas.")
             return
-        lineas = "\n".join(f"• {t.fecha:%H:%M} {t.titulo}" for t in hoy[:6])
-        hablado = "; ".join(f"{t.titulo}, {hora_hablada(t.fecha)}" for t in hoy[:5])
-        n = len(hoy)
-        self.responder(f"Hoy tienes {n}:\n{lineas}",
-                       f"Hoy tienes {n} pendiente{'s' if n > 1 else ''}: {hablado}.")
+        n = len(vencidas)
+        lineas = "\n".join(f"• {t.titulo} ({describir_fecha(t.fecha).replace('atrasada · ', '')})"
+                           for t in vencidas[:6])
+        hablado = "; ".join(t.titulo for t in vencidas[:5])
+        self.responder(f"Vencidas ({n}):\n{lineas}\nDi «pasa las vencidas a mañana» para moverlas.",
+                       f"Tienes {n} vencida{'s' if n > 1 else ''}: {hablado}.")
 
     # ======================================================= escuchar
     def poner_escucha(self, activo: bool, avisar: bool = True):

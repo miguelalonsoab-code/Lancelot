@@ -3,16 +3,25 @@ Configuración general del asistente.
 Todo lo que quieras personalizar (nombre, colores, tiempos) está aquí,
 para no tener que buscar valores sueltos dentro del código.
 """
+import os
+import sys
 from pathlib import Path
 
 # --- Identidad ---------------------------------------------------------------
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
+VERSION = "3.7"                         # sale en el panel y en el instalador (súbela en cada versión)
+MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
+# Si corre como Lancelot.exe (empaquetado con construir.py), sus datos viven en
+# %LOCALAPPDATA%\Lancelot: así reconstruir el .exe nunca borra tus tareas.
+# Si corre con "python main.py", usa la carpeta datos/ del proyecto, como siempre.
+EMPAQUETADO = getattr(sys, "frozen", False)
 CARPETA_PROYECTO = Path(__file__).resolve().parent
-CARPETA_DATOS = CARPETA_PROYECTO / "datos"
+CARPETA_DATOS_EXE = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local") / NOMBRE_ASISTENTE
+CARPETA_DATOS = CARPETA_DATOS_EXE if EMPAQUETADO else CARPETA_PROYECTO / "datos"
 RUTA_BD = CARPETA_DATOS / "tareas.db"
 RUTA_REGISTRO = CARPETA_DATOS / "lancelot.log"   # registro de eventos y errores
 CARPETA_RESPALDOS = CARPETA_DATOS / "respaldos"  # copia diaria de tareas.db
@@ -25,6 +34,12 @@ HORA_POR_DEFECTO = (9, 0)         # si dices "mañana" sin hora, se asume 09:00
 MINUTOS_POSPONER = 10             # botón "+10 min" de la burbuja
 HORA_DORMIR = 23                  # desde esta hora la cara se duerme si no hay nada pendiente
 HORA_DESPERTAR = 6
+
+# --- Saludo del día ------------------------------------------------------------
+SALUDO_ACTIVO = True              # el primer saludo del día con tus pendientes y tu racha
+HORA_SALUDO = HORA_DESPERTAR      # no saluda antes de esta hora (laptop prendida toda la noche)
+SALUDO_HABLADO = True             # además de la burbuja, lo dice en voz alta (salvo modo silencio)
+SEGUNDOS_SALUDO = 20              # cuánto queda visible la burbuja del saludo
 
 # --- Apariencia de la cara ---------------------------------------------------
 TAMANO_CARA = 150                 # diámetro en píxeles
@@ -62,6 +77,7 @@ MINUTOS_ENFOQUE = 25
 MINUTOS_DESCANSO = 5
 MINUTOS_DESCANSO_LARGO = 15
 CICLOS_PARA_DESCANSO_LARGO = 4
+META_ESTUDIO_DIARIO = 100         # minutos por día; se marca con una línea en el gráfico semanal
 
 # --- Distracciones (solo durante el modo estudio) ----------------------------
 # Se busca cada palabra en el TÍTULO de la ventana activa o en el nombre del programa.

@@ -12,3 +12,8 @@ datos/
 # Configuración local de editores
 .vscode/
 .idea/
+
+# Lo que genera "python construir.py" (el .exe y sus archivos temporales)
+build/
+dist/
+*.spec

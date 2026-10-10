@@ -13,18 +13,25 @@ Modos:
   - estudio  : sesión de pomodoros. Se activa y se termina.
   - silencio : sin sonidos, voz ni notificaciones de Windows; los avisos siguen en la cara.
   Pueden estar los dos activos a la vez (estudiar en la biblioteca, por ejemplo).
+
+Cada día, la primera vez que te ve frente a la laptop, te saluda con tus pendientes
+(ver saludar()). Mientras el saludo está en pantalla, los avisos de tareas esperan.
 """
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+import os
+import sys
+from datetime import date, datetime, timedelta
 
 from PySide6.QtCore import QObject, QPoint, QTimer
 from PySide6.QtGui import QAction, QGuiApplication, QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-from config import (ATAJO_HABLAR, CARPETA_RESPALDOS, COLORES, HORA_DESPERTAR, HORA_DORMIR, NOMBRE_ASISTENTE,
-                    NOMBRES_MODO, RESPALDOS_A_CONSERVAR, RUTA_BD, SEGUNDOS_ENTRE_REVISIONES, SEGUNDOS_MENSAJE)
+from config import (ATAJO_HABLAR, CARPETA_RESPALDOS, COLORES, HORA_DESPERTAR, HORA_DORMIR,
+                    HORA_SALUDO, META_ESTUDIO_DIARIO, NOMBRE_ASISTENTE, NOMBRE_USUARIO, NOMBRES_MODO,
+                    RESPALDOS_A_CONSERVAR, RUTA_BD, SALUDO_ACTIVO, SALUDO_HABLADO, SEGUNDOS_ENTRE_REVISIONES,
+                    SEGUNDOS_MENSAJE, SEGUNDOS_SALUDO, VERSION, EMPAQUETADO)
 from interfaz.asistente_voz import ControladorVoz, NotificadorVoz
 from interfaz.avisos import GestorAvisos, NotificadorCara
 from interfaz.burbuja import Burbuja
@@ -35,9 +42,12 @@ from notificadores.base import Notificador
 from notificadores.windows import NotificadorWindows
 from nucleo.almacen import Almacen
 from nucleo.comandos import Comando
+from nucleo.estadisticas import ResumenSemana, describir_semana, resumen_semana
 from nucleo.interprete import describir_fecha
-from nucleo.planificador import estado_del_dia
+from nucleo.planificador import a_manana, estado_del_dia
 from nucleo.respaldo import hacer_respaldo
+from nucleo.saludo import armar_saludo, debe_saludar
+from sensores.inactividad import segundos_inactivo
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +59,8 @@ _CONFIRMACION_VOZ = {
     "sin_silencio": "Vuelvo a hablar.",
 }
 
+SEGUNDOS_PARA_ESTAR_PRESENTE = 120    # si no tocas nada hace más de esto, el saludo espera
+
 
 class Asistente(QObject):
     def __init__(self, app: QApplication, ruta_bd=None):
@@ -58,6 +70,7 @@ class Asistente(QObject):
         self.almacen = Almacen(self.ruta_bd)
         self.almacen.reactivar_avisos_pendientes()
         self.silencio = self.almacen.leer_ajuste("silencio") == "1"
+        self._avisos_en_pausa_hasta: datetime | None = None   # mientras se muestra el saludo
 
         # --- Interfaz
         self.cara = Cara()
@@ -89,6 +102,9 @@ class Asistente(QObject):
         self.panel.editar_pedido.connect(self.editar)
         self.panel.comando_pedido.connect(self.ejecutar_comando)
         self.panel.hablar_pedido.connect(self.voz.oido.escuchar_una_orden)
+        self.panel.reprogramar_pedido.connect(self.reprogramar)
+        self.panel.reprogramar_vencidas_pedido.connect(self.reprogramar_vencidas)
+        self.panel.semana_pedida.connect(self.mostrar_semana)
 
         self._menu_bandeja = QMenu()                 # se guarda para que no se libere
         self._menu_bandeja.aboutToShow.connect(lambda: self._llenar_menu(self._menu_bandeja))
@@ -100,8 +116,8 @@ class Asistente(QObject):
         self.reloj_revision = QTimer(self)                 # ¿venció algo?
         self.reloj_revision.timeout.connect(self.revisar)
         self.reloj_revision.start(SEGUNDOS_ENTRE_REVISIONES * 1000)
-        self.reloj_refresco = QTimer(self)                 # textos como "hoy 20:00"
-        self.reloj_refresco.timeout.connect(self.refrescar)
+        self.reloj_refresco = QTimer(self)                 # textos como "hoy 20:00" y el saludo
+        self.reloj_refresco.timeout.connect(self._cada_minuto)
         self.reloj_refresco.start(60 * 1000)
         self.reloj_respaldo = QTimer(self)                 # por si la laptop queda prendida de un día a otro
         self.reloj_respaldo.timeout.connect(self.respaldar)
@@ -114,12 +130,22 @@ class Asistente(QObject):
         self.cara.show()
         self.refrescar()
         self.respaldar()
-        QTimer.singleShot(1500, self.revisar)              # avisos atrasados al abrir
-        log.info("Lancelot iniciado")
+        QTimer.singleShot(1500, self._al_arrancar)
+        log.info("Lancelot %s iniciado%s", VERSION, " (.exe)" if EMPAQUETADO else "")
+
+    def _al_arrancar(self):
+        self.saludar()                                     # primero el saludo del día (si toca)
+        self.revisar()                                     # luego los avisos atrasados
+
+    def _cada_minuto(self):
+        self.refrescar()
+        self.saludar()                                     # por si la laptop quedó prendida de un día a otro
 
     # ================================================================ tareas
     def revisar(self):
         """Se ejecuta cada pocos segundos: ¿llegó la hora de algo?"""
+        if self._avisos_en_pausa_hasta and datetime.now() < self._avisos_en_pausa_hasta:
+            return                                   # se está mostrando el saludo; avisa en un rato
         vencidas = self.almacen.por_avisar(datetime.now())
         for tarea in vencidas:
             self.almacen.marcar_avisada(tarea.id)
@@ -159,6 +185,69 @@ class Asistente(QObject):
         self.almacen.eliminar(tarea_id)
         self.avisos.quitar(tarea_id)
         self.refrescar()
+
+    def reprogramar(self, tarea_id: int, fecha: datetime):
+        self.almacen.reprogramar(tarea_id, fecha)
+        self.avisos.quitar(tarea_id)
+        self.cara.celebrar()
+        self.refrescar()
+
+    def reprogramar_vencidas(self) -> int:
+        """Pasa cada vencida a mañana, a la misma hora. Devuelve cuántas movió."""
+        ahora = datetime.now()
+        vencidas = self.almacen.vencidas(ahora)
+        for t in vencidas:
+            self.almacen.reprogramar(t.id, a_manana(t.fecha, ahora))
+            self.avisos.quitar(t.id)
+        if vencidas:
+            n = len(vencidas)
+            self.avisos.mostrar_mensaje("↻ Reprogramadas", f"Pasé {n} tarea{'s' if n > 1 else ''} a mañana, "
+                                        "a la misma hora.", [], COLORES["tranquilo"], 6, False)
+            self.cara.celebrar()
+        self.refrescar()
+        return len(vencidas)
+
+    # ================================================================ saludo
+    def saludar(self, forzado: bool = False) -> bool:
+        """
+        El saludo del día. Sin 'forzado', solo una vez por día y cuando:
+          - ya es más tarde que HORA_SALUDO,
+          - estás frente a la laptop (tocaste teclado o mouse hace poco),
+          - no hay un aviso de tarea ni una conversación en curso.
+        Si algo de eso falla, se vuelve a intentar al minuto siguiente.
+        """
+        ahora = datetime.now()
+        if not forzado:
+            if not SALUDO_ACTIVO or not debe_saludar(ahora, self.almacen.leer_ajuste("ultimo_saludo"), HORA_SALUDO):
+                return False
+            if (self.avisos.cola or self.voz.dialogo or self.voz.escuchando_orden
+                    or segundos_inactivo() > SEGUNDOS_PARA_ESTAR_PRESENTE):
+                return False
+        s = armar_saludo(ahora, self.almacen.pendientes(), self.almacen.racha(ahora.date()), NOMBRE_USUARIO)
+        self.almacen.guardar_ajuste("ultimo_saludo", ahora.date().isoformat())
+        self._avisos_en_pausa_hasta = ahora + timedelta(seconds=SEGUNDOS_SALUDO)
+        self.avisos.mostrar_mensaje(s.titulo, s.texto, [], COLORES["feliz"], SEGUNDOS_SALUDO, False)
+        if SALUDO_HABLADO:
+            self.voz.decir(s.hablado)
+        self.cara.celebrar()
+        log.info("saludo del día%s", " (pedido)" if forzado else "")
+        return True
+
+    # ================================================================ semana
+    def resumen_de_semana(self, semanas_atras: int = 0) -> ResumenSemana:
+        """Los 7 días que terminan hoy (o N semanas antes), con la sesión en curso incluida."""
+        ahora = datetime.now()
+        hoy = ahora.date()
+        fin = hoy - timedelta(weeks=semanas_atras)
+        datos = self.almacen.estudio_por_dia(fin - timedelta(days=13), fin)   # + 7 días para comparar
+        if self.estudio.activo and semanas_atras == 0:
+            pomos, mins = datos.get(hoy, (0, 0))
+            p = self.estudio.pomodoro
+            datos[hoy] = (pomos + p.completados, mins + p.minutos_enfocados(ahora))
+        return resumen_semana(datos, fin, META_ESTUDIO_DIARIO)
+
+    def mostrar_semana(self, semanas_atras: int = 0):
+        self.panel.mostrar_semana(self.resumen_de_semana(semanas_atras), date.today())
 
     def respaldar(self):
         try:
@@ -200,6 +289,21 @@ class Asistente(QObject):
                 self.estudio.terminar()
             else:
                 mensaje(NOMBRES_MODO["normal"], "De vuelta al modo normal.", [], COLORES["tranquilo"], 5, False)
+        elif accion == "saludo":
+            self.saludar(forzado=True)
+        elif accion == "semana":
+            texto, hablado = describir_semana(self.resumen_de_semana())
+            mensaje("📊 Tu semana", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
+            if por_voz:
+                self.voz.decir(hablado)
+            else:
+                self.panel.ver_estudio()
+        elif accion == "vencidas_manana":
+            n = self.reprogramar_vencidas()
+            if not n:
+                mensaje("↻ Vencidas", "No tienes tareas vencidas. 👌", [], COLORES["tranquilo"], 5, False)
+            if por_voz:
+                self.voz.decir(f"Listo, pasé {n} a mañana." if n else "No tienes tareas vencidas.")
         elif accion == "resumen":
             texto = self.estudio.resumen_hoy(datetime.now())
             mensaje("📊 Tu día", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
@@ -222,9 +326,11 @@ class Asistente(QObject):
 
     # ================================================================ estado
     def refrescar(self):
-        """Actualización completa (incluye la lista de tareas)."""
+        """Actualización completa (incluye la lista de tareas y, si está a la vista, el gráfico)."""
         self.actualizar_estado()
         self.panel.mostrar_tareas(self.almacen.pendientes())
+        if self.panel.viendo_estudio:
+            self.mostrar_semana(self.panel.semanas_atras)
 
     def actualizar_estado(self):
         """Actualización liviana: cara y modos. El modo estudio la llama cada segundo."""
@@ -271,6 +377,8 @@ class Asistente(QObject):
     def abrir_panel(self):
         self.panel.abrir()
         self.actualizar_estado()
+        if self.panel.viendo_estudio:                # el gráfico pudo quedar viejo mientras estaba oculto
+            self.mostrar_semana(self.panel.semanas_atras)
 
     def _alternar_cara(self):
         if self.cara.isVisible():
@@ -322,12 +430,14 @@ class Asistente(QObject):
             ("🔔 Quitar silencio" if self.silencio else f"🔕 {NOMBRES_MODO['silencio']}",
              comando("sin_silencio" if self.silencio else "silencio")),
             ("📊 Resumen de hoy", comando("resumen")),
+            ("📈 Mi semana", self.panel.ver_estudio),
             None,
             ("🎙 Dejar de escuchar" if escucha else f"🎙 Escuchar «{NOMBRE_ASISTENTE}»",
              lambda: self.voz.poner_escucha(not escucha)),
             (f"🗣 Hablarle ahora ({ATAJO_HABLAR})", lambda: self.voz.oido.escuchar_una_orden()),
             None,
             ("Mostrar / ocultar cara", self._alternar_cara),
+            ("📁 Carpeta de datos", self._abrir_carpeta_datos),
             ("Salir", self.salir),
         ]
         for opcion in opciones:
@@ -337,6 +447,14 @@ class Asistente(QObject):
             accion = QAction(opcion[0], menu)
             accion.triggered.connect(opcion[1])
             menu.addAction(accion)
+
+    def _abrir_carpeta_datos(self):
+        """Tareas, respaldos, registro y voces. Con el .exe vive en %LOCALAPPDATA%\\Lancelot."""
+        carpeta = self.ruta_bd.parent
+        if sys.platform == "win32":
+            os.startfile(carpeta)
+        else:
+            log.info("carpeta de datos: %s", carpeta)
 
     def salir(self):
         if self.estudio.activo:

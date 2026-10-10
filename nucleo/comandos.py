@@ -21,6 +21,7 @@ class Comando:
     accion: str               # estudio | pausa | seguir | terminar | silencio | normal | resumen
     #                           abrir | hora | agenda | escucha_on | escucha_off
     #                           apodo | olvidar_apodo | apodos | abrir_web | buscar
+    #                           saludo | semana | vencidas | vencidas_manana
     minutos: int | None = None
     texto: str | None = None  # p. ej. el nombre de la app en "abre spotify", o el apodo
     destino: str | None = None  # a qué app apunta un apodo nuevo, o dónde buscar (youtube, google)
@@ -42,6 +43,14 @@ REGLAS = [
     (r"^" + _PREFIJO + r"(?:modo )?(?:silencio|silencioso|no molestar)$", "silencio", None),
     (r"^" + _PREFIJO + r"modo normal$|^(?:quita|quitar|desactiva(?:r)?) (?:el )?silencio$", "normal", None),
     (r"^(?:resumen|como voy|cuanto estudie(?: hoy)?)$", "resumen", None),
+    (r"^(?:resumen (?:de (?:la |esta )?)?semana(?:l)?|como voy (?:esta|en la) semana|"
+     r"cuanto estudie (?:esta|en la) semana|mi semana)$", "semana", None),
+    (r"^(?:hola|buenos dias|buen dia|buenas tardes|buenas noches|saludame|como empieza mi dia)$",
+     "saludo", None),
+    (r"^(?:que tengo vencido|(?:mis |las )?(?:tareas )?vencidas|que se me paso|que tareas se me pasaron)$",
+     "vencidas", None),
+    (r"^(?:pasa|pasar|mueve|mover|reprograma|reprogramar|deja|dejar)(?: todas)? las (?:tareas )?vencidas "
+     r"(?:para |a )?manana$", "vencidas_manana", None),
     # "cuando diga el código abre visual studio code" -> apodo
     #   (.+?) es "perezoso": corta en el PRIMER "abre"; sin el ? se comería hasta el último
     (r"^(?:cuando|si) (?:te )?(?:diga|digo) (.+?),? (?:abre|abres|abrir|abras) "

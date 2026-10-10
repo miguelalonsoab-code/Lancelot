@@ -97,6 +97,13 @@ class Almacen:
             "ORDER BY fecha", (ahora.strftime(FORMATO),)).fetchall()
         return [self._a_tarea(f) for f in filas]
 
+    def vencidas(self, ahora: datetime) -> list[Tarea]:
+        """Pendientes cuya hora ya pasó (se hayan avisado o no)."""
+        filas = self.con.execute(
+            "SELECT * FROM tareas WHERE estado = 'pendiente' AND fecha <= ? ORDER BY fecha",
+            (ahora.strftime(FORMATO),)).fetchall()
+        return [self._a_tarea(f) for f in filas]
+
     def marcar_avisada(self, id_: int):
         self.con.execute("UPDATE tareas SET avisada = 1 WHERE id = ?", (id_,))
         self.con.commit()
@@ -125,6 +132,12 @@ class Almacen:
         nueva = (ahora or datetime.now()).replace(second=0, microsecond=0) + timedelta(minutes=minutos)
         self.con.execute("UPDATE tareas SET fecha = ?, avisada = 0 WHERE id = ?",
                          (nueva.strftime(FORMATO), id_))
+        self.con.commit()
+
+    def reprogramar(self, id_: int, fecha: datetime):
+        """Solo cambia la fecha (título y repetición quedan igual) y vuelve a avisar a esa hora."""
+        self.con.execute("UPDATE tareas SET fecha = ?, avisada = 0 WHERE id = ?",
+                         (fecha.strftime(FORMATO), id_))
         self.con.commit()
 
     def editar(self, id_: int, titulo: str, fecha: datetime, repeticion: str | None):
@@ -166,6 +179,14 @@ class Almacen:
             "SELECT COALESCE(SUM(pomodoros), 0), COALESCE(SUM(minutos_enfoque), 0) "
             "FROM sesiones WHERE substr(inicio, 1, 10) = ?", (dia.isoformat(),)).fetchone()
         return fila[0], fila[1]
+
+    def estudio_por_dia(self, desde: date, hasta: date) -> dict[date, tuple[int, int]]:
+        """{día: (pomodoros, minutos)} entre dos fechas, ambas incluidas. Los días sin estudio no aparecen."""
+        filas = self.con.execute(
+            "SELECT substr(inicio, 1, 10) AS dia, SUM(pomodoros), SUM(minutos_enfoque) FROM sesiones "
+            "WHERE substr(inicio, 1, 10) BETWEEN ? AND ? GROUP BY dia",
+            (desde.isoformat(), hasta.isoformat())).fetchall()
+        return {date.fromisoformat(f[0]): (f[1], f[2]) for f in filas}
 
     def racha(self, hoy: date) -> int:
         """

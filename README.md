@@ -1,8 +1,57 @@
-# Lancelot — asistente de escritorio · v3.5
+# Lancelot — asistente de escritorio · v3.7
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
 te muestra una burbuja y Windows lanza una notificación.
+
+## Novedades v3.7: instalador
+- **`Lancelot-setup-3.7.exe`**: un solo archivo que instala Lancelot como cualquier programa:
+  menú Inicio, inicio con Windows (opcional), acceso en el escritorio (opcional) y **desinstalador** en
+  *Configuración → Aplicaciones*. No pide permisos de administrador (se instala solo para tu usuario).
+- **Actualizar** = ejecutar el instalador de la versión nueva encima. Tus tareas no se tocan.
+- **Desinstalar** te pregunta si también quieres borrar tus datos (por defecto, no).
+- Si Lancelot está abierto, el instalador lo detecta y te pide cerrarlo.
+- El panel muestra la versión en su título.
+
+## Novedades v3.6: tu día, tu semana y un .exe
+- **Saludo del día**: la primera vez que te ve cada día (desde las 6:00), te dice tus pendientes de hoy,
+  cuántas vencidas tienes y tu racha de estudio, en la burbuja y en voz alta. Si dejaste la laptop prendida
+  de noche, espera a que toques el teclado o el mouse. Pídelo cuando quieras: **"buenos días"** u **"hola"**.
+  Se ajusta en `config.py` (`SALUDO_ACTIVO`, `HORA_SALUDO`, `SALUDO_HABLADO`).
+- **Tareas vencidas aparte**: arriba del panel, en rojo, con cuánto hace que vencieron. El botón **↻** ofrece
+  *En 1 hora · Hoy a las… · Esta noche · Mañana a la misma hora · Mañana 09:00 · Elegir fecha…*.
+  **"Todas a mañana →"** las mueve todas de una vez. Por voz: **"¿qué tengo vencido?"** y
+  **"pasa las vencidas a mañana"**. "¿Qué tengo para hoy?" ahora también te avisa si hay vencidas.
+- **Pestaña 📊 Estudio**: gráfico de barras de los últimos 7 días, con ◀ ▶ para ver semanas anteriores,
+  tu mejor día, la comparación con la semana anterior y una línea con tu meta diaria (`META_ESTUDIO_DIARIO`).
+  Por voz: **"resumen semanal"** o **"¿cómo voy esta semana?"**.
+- **Lancelot.exe**: un programa normal de Windows, sin Python ni terminal (ver "Crear el .exe" abajo).
+- Menú de la cara: **📈 Mi semana** y **📁 Carpeta de datos**.
+- Actualizar: copiar encima y reemplazar. No hay librerías nuevas (PyInstaller solo si quieres el .exe).
+
+## Crear el .exe y el instalador (opcional)
+1. Una sola vez: instala **Inno Setup** (gratis) y PyInstaller:
+   ```powershell
+   winget install --id JRSoftware.InnoSetup -e -s winget
+   pip install pyinstaller
+   ```
+   (Inno Setup también se descarga de https://jrsoftware.org/isdl.php. `pip` va con el entorno activado.)
+2. Cierra Lancelot. En la terminal, dentro de la carpeta y con el entorno activado (`.venv\Scripts\activate`):
+   ```powershell
+   python construir.py
+   ```
+3. Tarda unos minutos y crea dos cosas en `dist\`:
+   - `Lancelot\Lancelot.exe`: el programa suelto (~300 MB: lleva Python, Qt, Vosk y Piper adentro).
+   - `Lancelot-setup-3.7.exe`: el instalador (más liviano, va comprimido). Es el que conviene usar.
+   Al final te pregunta si quieres copiar tus datos, quitar el inicio viejo con `iniciar.bat` e instalar.
+   Sin Inno Setup, solo crea el .exe y los accesos directos (`python construir.py --sin-instalador` hace lo mismo).
+4. **Dónde quedan los datos:** `Lancelot.exe` usa `%LOCALAPPDATA%\Lancelot` (menú → 📁 Carpeta de datos);
+   `python main.py` sigue usando `datos\` del proyecto. Así puedes probar cambios sin tocar tus tareas reales,
+   y reconstruir el .exe nunca las borra. Solo puede haber uno abierto a la vez.
+5. Cada vez que cambies el código: sube `VERSION` en `config.py`, cierra Lancelot, ejecuta
+   `python construir.py` e instala el nuevo `Lancelot-setup-X.Y.exe` encima del anterior.
+6. Si Windows muestra "Windows protegió su PC" la primera vez: *Más información → Ejecutar de todas formas*.
+   Pasa con cualquier programa nuevo sin firma digital; es tu propio código.
 
 ## Novedades v3.5: bases sólidas
 - **Registro de errores** en `datos/lancelot.log` (rotativo: máximo ~4 MB entre todos). Si algo falla, ahí queda
@@ -113,6 +162,8 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 1. `Win + R` → escribe `shell:startup` → Enter.
 2. En la carpeta que se abre, crea un **acceso directo** a `iniciar.bat`.
 
+(Si usas el .exe, `python construir.py` crea este acceso por ti.)
+
 ## Uso
 
 | Acción | Resultado |
@@ -122,6 +173,8 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | Clic derecho en la cara o en el ícono de la bandeja | Menú: tareas, ocultar cara, salir |
 | Burbuja de aviso | ✓ Hecho · +10 min · +1 h |
 | ✎ / ✓ / ✕ en cada tarea | Editar · completar · eliminar |
+| ↻ en una vencida | Reprogramar (en 1 hora, esta noche, mañana…) |
+| Pestaña 📊 Estudio | Gráfico de la semana; ◀ ▶ semanas anteriores |
 
 ## Comandos (en el cuadro de texto del panel)
 
@@ -134,6 +187,10 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | `modo silencio` · `no molestar` | Sin sonido ni notificaciones de Windows |
 | `modo normal` | Quita el silencio y termina el estudio |
 | `cuánto estudié hoy` · `resumen` | Tu día en una burbuja |
+| `resumen semanal` · `cómo voy esta semana` | Tu semana (y abre la pestaña 📊 Estudio) |
+| `buenos días` · `hola` | El saludo con tus pendientes de hoy |
+| `vencidas` · `qué tengo vencido` | Lista tus tareas vencidas |
+| `pasa las vencidas a mañana` | Las mueve todas a mañana, a la misma hora |
 
 Si el texto no es un comando, se guarda como tarea. Mientras escribes, debajo dice cuál de los dos entendió.
 
@@ -164,6 +221,8 @@ Ojo: "a las 3" sin "am" se entiende como 15:00 (lo más común al hablar).
 
 ```
 main.py                  arranque
+construir.py             crea dist\Lancelot\Lancelot.exe (PyInstaller) y el instalador (Inno Setup)
+instalador/lancelot.iss  receta del instalador: qué copia, accesos directos, desinstalación
 registro.py              registro de errores en datos/lancelot.log
 config.py                nombre, colores, tiempos (personaliza aquí)
 nucleo/                  lógica pura, sin interfaz
@@ -178,8 +237,11 @@ nucleo/                  lógica pura, sin interfaz
   hablado.py             20:40 -> "a las 8 y 40 de la noche"
   dialogo.py             "¿para cuándo?" / "¿qué te recuerdo?": completa tareas por voz
   respaldo.py            copia de seguridad diaria de la base de datos
+  saludo.py              el saludo del día (textos para la burbuja y la voz)
+  estadisticas.py        la semana de estudio: totales, mejor día, comparación
 sensores/
   ventana_activa.py      título y programa de la ventana al frente (API de Windows)
+  inactividad.py         segundos sin tocar teclado ni mouse (para no saludar a nadie)
 voz/
   oido.py                micrófono + Vosk (reconocimiento local) + nombre "Lancelot"
   habla.py               voz: Piper o voces de Windows, en un hilo aparte
@@ -195,7 +257,8 @@ interfaz/                todo lo visual (PySide6)
   cara.py                la carita animada
   burbuja.py             avisos y mensajes junto a la cara
   estudio.py             modo estudio: pomodoro + frases + distracciones + sesiones
-  panel.py               ventana "Mis tareas"
+  panel.py               ventana "Mis tareas" (pestañas Tareas y 📊 Estudio)
+  grafico.py             gráfico de barras de la semana (QPainter)
   app.py                 director: crea las piezas, tareas, comandos, estado de la cara, menú
   avisos.py              qué muestra la burbuja y en qué orden (tareas primero, mensajes después)
   asistente_voz.py       oír, hablar, diálogo, abrir apps y páginas, apodos

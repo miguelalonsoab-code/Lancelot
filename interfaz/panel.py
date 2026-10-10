@@ -5,19 +5,28 @@ El cuadro de texto entiende dos cosas:
   - COMANDOS: "modo estudio", "modo estudio 50", "pausa", "terminar", "modo silencio"...
   - TAREAS:   "mañana 8pm pagar la luz", "cada lunes 9am reunión"...
 Primero se revisa si es comando; si no, se interpreta como tarea.
+
+Pestañas:
+  - Tareas:  arriba las VENCIDAS (con ↻ para reprogramar), luego las próximas.
+  - Estudio: gráfico de los últimos 7 días, con ◀ ▶ para ver semanas anteriores.
 """
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from PySide6.QtCore import QDateTime, Qt, Signal
+from PySide6.QtCore import QDateTime, QPoint, QSize, Qt, Signal
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (QComboBox, QDateTimeEdit, QFrame, QHBoxLayout, QLabel, QLineEdit,
-                               QListWidget, QListWidgetItem, QPushButton, QVBoxLayout, QWidget)
+                               QListWidget, QListWidgetItem, QMenu, QPushButton, QTabWidget, QVBoxLayout,
+                               QWidget)
 
-from config import ATAJO_HABLAR, COLORES, NOMBRE_ASISTENTE, NOMBRES_MODO
+from config import ATAJO_HABLAR, COLORES, VERSION, HORA_POR_DEFECTO, META_ESTUDIO_DIARIO, NOMBRE_ASISTENTE, NOMBRES_MODO
+from interfaz.grafico import GraficoSemana
 from nucleo.almacen import Tarea
 from nucleo.comandos import Comando, interpretar_comando
-from nucleo.interprete import REPETICIONES, describir_fecha, interpretar
+from nucleo.estadisticas import ResumenSemana, describir_semana, rango
+from nucleo.interprete import REPETICIONES, describir_atraso, describir_fecha, interpretar
+from nucleo.planificador import opciones_reprogramar
 
 DESCRIPCION_COMANDO = {
     "estudio": "activar {modo}",
@@ -37,6 +46,10 @@ DESCRIPCION_COMANDO = {
     "apodos": "mostrar tus apodos",
     "abrir_web": "abrir «{texto}»{en}",
     "buscar": "buscar «{texto}» en {destino}{en}",
+    "saludo": "saludarte con el resumen del día",
+    "semana": "mostrar cuánto estudiaste esta semana",
+    "vencidas": "decir tus tareas vencidas",
+    "vencidas_manana": "pasar todas las vencidas a mañana (misma hora)",
 }
 
 ESTILO = f"""
@@ -71,6 +84,21 @@ QListWidget::item:selected {{ background: transparent; }}
 #mini {{ background: transparent; padding: 4px 8px; font-size: 14px; }}
 #mini:hover {{ background: #232731; }}
 #pie {{ color: #5d6573; font-size: 11px; }}
+#seccion {{ color: #8b93a1; font-size: 11px; font-weight: 700; letter-spacing: 1px; background: transparent; }}
+#seccion[vencidas="true"] {{ color: {COLORES['alerta']}; }}
+#enlace {{ background: transparent; color: {COLORES['alerta']}; padding: 2px 6px; font-size: 12px; }}
+#enlace:hover {{ background: #2a1d1d; }}
+QTabWidget::pane {{ border: none; }}
+QTabBar::tab {{ background: transparent; color: #8b93a1; padding: 6px 14px; margin-right: 4px;
+               border-bottom: 2px solid transparent; }}
+QTabBar::tab:selected {{ color: #e8ebef; border-bottom-color: {COLORES['tranquilo']}; }}
+QTabBar::tab:hover {{ color: #e8ebef; }}
+#rango {{ font-size: 14px; font-weight: 600; }}
+#semana_texto {{ color: #c3c8d1; font-size: 12px; }}
+#nota {{ color: #5d6573; font-size: 11px; }}
+QMenu {{ background: #1a1d24; border: 1px solid #2a2f3a; padding: 4px; }}
+QMenu::item {{ padding: 6px 18px; border-radius: 6px; }}
+QMenu::item:selected {{ background: #2e3340; }}
 """
 
 
@@ -81,12 +109,15 @@ class Panel(QWidget):
     editar_pedido = Signal(int, str, datetime, object)  # id, titulo, fecha, repeticion
     comando_pedido = Signal(object)                   # Comando
     hablar_pedido = Signal()                          # botón 🗣: escuchar una orden ahora
+    reprogramar_pedido = Signal(int, datetime)        # id, nueva fecha (atajos de ↻)
+    reprogramar_vencidas_pedido = Signal()            # "Todas a mañana"
+    semana_pedida = Signal(int)                       # semanas hacia atrás (0 = últimos 7 días)
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"Mis tareas · {NOMBRE_ASISTENTE}")
+        self.setWindowTitle(f"Mis tareas · {NOMBRE_ASISTENTE} {VERSION}")
         self.setStyleSheet(ESTILO)
-        self.resize(430, 620)
+        self.resize(460, 660)
 
         titulo = QLabel("Mis tareas", objectName="titulo")
 
@@ -158,7 +189,52 @@ class Panel(QWidget):
 
         self.lista = QListWidget()
         self.lista.setSelectionMode(QListWidget.NoSelection)
+        self.lista.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)   # las filas se ajustan al ancho
         self.pie = QLabel(objectName="pie")
+
+        # --- Pestaña "Tareas"
+        pestana_tareas = QWidget()
+        capa_tareas = QVBoxLayout(pestana_tareas)
+        capa_tareas.setContentsMargins(0, 8, 0, 0)
+        capa_tareas.setSpacing(8)
+        capa_tareas.addWidget(self.entrada)
+        capa_tareas.addWidget(self.vista)
+        capa_tareas.addLayout(fila_opciones)
+        capa_tareas.addSpacing(4)
+        capa_tareas.addWidget(self.lista, 1)
+        capa_tareas.addWidget(self.pie)
+
+        # --- Pestaña "Estudio": la semana en un gráfico
+        self.semanas_atras = 0
+        b_antes = QPushButton("◀", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Semana anterior")
+        self.b_despues = QPushButton("▶", objectName="mini", cursor=Qt.PointingHandCursor,
+                                     toolTip="Semana siguiente")
+        b_antes.clicked.connect(lambda: self._cambiar_semana(+1))
+        self.b_despues.clicked.connect(lambda: self._cambiar_semana(-1))
+        self.rango = QLabel(objectName="rango", alignment=Qt.AlignCenter)
+        fila_rango = QHBoxLayout()
+        fila_rango.addWidget(b_antes)
+        fila_rango.addWidget(self.rango, 1)
+        fila_rango.addWidget(self.b_despues)
+        self.grafico = GraficoSemana()
+        self.semana_texto = QLabel(objectName="semana_texto", wordWrap=True)
+        nota = QLabel(f"La línea punteada es tu meta diaria ({META_ESTUDIO_DIARIO} min, en config.py). "
+                      "Las barras verdes la cumplieron. También puedes preguntar «resumen semanal».",
+                      objectName="nota", wordWrap=True)
+        pestana_estudio = QWidget()
+        capa_estudio = QVBoxLayout(pestana_estudio)
+        capa_estudio.setContentsMargins(0, 10, 0, 0)
+        capa_estudio.setSpacing(10)
+        capa_estudio.addLayout(fila_rango)
+        capa_estudio.addWidget(self.grafico)
+        capa_estudio.addWidget(self.semana_texto)
+        capa_estudio.addStretch()
+        capa_estudio.addWidget(nota)
+
+        self.pestanas = QTabWidget()
+        self.pestanas.addTab(pestana_tareas, "Tareas")
+        self.pestanas.addTab(pestana_estudio, "📊 Estudio")
+        self.pestanas.currentChanged.connect(self._al_cambiar_pestana)
 
         capa = QVBoxLayout(self)
         capa.setContentsMargins(18, 16, 18, 12)
@@ -168,15 +244,10 @@ class Panel(QWidget):
         capa.addWidget(self.voz)
         capa.addWidget(self.tarjeta)
         capa.addWidget(self.hoy)
-        capa.addSpacing(4)
-        capa.addWidget(self.entrada)
-        capa.addWidget(self.vista)
-        capa.addLayout(fila_opciones)
-        capa.addSpacing(6)
-        capa.addWidget(self.lista, 1)
-        capa.addWidget(self.pie)
+        capa.addWidget(self.pestanas, 1)
 
         self._editando: int | None = None    # id de la tarea que se está editando
+        self._menu_reprogramar: QMenu | None = None
         self._reiniciar_formulario()
 
     # ---------------------------------------------------------------- abrir
@@ -231,6 +302,7 @@ class Panel(QWidget):
         self.boton_cancelar.show()
         self._mostrar_vista("✎ Editando. Cambia el texto, la fecha o la repetición y pulsa Guardar.",
                             editando=True)
+        self.pestanas.setCurrentIndex(0)
         self.abrir()
         self.entrada.selectAll()
 
@@ -300,33 +372,89 @@ class Panel(QWidget):
         widget.style().unpolish(widget)
         widget.style().polish(widget)
 
+    # ---------------------------------------------------------------- estudio
+    @property
+    def viendo_estudio(self) -> bool:
+        return self.isVisible() and self.pestanas.currentIndex() == 1
+
+    def ver_estudio(self):
+        self.pestanas.setCurrentIndex(1)
+        self.abrir()
+        self.semana_pedida.emit(self.semanas_atras)
+
+    def _al_cambiar_pestana(self, indice: int):
+        if indice == 1:
+            self.semana_pedida.emit(self.semanas_atras)
+
+    def _cambiar_semana(self, paso: int):
+        self.semanas_atras = max(0, self.semanas_atras + paso)
+        self.semana_pedida.emit(self.semanas_atras)
+
+    def mostrar_semana(self, r: ResumenSemana, hoy):
+        """Lo llama el asistente con los datos ya calculados."""
+        self.rango.setText(("Últimos 7 días · " if self.semanas_atras == 0 else "") + rango(r))
+        self.b_despues.setEnabled(self.semanas_atras > 0)
+        self.grafico.mostrar(r.dias, r.meta, hoy)
+        self.semana_texto.setText(describir_semana(r)[0])
+
     # ------------------------------------------------------------------ lista
     def mostrar_tareas(self, tareas: list[Tarea]):
         self.lista.clear()
         ahora = datetime.now()
-        for t in tareas:
-            item = QListWidgetItem(self.lista)
-            fila = self._crear_fila(t, ahora)
-            item.setSizeHint(fila.sizeHint())
-            self.lista.setItemWidget(item, fila)
-        hoy = sum(1 for t in tareas if t.fecha.date() == ahora.date())
-        self.pie.setText(f"{len(tareas)} pendiente(s) · {hoy} para hoy" if tareas
+        vencidas = [t for t in tareas if t.fecha <= ahora]
+        proximas = [t for t in tareas if t.fecha > ahora]
+        if vencidas:
+            self._agregar_fila(self._crear_seccion(f"⚠ VENCIDAS · {len(vencidas)}", vencidas=True))
+            for t in vencidas:
+                self._agregar_fila(self._crear_fila(t, ahora, vencida=True))
+            if proximas:
+                self._agregar_fila(self._crear_seccion("PRÓXIMAS"))
+        for t in proximas:
+            self._agregar_fila(self._crear_fila(t, ahora))
+        hoy = sum(1 for t in proximas if t.fecha.date() == ahora.date())
+        partes = [f"{len(tareas)} pendiente(s)", f"{hoy} más para hoy"]
+        if vencidas:
+            partes.append(f"{len(vencidas)} vencida(s)")
+        self.pie.setText(" · ".join(partes) if tareas
                          else "Nada pendiente. Escribe arriba para agregar una tarea.")
 
-    def _crear_fila(self, t: Tarea, ahora: datetime) -> QWidget:
+    def _agregar_fila(self, fila: QWidget):
+        item = QListWidgetItem(self.lista)
+        item.setSizeHint(QSize(0, fila.sizeHint().height()))   # ancho 0: que tome el de la lista
+        self.lista.setItemWidget(item, fila)
+
+    def _crear_seccion(self, texto: str, vencidas: bool = False) -> QWidget:
+        fila = QWidget()
+        etiqueta = QLabel(texto, objectName="seccion")
+        etiqueta.setProperty("vencidas", vencidas)
+        capa = QHBoxLayout(fila)
+        capa.setContentsMargins(4, 10, 4, 2)
+        capa.addWidget(etiqueta, 1)
+        if vencidas:
+            b_todas = QPushButton("Todas a mañana →", objectName="enlace", cursor=Qt.PointingHandCursor,
+                                  toolTip="Mueve cada vencida a mañana, a la misma hora")
+            b_todas.clicked.connect(self.reprogramar_vencidas_pedido.emit)
+            capa.addWidget(b_todas)
+        return fila
+
+    def _crear_fila(self, t: Tarea, ahora: datetime, vencida: bool = False) -> QWidget:
         fila = QWidget()
         nombre = QLabel(t.titulo, objectName="fila_titulo", wordWrap=True)
-        detalle = describir_fecha(t.fecha, ahora)
+        detalle = describir_atraso(t.fecha, ahora) if vencida else describir_fecha(t.fecha, ahora)
         if t.repeticion:
             detalle += "  🔁 " + REPETICIONES[t.repeticion].lower()
         fecha = QLabel(detalle, objectName="fila_fecha")
-        fecha.setProperty("atrasada", t.fecha < ahora)
-        fecha.setProperty("hoy", t.fecha.date() == ahora.date() and t.fecha >= ahora)
+        fecha.setProperty("atrasada", vencida)
+        fecha.setProperty("hoy", t.fecha.date() == ahora.date() and not vencida)
 
-        b_editar = QPushButton("✎", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Editar")
+        if vencida:   # en vez de ✎, el menú de reprogramar (que también trae "Elegir fecha…")
+            b_primero = QPushButton("↻", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Reprogramar")
+            b_primero.clicked.connect(lambda: self._abrir_menu_reprogramar(t, b_primero))
+        else:
+            b_primero = QPushButton("✎", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Editar")
+            b_primero.clicked.connect(lambda: self.empezar_edicion(t))
         b_hecho = QPushButton("✓", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Hecho")
         b_borrar = QPushButton("✕", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Eliminar")
-        b_editar.clicked.connect(lambda: self.empezar_edicion(t))
         b_hecho.clicked.connect(lambda: self.completar_pedido.emit(t.id))
         b_borrar.clicked.connect(lambda: self.eliminar_pedido.emit(t.id))
 
@@ -337,7 +465,25 @@ class Panel(QWidget):
         capa = QHBoxLayout(fila)
         capa.setContentsMargins(4, 8, 4, 8)
         capa.addLayout(textos, 1)
-        capa.addWidget(b_editar)
+        capa.addWidget(b_primero)
         capa.addWidget(b_hecho)
         capa.addWidget(b_borrar)
         return fila
+
+    def opciones_menu_reprogramar(self, t: Tarea) -> list[tuple[str, datetime | None]]:
+        """Los atajos del menú ↻. None = "Elegir fecha…" (abre la edición)."""
+        return opciones_reprogramar(t.fecha, datetime.now(), HORA_POR_DEFECTO) + [("Elegir fecha y hora…", None)]
+
+    def _abrir_menu_reprogramar(self, t: Tarea, boton: QPushButton):
+        menu = QMenu(self)
+        for etiqueta, cuando in self.opciones_menu_reprogramar(t):
+            if cuando is None:
+                menu.addSeparator()
+            accion = QAction(etiqueta, menu)
+            if cuando is None:
+                accion.triggered.connect(lambda: self.empezar_edicion(t))
+            else:
+                accion.triggered.connect(lambda _=False, c=cuando: self.reprogramar_pedido.emit(t.id, c))
+            menu.addAction(accion)
+        self._menu_reprogramar = menu                   # que no se libere mientras está abierto
+        menu.popup(boton.mapToGlobal(QPoint(0, boton.height())))

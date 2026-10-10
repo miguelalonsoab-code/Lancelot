@@ -107,6 +107,8 @@ class Burbuja(QWidget):
     def _pintar(self, color: str, cabecera: str, titulo: str, extra: str):
         self.setStyleSheet(ESTILO_BASE.format(color=color, fondo=COLORES["fondo_bisel"]))
         self.cabecera.setText(cabecera)
+        # Textos largos o de varias líneas (saludo, agenda): más ancha, para que no quede una columna flaca
+        self.titulo.setMinimumWidth(250 if len(titulo) > 60 or "\n" in titulo else 0)
         self.titulo.setText(titulo)
         self.extra.setText(extra)
         self.extra.setVisible(bool(extra))

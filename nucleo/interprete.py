@@ -219,6 +219,21 @@ def describir_fecha(fecha: datetime, ahora: datetime | None = None) -> str:
     return f"{abrev} {fecha.strftime('%d/%m')} {hora}"
 
 
+def describir_atraso(fecha: datetime, ahora: datetime | None = None) -> str:
+    """Cuánto hace que venció: 'venció hace 12 min', 'venció ayer 20:00', 'venció hace 3 días'."""
+    ahora = ahora or datetime.now()
+    minutos = int((ahora - fecha).total_seconds() // 60)
+    dias = (ahora.date() - fecha.date()).days
+    if minutos < 60:
+        return f"venció hace {max(minutos, 1)} min"
+    if dias == 0:
+        return f"venció hoy {fecha:%H:%M}"
+    if dias == 1:
+        return f"venció ayer {fecha:%H:%M}"
+    abrev = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"][fecha.weekday()]
+    return f"venció hace {dias} días ({abrev} {fecha:%d/%m})"
+
+
 # ---------------------------------------------------------------------------
 # Ayudantes internos
 # ---------------------------------------------------------------------------
