@@ -1,0 +1,14 @@
+# Entorno virtual: se recrea con "pip install -r requirements.txt"
+.venv/
+
+# Archivos que Python genera solo
+__pycache__/
+*.pyc
+
+# Tus datos personales: tareas, apodos, respaldos, registro, modelo y voces descargados.
+# NUNCA se suben a GitHub.
+datos/
+
+# Configuración local de editores
+.vscode/
+.idea/
