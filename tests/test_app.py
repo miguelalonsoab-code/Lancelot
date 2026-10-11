@@ -155,6 +155,29 @@ class TestAsistente(unittest.TestCase):
         self.a.panel._cambiar_semana(+1)                            # ◀ semana anterior
         self.assertEqual(self.a.panel.grafico.dias[-1].fecha, ahora.date() - timedelta(weeks=1))
 
+    # ------------------------------------------------------------- v3.8
+    def test_ofrece_actualizacion_y_omitir(self):
+        from nucleo.version import Actualizacion
+        act = Actualizacion("9.0", "https://github.com/x/Lancelot-setup-9.0.exe", "", "- Novedad", 0, None)
+        self.a.actualizador.encontrada.emit(act, False)
+        self.app.processEvents()
+        self.assertIn("9.0 disponible", self.a.burbuja.cabecera.text())
+        self.a.burbuja.accion.emit("omitir_version")
+        self.assertEqual(self.a.almacen.leer_ajuste("version_omitida"), "9.0")
+        self.a.burbuja.ocultar()
+        self.ganchos["olvidar_oferta"]()
+        self.a.actualizador.encontrada.emit(act, False)            # la próxima búsqueda automática…
+        self.app.processEvents()
+        self.assertFalse(self.a.burbuja.isVisible())                # …ya no insiste
+
+    def test_actualizacion_no_interrumpe_el_estudio(self):
+        from nucleo.version import Actualizacion
+        self.a.ejecutar_comando(self._comando("modo estudio"))
+        self.a.burbuja.ocultar()
+        self.a.actualizador.encontrada.emit(Actualizacion("9.0", "u", "", "", 0, None), False)
+        self.app.processEvents()
+        self.assertFalse(self.a.burbuja.isVisible())
+
     @staticmethod
     def _comando(texto):
         from nucleo.comandos import interpretar_comando
@@ -178,6 +201,7 @@ def puntos_de_enganche(a, modulo):
         "dialogo": lambda: a.voz.dialogo,
         "config_saludo": lambda hora: setattr(modulo, "HORA_SALUDO", hora),
         "terminar_saludo": lambda: setattr(a, "_avisos_en_pausa_hasta", None),
+        "olvidar_oferta": lambda: setattr(a, "_actualizacion", None),
     }
 
 

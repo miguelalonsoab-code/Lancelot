@@ -1,8 +1,31 @@
-# Lancelot — asistente de escritorio · v3.7
+# Lancelot — asistente de escritorio · v3.8
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
 te muestra una burbuja y Windows lanza una notificación.
+
+## Novedades v3.8: actualizaciones y voz incluida
+- **Actualizaciones automáticas**: Lancelot revisa en GitHub si hay una versión nueva (al minuto de abrir y cada
+  6 horas). Si la hay, te ofrece **Actualizar · Ahora no · Omitir**. Al aceptar, la descarga, comprueba que el
+  archivo esté intacto, se cierra, se instala y vuelve a abrirse solo. Nunca interrumpe una sesión de estudio.
+- Pídelo cuando quieras: **"busca actualizaciones"** o **"¿qué versión tienes?"** (también en el menú 🔄).
+- **La voz viene en el instalador**: el modelo de reconocimiento y tus voces Piper van dentro, así que en una
+  PC nueva funciona sin descargar nada. Tus tareas y apodos nunca van en el instalador.
+- `python construir.py --publicar` sube la versión a GitHub (ver "Actualizaciones" abajo).
+
+## Actualizaciones (cómo publicar una versión)
+1. Una sola vez:
+   - En `config.py`, escribe tu repositorio: `REPO_ACTUALIZACIONES = "tu-usuario/lancelot"`.
+   - El repositorio debe ser **público** para que Lancelot lea sus Releases sin contraseñas.
+     Si prefieres que tu código siga privado, crea otro repositorio **público y vacío** (p. ej. `lancelot-versiones`)
+     solo para publicar los instaladores, y pon ese en `REPO_ACTUALIZACIONES`.
+   - Instala GitHub CLI y conéctalo: `winget install --id GitHub.cli -e` y luego `gh auth login`.
+2. Cada versión nueva:
+   - Sube `VERSION` en `config.py` y agrega su sección `## Novedades vX.Y` en este README (son las notas que verás
+     en la burbuja).
+   - `git add .`, `git commit -m "..."`, `git push`.
+   - `python construir.py --publicar`
+3. Tus Lancelot instalados la verán en las próximas horas, o al decir "busca actualizaciones".
 
 ## Novedades v3.7: instalador
 - **`Lancelot-setup-3.7.exe`**: un solo archivo que instala Lancelot como cualquier programa:
@@ -191,6 +214,7 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | `buenos días` · `hola` | El saludo con tus pendientes de hoy |
 | `vencidas` · `qué tengo vencido` | Lista tus tareas vencidas |
 | `pasa las vencidas a mañana` | Las mueve todas a mañana, a la misma hora |
+| `busca actualizaciones` · `qué versión tienes` | Revisa si hay una versión nueva en GitHub |
 
 Si el texto no es un comando, se guarda como tarea. Mientras escribes, debajo dice cuál de los dos entendió.
 
@@ -239,6 +263,7 @@ nucleo/                  lógica pura, sin interfaz
   respaldo.py            copia de seguridad diaria de la base de datos
   saludo.py              el saludo del día (textos para la burbuja y la voz)
   estadisticas.py        la semana de estudio: totales, mejor día, comparación
+  version.py             comparar versiones y leer las Releases de GitHub
 sensores/
   ventana_activa.py      título y programa de la ventana al frente (API de Windows)
   inactividad.py         segundos sin tocar teclado ni mouse (para no saludar a nadie)
@@ -259,6 +284,7 @@ interfaz/                todo lo visual (PySide6)
   estudio.py             modo estudio: pomodoro + frases + distracciones + sesiones
   panel.py               ventana "Mis tareas" (pestañas Tareas y 📊 Estudio)
   grafico.py             gráfico de barras de la semana (QPainter)
+  actualizador.py        buscar, descargar (verificando) e instalar versiones nuevas
   app.py                 director: crea las piezas, tareas, comandos, estado de la cara, menú
   avisos.py              qué muestra la burbuja y en qué orden (tareas primero, mensajes después)
   asistente_voz.py       oír, hablar, diálogo, abrir apps y páginas, apodos

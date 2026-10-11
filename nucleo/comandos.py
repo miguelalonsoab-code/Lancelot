@@ -21,7 +21,7 @@ class Comando:
     accion: str               # estudio | pausa | seguir | terminar | silencio | normal | resumen
     #                           abrir | hora | agenda | escucha_on | escucha_off
     #                           apodo | olvidar_apodo | apodos | abrir_web | buscar
-    #                           saludo | semana | vencidas | vencidas_manana
+    #                           saludo | semana | vencidas | vencidas_manana | actualizacion
     minutos: int | None = None
     texto: str | None = None  # p. ej. el nombre de la app en "abre spotify", o el apodo
     destino: str | None = None  # a qué app apunta un apodo nuevo, o dónde buscar (youtube, google)
@@ -49,6 +49,8 @@ REGLAS = [
      "saludo", None),
     (r"^(?:que tengo vencido|(?:mis |las )?(?:tareas )?vencidas|que se me paso|que tareas se me pasaron)$",
      "vencidas", None),
+    (r"^(?:busca(?:r)? actualizacion(?:es)?|hay (?:alguna )?actualizacion|actualizate|"
+     r"que version (?:tienes|eres)|(?:tu )?version)$", "actualizacion", None),
     (r"^(?:pasa|pasar|mueve|mover|reprograma|reprogramar|deja|dejar)(?: todas)? las (?:tareas )?vencidas "
      r"(?:para |a )?manana$", "vencidas_manana", None),
     # "cuando diga el código abre visual studio code" -> apodo

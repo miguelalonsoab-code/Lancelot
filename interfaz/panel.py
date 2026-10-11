@@ -50,6 +50,7 @@ DESCRIPCION_COMANDO = {
     "semana": "mostrar cuánto estudiaste esta semana",
     "vencidas": "decir tus tareas vencidas",
     "vencidas_manana": "pasar todas las vencidas a mañana (misma hora)",
+    "actualizacion": "buscar una versión nueva de Lancelot",
 }
 
 ESTILO = f"""

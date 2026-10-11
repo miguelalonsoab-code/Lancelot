@@ -16,6 +16,9 @@ Modos:
 
 Cada día, la primera vez que te ve frente a la laptop, te saluda con tus pendientes
 (ver saludar()). Mientras el saludo está en pantalla, los avisos de tareas esperan.
+
+Actualizaciones (solo con Lancelot.exe y REPO_ACTUALIZACIONES configurado): al minuto de abrir
+y cada pocas horas pregunta a GitHub si hay una versión nueva; si la hay, te ofrece instalarla.
 """
 from __future__ import annotations
 
@@ -31,7 +34,9 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 from config import (ATAJO_HABLAR, CARPETA_RESPALDOS, COLORES, HORA_DESPERTAR, HORA_DORMIR,
                     HORA_SALUDO, META_ESTUDIO_DIARIO, NOMBRE_ASISTENTE, NOMBRE_USUARIO, NOMBRES_MODO,
                     RESPALDOS_A_CONSERVAR, RUTA_BD, SALUDO_ACTIVO, SALUDO_HABLADO, SEGUNDOS_ENTRE_REVISIONES,
-                    SEGUNDOS_MENSAJE, SEGUNDOS_SALUDO, VERSION, EMPAQUETADO)
+                    SEGUNDOS_MENSAJE, SEGUNDOS_SALUDO, VERSION, EMPAQUETADO, REPO_ACTUALIZACIONES,
+                    HORAS_ENTRE_BUSQUEDAS, BUSCAR_ACTUALIZACIONES_EN_DESARROLLO)
+from interfaz.actualizador import Actualizador
 from interfaz.asistente_voz import ControladorVoz, NotificadorVoz
 from interfaz.avisos import GestorAvisos, NotificadorCara
 from interfaz.burbuja import Burbuja
@@ -47,6 +52,7 @@ from nucleo.interprete import describir_fecha
 from nucleo.planificador import a_manana, estado_del_dia
 from nucleo.respaldo import hacer_respaldo
 from nucleo.saludo import armar_saludo, debe_saludar
+from nucleo.version import Actualizacion, resumen_notas
 from sensores.inactividad import segundos_inactivo
 
 log = logging.getLogger(__name__)
@@ -85,6 +91,8 @@ class Asistente(QObject):
         self.avisos = GestorAvisos(self)
         self.voz = ControladorVoz(self)
         self.notificador_windows = NotificadorWindows(self.bandeja)
+        self.actualizador = Actualizador(REPO_ACTUALIZACIONES, VERSION, self.ruta_bd.parent / "actualizaciones")
+        self._actualizacion: Actualizacion | None = None   # la última ofrecida
         # Canales de aviso de tareas (en la Fase 2 se agrega aquí el del celular)
         self.notificadores: list[Notificador] = [NotificadorCara(self.avisos), self.notificador_windows,
                                                  NotificadorVoz(self.voz)]
@@ -105,6 +113,11 @@ class Asistente(QObject):
         self.panel.reprogramar_pedido.connect(self.reprogramar)
         self.panel.reprogramar_vencidas_pedido.connect(self.reprogramar_vencidas)
         self.panel.semana_pedida.connect(self.mostrar_semana)
+        self.actualizador.encontrada.connect(self._al_encontrar_actualizacion)
+        self.actualizador.sin_novedad.connect(self._al_no_haber_actualizacion)
+        self.actualizador.descargada.connect(self._al_descargar_actualizacion)
+        self.actualizador.fallo.connect(
+            lambda texto: self.avisos.mostrar_mensaje("🔄 Actualización", texto, [], COLORES["alerta"], 10, False))
 
         self._menu_bandeja = QMenu()                 # se guarda para que no se libere
         self._menu_bandeja.aboutToShow.connect(lambda: self._llenar_menu(self._menu_bandeja))
@@ -122,6 +135,12 @@ class Asistente(QObject):
         self.reloj_respaldo = QTimer(self)                 # por si la laptop queda prendida de un día a otro
         self.reloj_respaldo.timeout.connect(self.respaldar)
         self.reloj_respaldo.start(3 * 60 * 60 * 1000)
+        if self.busca_actualizaciones:
+            self.actualizador.limpiar_descargas()
+            QTimer.singleShot(60 * 1000, self.actualizador.buscar)      # un minuto después de abrir
+            self.reloj_actualizacion = QTimer(self)
+            self.reloj_actualizacion.timeout.connect(self.actualizador.buscar)
+            self.reloj_actualizacion.start(HORAS_ENTRE_BUSQUEDAS * 60 * 60 * 1000)
 
         if self.almacen.leer_ajuste("escucha") == "1":
             self.voz.poner_escucha(True, avisar=False)
@@ -233,6 +252,74 @@ class Asistente(QObject):
         log.info("saludo del día%s", " (pedido)" if forzado else "")
         return True
 
+    # ======================================================= actualizaciones
+    @property
+    def busca_actualizaciones(self) -> bool:
+        return bool(REPO_ACTUALIZACIONES) and (EMPAQUETADO or BUSCAR_ACTUALIZACIONES_EN_DESARROLLO)
+
+    def buscar_actualizaciones(self):
+        """La búsqueda que pides tú ("busca actualizaciones"): siempre responde algo."""
+        if not REPO_ACTUALIZACIONES:
+            self.avisos.mostrar_mensaje("🔄 Versión " + VERSION, "Para buscar versiones nuevas, escribe tu repositorio "
+                                        "en config.py (REPO_ACTUALIZACIONES).", [], COLORES["tranquilo"], 8, False)
+            return
+        self.avisos.mostrar_mensaje("🔄 Actualizaciones", f"Tengo la versión {VERSION}. Buscando una más nueva…",
+                                    [], COLORES["tranquilo"], 6, False)
+        self.actualizador.buscar(manual=True)
+
+    def _al_encontrar_actualizacion(self, act: Actualizacion, manual: bool):
+        ya_ofrecida = self._actualizacion and self._actualizacion.version == act.version
+        omitida = self.almacen.leer_ajuste("version_omitida") == act.version
+        if not manual and (ya_ofrecida or omitida):
+            return                                   # no insistir con la misma versión
+        if not manual and (self.estudio.activo or self.burbuja.tipo == "tarea"):
+            return                                   # no interrumpir: se vuelve a ofrecer en la próxima búsqueda
+        self._actualizacion = act
+        peso = f" · {act.tamano / 1024 ** 2:.0f} MB" if act.tamano else ""
+        novedades = resumen_notas(act.notas)
+        self.avisos.mostrar_mensaje(f"🎁 {NOMBRE_ASISTENTE} {act.version} disponible{peso}",
+                                    novedades or "Hay una versión nueva.",
+                                    [("Actualizar", "actualizar"), ("Ahora no", "cerrar"),
+                                     ("Omitir", "omitir_version")], COLORES["feliz"], 45, False)
+        if manual:
+            self.voz.decir(f"Hay una versión nueva: la {act.version}.")
+
+    def _al_no_haber_actualizacion(self, texto: str, manual: bool):
+        if manual:                                   # las búsquedas automáticas no molestan
+            self.avisos.mostrar_mensaje("🔄 Actualizaciones", texto, [], COLORES["tranquilo"], 8, False)
+            self.voz.decir(texto)
+
+    def actualizar_ahora(self):
+        act = self._actualizacion
+        if not act:
+            return
+        if not EMPAQUETADO:                          # en desarrollo se actualiza con git pull
+            from voz import web
+            web.abrir_url(act.url_pagina)
+            self.avisos.mostrar_mensaje("🔄 Modo desarrollo", "Con python main.py se actualiza con «git pull». "
+                                        "Te abrí la página de la versión.", [], COLORES["tranquilo"], 8, False)
+            return
+        self.avisos.mostrar_mensaje("⬇ Descargando", f"Bajando {NOMBRE_ASISTENTE} {act.version}. "
+                                    "Te aviso cuando esté listo; puedes seguir usándome.", [], COLORES["tranquilo"], 8, False)
+        self.actualizador.descargar(act)
+
+    def omitir_actualizacion(self):
+        if self._actualizacion:
+            self.almacen.guardar_ajuste("version_omitida", self._actualizacion.version)
+
+    def _al_descargar_actualizacion(self, ruta: str):
+        """Descargado y verificado: Lancelot se cierra y el instalador lo vuelve a abrir actualizado."""
+        version = self._actualizacion.version if self._actualizacion else ""
+        self.avisos.mostrar_mensaje("🔄 Instalando", f"Me cierro unos segundos para instalar la {version} "
+                                    "y vuelvo solo. Tus tareas no se tocan.", [], COLORES["feliz"], 5, False)
+        self.voz.decir("Me actualizo y vuelvo en un momento.")
+        log.info("instalando actualización %s", version)
+
+        def instalar_y_salir():
+            self.actualizador.instalar(ruta)
+            self.salir()
+        QTimer.singleShot(4000, instalar_y_salir)    # tiempo para leer el mensaje (y oírlo)
+
     # ================================================================ semana
     def resumen_de_semana(self, semanas_atras: int = 0) -> ResumenSemana:
         """Los 7 días que terminan hoy (o N semanas antes), con la sesión en curso incluida."""
@@ -289,6 +376,8 @@ class Asistente(QObject):
                 self.estudio.terminar()
             else:
                 mensaje(NOMBRES_MODO["normal"], "De vuelta al modo normal.", [], COLORES["tranquilo"], 5, False)
+        elif accion == "actualizacion":
+            self.buscar_actualizaciones()
         elif accion == "saludo":
             self.saludar(forzado=True)
         elif accion == "semana":
@@ -438,6 +527,7 @@ class Asistente(QObject):
             None,
             ("Mostrar / ocultar cara", self._alternar_cara),
             ("📁 Carpeta de datos", self._abrir_carpeta_datos),
+            (f"🔄 Buscar actualizaciones (v{VERSION})", self.buscar_actualizaciones),
             ("Salir", self.salir),
         ]
         for opcion in opciones:

@@ -5,7 +5,7 @@
 ;    /DVersionApp=3.7  /DCarpetaApp=...\dist\Lancelot  /DIcono=...\build\lancelot.ico
 ;    /DSalida=...\dist  /DMutexApp=LancelotEnEjecucion
 ;
-;  Resultado: dist\Lancelot-setup-3.7.exe  (un solo archivo para instalar en cualquier PC)
+;  Resultado: dist\Lancelot-setup-X.Y.exe  (un solo archivo para instalar en cualquier PC)
 ;
 ;  Decisiones importantes:
 ;   - Se instala SOLO para tu usuario (%LOCALAPPDATA%\Programs\Lancelot): no pide permisos
@@ -87,6 +87,7 @@ Source: "{#CarpetaApp}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 [InstallDelete]
 ; Al actualizar, borra la carpeta interna vieja: así no quedan librerías de versiones anteriores
 Type: filesandordirs; Name: "{app}\_internal"
+Type: filesandordirs; Name: "{app}\recursos"
 
 [Icons]
 Name: "{autoprograms}\{#NombreApp}"; Filename: "{app}\{#ExeApp}"; Comment: "Tu asistente de tareas"
@@ -95,6 +96,8 @@ Name: "{userstartup}\{#NombreApp}"; Filename: "{app}\{#ExeApp}"; Tasks: inicio
 
 [Run]
 Filename: "{app}\{#ExeApp}"; Description: "Abrir {#NombreApp} ahora"; Flags: nowait postinstall skipifsilent
+; Actualización automática (Lancelot lanza el instalador con /SILENT y se cierra): volver a abrirlo solo
+Filename: "{app}\{#ExeApp}"; Flags: nowait; Check: WizardSilent
 
 [Code]
 { Al terminar de desinstalar: ¿borrar también los datos? Por defecto NO (botón "No" marcado).

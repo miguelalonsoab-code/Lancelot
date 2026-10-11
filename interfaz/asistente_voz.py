@@ -15,7 +15,7 @@ import threading
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from config import (APPS_EXTRA, ATAJO_HABLAR, CARPETA_VOCES, CARPETA_VOZ, COLORES, HABLAR_RECORDATORIOS,
+from config import (APPS_EXTRA, ATAJO_HABLAR, CARPETA_RECURSOS, CARPETA_VOCES, CARPETA_VOZ, COLORES, HABLAR_RECORDATORIOS,
                     MODELO_VOSK, NOMBRE_ASISTENTE, NOMBRE_USUARIO, PALABRAS_ACTIVACION,
                     SEGUNDOS_ESPERA_ORDEN, SITIOS_CONOCIDOS, URL_MODELO_VOSK, VOZ_MOTOR, VOZ_VELOCIDAD,
                     VOZ_WINDOWS_PREFERIDA)
@@ -74,8 +74,11 @@ class ControladorVoz:
             self.catalogo.agregar_alias(apodo, destino)
         threading.Thread(target=self._cargar_apps, daemon=True, name="catalogo").start()
 
-        self.habla = Voz(VOZ_MOTOR, CARPETA_VOCES, VOZ_WINDOWS_PREFERIDA, VOZ_VELOCIDAD)
-        self.oido = Oido(CARPETA_VOZ, MODELO_VOSK, URL_MODELO_VOSK, PALABRAS_ACTIVACION, SEGUNDOS_ESPERA_ORDEN)
+        recursos = CARPETA_RECURSOS                    # None con "python main.py"
+        self.habla = Voz(VOZ_MOTOR, CARPETA_VOCES, VOZ_WINDOWS_PREFERIDA, VOZ_VELOCIDAD,
+                         recursos / "voces" if recursos else None)
+        self.oido = Oido(CARPETA_VOZ, MODELO_VOSK, URL_MODELO_VOSK, PALABRAS_ACTIVACION, SEGUNDOS_ESPERA_ORDEN,
+                         recursos / "voz" if recursos else None)
         self.atajo = AtajoTeclado()
 
         self.habla.empezo.connect(self._al_empezar_a_hablar)

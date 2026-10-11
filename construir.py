@@ -5,12 +5,16 @@ Uso (con el entorno virtual activado, desde la carpeta del proyecto):
 
     pip install pyinstaller          <- solo la primera vez
     python construir.py              <- .exe + instalador (si tienes Inno Setup)
+    python construir.py --publicar   <- además, lo sube a GitHub como Release (para la actualización automática)
     python construir.py --sin-instalador
+    python construir.py --sin-voz    <- no incluye el modelo de voz ni las voces (instalador más liviano)
 
 Qué hace, en orden:
   1. Revisa que Lancelot esté cerrado (si está abierto, Windows no deja reemplazar el .exe).
   2. Dibuja el ícono a partir de la cara (build\\lancelot.ico).
   3. Llama a PyInstaller: junta Python, PySide6, Vosk, Piper... y tu código en dist\\Lancelot\\.
+  3b. Copia el modelo de voz (Vosk) y tus voces Piper a dist\\Lancelot\\recursos: así, en una PC nueva,
+      la voz funciona sin descargar nada. Tus tareas y apodos NUNCA van en el instalador.
   4. Si tienes Inno Setup, arma el instalador: dist\\Lancelot-setup-3.7.exe (ver instalador\\lancelot.iss).
   5. Te pregunta si quieres copiar tus datos actuales (tareas, apodos, modelo de voz) a donde los usa
      el .exe, y quita el inicio viejo con iniciar.bat. Luego:
@@ -38,7 +42,8 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent
 sys.path.insert(0, str(RAIZ))
 
-from config import CARPETA_DATOS_EXE, MUTEX_WINDOWS, NOMBRE_ASISTENTE, VERSION   # noqa: E402
+from config import (CARPETA_DATOS_EXE, MODELO_VOSK, MUTEX_WINDOWS, NOMBRE_ASISTENTE,  # noqa: E402
+                    REPO_ACTUALIZACIONES, URL_MODELO_VOSK, VERSION)
 
 NOMBRE = NOMBRE_ASISTENTE                  # "Lancelot" -> Lancelot.exe
 DIST = RAIZ / "dist"
@@ -199,6 +204,44 @@ def empaquetar(icono: Path):
     print(f"\nListo en {time.monotonic() - inicio:.0f} s: {EXE.relative_to(RAIZ)}  ({peso:.0f} MB en total)")
 
 
+# ------------------------------------------------------------ 3b. recursos
+def copiar_recursos():
+    """
+    Modelo de voz y voces Piper dentro del programa (dist\\Lancelot\\recursos).
+    Se buscan en tus datos de desarrollo y en los del .exe; si el modelo no está, se descarga.
+    """
+    titulo("3b. Voz incluida")
+    from voz.habla import voces_piper
+    from voz.oido import asegurar_modelo, modelo_valido
+
+    destino = SALIDA / "recursos"
+    origenes = [RAIZ / "datos", CARPETA_DATOS_EXE]
+
+    modelo = next((o / "voz" / MODELO_VOSK for o in origenes if modelo_valido(o / "voz" / MODELO_VOSK)), None)
+    if modelo is None:
+        print("No tengo el modelo de voz a mano; lo descargo (39 MB, solo esta vez)…")
+        try:
+            modelo = asegurar_modelo(BUILD / "descargas", MODELO_VOSK, URL_MODELO_VOSK,
+                                     lambda p: print(f"  {p}"))
+        except Exception as e:
+            print(f"No pude descargarlo ({e}). El instalador irá sin modelo: lo bajará al activar la voz.")
+    if modelo:
+        shutil.copytree(modelo, destino / "voz" / MODELO_VOSK)
+        print(f"Modelo de voz: {MODELO_VOSK}")
+
+    voces = next((v for v in (voces_piper(o / "voces") for o in origenes) if v), [])
+    for onnx in voces:
+        (destino / "voces").mkdir(parents=True, exist_ok=True)
+        for archivo in (onnx, onnx.with_name(onnx.name + ".json")):
+            shutil.copy2(archivo, destino / "voces" / archivo.name)
+        print(f"Voz Piper: {onnx.stem}")
+    if not voces:
+        print("Sin voces Piper: el .exe usará las voces de Windows (como ahora).")
+    if destino.exists():
+        peso = sum(f.stat().st_size for f in destino.rglob("*") if f.is_file()) / 1024 ** 2
+        print(f"Recursos incluidos: {peso:.0f} MB")
+
+
 # ------------------------------------------------------------- 4. instalador
 def buscar_inno() -> Path | None:
     """ISCC.exe es el compilador de Inno Setup. Se busca en el registro, en el PATH y en sus carpetas típicas."""
@@ -235,6 +278,42 @@ def crear_instalador(iscc: Path, icono: Path) -> bool:
         return False
     print(f"Instalador: {INSTALADOR.relative_to(RAIZ)}  ({INSTALADOR.stat().st_size / 1024 ** 2:.0f} MB)")
     return True
+
+
+# ---------------------------------------------------------------- 6. publicar
+def buscar_gh() -> str | None:
+    """GitHub CLI: la herramienta oficial de GitHub para la terminal."""
+    candidatos = [shutil.which("gh"), str(Path(os.environ.get("ProgramFiles", "")) / "GitHub CLI" / "gh.exe")]
+    return next((c for c in candidatos if c and Path(c).is_file()), None)
+
+
+def publicar():
+    """Crea la Release vX.Y en GitHub con el instalador adjunto y las novedades del README."""
+    titulo("6. Publicar en GitHub")
+    from nucleo.version import notas_de_version
+    if not REPO_ACTUALIZACIONES:
+        print("Primero escribe tu repositorio en config.py:  REPO_ACTUALIZACIONES = \"usuario/repositorio\"")
+        return
+    gh = buscar_gh()
+    if not gh:
+        print("Falta GitHub CLI. Instálalo y conéctalo (una sola vez):\n"
+              "    winget install --id GitHub.cli -e\n    gh auth login\n"
+              "Luego cierra y abre la terminal, y repite: python construir.py --publicar")
+        return
+    pendientes = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=RAIZ).stdout
+    if pendientes.strip():
+        print("Ojo: tienes cambios sin commit. La Release se crea sobre lo último que subiste a GitHub.")
+    if not preguntar(f"¿Publicar Lancelot {VERSION} en github.com/{REPO_ACTUALIZACIONES}?"):
+        return
+    notas = BUILD / "notas.md"
+    notas.write_text(notas_de_version((RAIZ / "README.md").read_text(encoding="utf-8"), VERSION), encoding="utf-8")
+    r = subprocess.run([gh, "release", "create", f"v{VERSION}", str(INSTALADOR), "--repo", REPO_ACTUALIZACIONES,
+                        "--title", f"{NOMBRE} {VERSION}", "--notes-file", str(notas)], cwd=RAIZ)
+    if r.returncode != 0:
+        print(f"No se pudo publicar. Si dice que «v{VERSION}» ya existe, sube VERSION en config.py y reconstruye.")
+    else:
+        print(f"Publicado: https://github.com/{REPO_ACTUALIZACIONES}/releases/tag/v{VERSION}\n"
+              "Los Lancelot instalados lo verán en las próximas horas (o al decir «busca actualizaciones»).")
 
 
 # --------------------------------------------------------------- 5. opciones
@@ -309,6 +388,8 @@ def main():
     revisar_requisitos()
     icono = crear_icono()
     empaquetar(icono)
+    if "--sin-voz" not in sys.argv:
+        copiar_recursos()
 
     instalador_listo = False
     if con_instalador:
@@ -323,6 +404,11 @@ def main():
 
     titulo("5. Opciones")
     copiar_datos()
+    if "--publicar" in sys.argv:
+        if instalador_listo:
+            publicar()
+        else:
+            print("No hay instalador, así que no hay nada que publicar (necesitas Inno Setup).")
     if not EN_WINDOWS:
         print(f"\nListo: {EXE.relative_to(RAIZ)}")
         return

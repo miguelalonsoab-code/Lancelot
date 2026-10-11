@@ -132,6 +132,8 @@ class GestorAvisos:
             "volver": estudio.volver,
             "permitir": estudio.permitir_ventana_actual,
             "cancelar_dialogo": self.a.voz.cancelar_dialogo,
+            "actualizar": self.a.actualizar_ahora,
+            "omitir_version": self.a.omitir_actualizacion,
         }
         if clave in acciones:
             acciones[clave]()

@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.7"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.8"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
@@ -22,6 +22,9 @@ EMPAQUETADO = getattr(sys, "frozen", False)
 CARPETA_PROYECTO = Path(__file__).resolve().parent
 CARPETA_DATOS_EXE = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local") / NOMBRE_ASISTENTE
 CARPETA_DATOS = CARPETA_DATOS_EXE if EMPAQUETADO else CARPETA_PROYECTO / "datos"
+# Recursos que vienen DENTRO del instalador (modelo de voz y voces Piper), junto a Lancelot.exe.
+# Se usan solo si no los tienes ya en tu carpeta de datos. Con "python main.py" no hay.
+CARPETA_RECURSOS = Path(sys.executable).parent / "recursos" if EMPAQUETADO else None
 RUTA_BD = CARPETA_DATOS / "tareas.db"
 RUTA_REGISTRO = CARPETA_DATOS / "lancelot.log"   # registro de eventos y errores
 CARPETA_RESPALDOS = CARPETA_DATOS / "respaldos"  # copia diaria de tareas.db
@@ -34,6 +37,13 @@ HORA_POR_DEFECTO = (9, 0)         # si dices "mañana" sin hora, se asume 09:00
 MINUTOS_POSPONER = 10             # botón "+10 min" de la burbuja
 HORA_DORMIR = 23                  # desde esta hora la cara se duerme si no hay nada pendiente
 HORA_DESPERTAR = 6
+
+# --- Actualizaciones -------------------------------------------------------------
+# Repositorio de GitHub donde publicas las versiones ("usuario/repositorio"). Vacío = no busca.
+# Debe ser PÚBLICO (o tener sus Releases en un repositorio público): ver README, "Actualizaciones".
+REPO_ACTUALIZACIONES = ""
+HORAS_ENTRE_BUSQUEDAS = 6
+BUSCAR_ACTUALIZACIONES_EN_DESARROLLO = False   # con "python main.py" se actualiza con git pull
 
 # --- Saludo del día ------------------------------------------------------------
 SALUDO_ACTIVO = True              # el primer saludo del día con tus pendientes y tu racha

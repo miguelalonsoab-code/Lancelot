@@ -15,6 +15,7 @@ from __future__ import annotations
 import queue
 import re
 import sys
+import tempfile
 import threading
 import wave
 from pathlib import Path
@@ -29,15 +30,24 @@ def limpiar_para_hablar(texto: str) -> str:
     return re.sub(r"\s+", " ", texto).strip()
 
 
+def voces_piper(carpeta: Path | None) -> list[Path]:
+    """Archivos .onnx que tienen al lado su .onnx.json (Piper necesita los dos)."""
+    if not carpeta or not carpeta.is_dir():
+        return []
+    return sorted(p for p in carpeta.glob("*.onnx") if p.with_name(p.name + ".json").exists())
+
+
 class Voz(QObject):
     empezo = Signal()
     termino = Signal()
     estado = Signal(str)             # descripción de la voz en uso o del error
 
-    def __init__(self, motor: str, carpeta_voces: Path, preferida: str, velocidad: float):
+    def __init__(self, motor: str, carpeta_voces: Path, preferida: str, velocidad: float,
+                 carpeta_incluida: Path | None = None):
         super().__init__()
         self.motor = motor
         self.carpeta_voces = carpeta_voces
+        self.carpeta_incluida = carpeta_incluida      # voces que trae el instalador (si hay)
         self.preferida = preferida.lower()
         self.velocidad = velocidad
         self._cola: queue.Queue[str] = queue.Queue()
@@ -72,7 +82,7 @@ class Voz(QObject):
                 self.termino.emit()
 
     def _preparar(self):
-        onnx = sorted(self.carpeta_voces.glob("*.onnx")) if self.carpeta_voces.is_dir() else []
+        onnx = voces_piper(self.carpeta_voces) or voces_piper(self.carpeta_incluida)   # primero las tuyas
         if self.motor in ("auto", "piper") and onnx:
             try:
                 return self._preparar_piper(onnx[0])
@@ -91,7 +101,7 @@ class Voz(QObject):
 
         voz = PiperVoice.load(str(ruta))
         ajustes = SynthesisConfig(length_scale=1.0 / max(0.5, self.velocidad))
-        temporal = ruta.parent / "_ultima_frase.wav"
+        temporal = Path(tempfile.gettempdir()) / "lancelot_frase.wav"   # no ensucia la carpeta de voces
 
         def hablar(texto: str):
             with wave.open(str(temporal), "wb") as wav:

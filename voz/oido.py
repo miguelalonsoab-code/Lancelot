@@ -37,9 +37,10 @@ class Oido(QObject):
     oido = Signal(str)                # todo lo que reconoce (para depurar / probar_voz.py)
 
     def __init__(self, carpeta: Path, nombre_modelo: str, url_modelo: str, variantes: list[str],
-                 segundos_espera: int):
+                 segundos_espera: int, carpeta_incluida: Path | None = None):
         super().__init__()
         self.carpeta = carpeta
+        self.carpeta_incluida = carpeta_incluida      # el modelo que trae el instalador (si hay)
         self.nombre_modelo = nombre_modelo
         self.url_modelo = url_modelo
         self.variantes = variantes
@@ -187,14 +188,25 @@ class Oido(QObject):
     # ========================================================== modelo de voz
     def _asegurar_modelo(self) -> Path:
         return asegurar_modelo(self.carpeta, self.nombre_modelo, self.url_modelo,
-                               lambda p: self.estado.emit("descargando", p))
+                               lambda p: self.estado.emit("descargando", p), self.carpeta_incluida)
 
 
-def asegurar_modelo(carpeta: Path, nombre_modelo: str, url: str, avisar=print) -> Path:
-    """Devuelve la carpeta del modelo; si no existe, lo descarga y descomprime (una sola vez)."""
+def modelo_valido(ruta: Path) -> bool:
+    return (ruta / "am").is_dir() or (ruta / "conf").is_dir()
+
+
+def asegurar_modelo(carpeta: Path, nombre_modelo: str, url: str, avisar=print,
+                    incluida: Path | None = None) -> Path:
+    """
+    Devuelve la carpeta del modelo. Busca, en orden:
+      1. en tus datos (carpeta), 2. el que trae el instalador (incluida),
+      3. si no está en ninguno, lo descarga y descomprime en tus datos (una sola vez).
+    """
     destino = carpeta / nombre_modelo
-    if (destino / "am").is_dir() or (destino / "conf").is_dir():
+    if modelo_valido(destino):
         return destino
+    if incluida and modelo_valido(incluida / nombre_modelo):
+        return incluida / nombre_modelo
     carpeta.mkdir(parents=True, exist_ok=True)
     zip_path = carpeta / "modelo.zip"
     ultimo = [-1]
