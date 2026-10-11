@@ -1,0 +1,186 @@
+/* Lancelot en el celular: misma noche azulada y mismos colores de estado que la laptop. */
+@font-face {
+  font-family: "Nunito";
+  src: url("/fuentes/nunito.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-display: swap;
+}
+
+:root {
+  --noche: #0f1116;          /* fondo, como el panel de la laptop */
+  --superficie: #181b22;
+  --linea: #262b35;
+  --texto: #e8ebef;
+  --tenue: #8b93a1;
+  --bisel: #16181d;
+  /* Estados de la cara */
+  --tranquilo: #4fd1c5;
+  --pendiente: #f6c453;
+  --alerta: #ff6b4a;
+  --feliz: #5be37d;
+  --dormido: #3a4a6b;
+  --escuchando: #4fc3ff;
+  --acento: var(--tranquilo);  /* cambia con el estado de la cara */
+  --abajo: env(safe-area-inset-bottom, 0px);
+}
+body[data-estado="pendiente"] { --acento: var(--pendiente); }
+body[data-estado="alerta"] { --acento: var(--alerta); }
+body[data-estado="dormido"] { --acento: #6d84b8; }
+body[data-estado="escuchando"] { --acento: var(--escuchando); }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0 auto;
+  max-width: 560px;
+  min-height: 100dvh;
+  background: var(--noche);
+  color: var(--texto);
+  font: 400 16px/1.45 "Nunito", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+[hidden] { display: none !important; }
+svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ------------------------------------------------------------ cabecera */
+.cabecera {
+  position: sticky; top: 0; z-index: 2;
+  display: grid; grid-template-columns: 112px 1fr auto; align-items: center; gap: 4px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 12px 6px;
+  background: linear-gradient(var(--noche) 82%, transparent);
+}
+.cara { width: 112px; height: 112px; }
+.burbuja {
+  position: relative; margin: 0;
+  padding: 10px 14px;
+  background: var(--bisel);
+  border: 1.5px solid var(--acento);
+  border-radius: 16px;
+  font-size: 15px; font-weight: 600;
+  white-space: pre-line;
+  transition: border-color .4s;
+}
+.burbuja::before {                       /* el piquito apunta a la cara */
+  content: ""; position: absolute; left: -8px; top: 50%; translate: 0 -50%;
+  border: 7px solid transparent; border-right-color: var(--acento); border-left: 0;
+}
+.b-icono {
+  align-self: start; margin-top: 6px;
+  width: 40px; height: 40px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: 12px; color: var(--tenue);
+}
+.b-icono:active { background: var(--superficie); }
+
+/* ------------------------------------------------------------ conectar */
+.conectar { padding: 8px 20px 40px; }
+.conectar form { display: grid; gap: 12px; }
+.conectar label { font-weight: 800; }
+.nota { color: var(--tenue); font-size: 14px; margin: 0; }
+
+input[type="text"], input[type="password"], input[type="datetime-local"], select {
+  width: 100%; padding: 12px 14px;
+  background: var(--superficie); border: 1.5px solid var(--linea); border-radius: 12px;
+  outline: none;
+}
+input:focus, select:focus { border-color: var(--acento); }
+.b-principal {
+  padding: 13px 16px; border: 0; border-radius: 12px;
+  background: var(--acento); color: #06201d; font-weight: 800;
+}
+
+/* ------------------------------------------------------------ lista */
+.principal { padding: 0 14px calc(120px + var(--abajo)); }
+.grupo { margin-top: 18px; }
+.grupo-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 4px 6px; }
+.grupo h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--tenue); }
+.grupo[data-tipo="vencidas"] h3 { color: var(--alerta); }
+.grupo[data-tipo="hoy"] h3 { color: var(--pendiente); }
+.enlace { background: none; border: 0; padding: 6px 4px; color: var(--alerta); font-weight: 700; font-size: 14px; }
+
+.tarea {
+  display: grid; grid-template-columns: 58px 1fr 44px; align-items: center;
+  min-height: 60px; padding: 6px 0 6px 4px;
+  border-top: 1px solid var(--linea);
+}
+.tarea:first-of-type { border-top: 0; }
+.tarea .hora {
+  font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums;
+  color: var(--tenue);
+}
+.grupo[data-tipo="vencidas"] .hora { color: var(--alerta); }
+.grupo[data-tipo="hoy"] .hora { color: var(--pendiente); }
+.tarea .que { text-align: left; background: none; border: 0; padding: 8px 6px; line-height: 1.3; }
+.tarea .titulo { display: block; font-weight: 700; }
+.tarea .detalle { display: block; color: var(--tenue); font-size: 13px; margin-top: 2px; }
+.hecho {                                   /* el círculo recuerda al anillo de la cara */
+  justify-self: end; width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: 0; display: grid; place-items: center;
+}
+.hecho::before {
+  content: ""; width: 24px; height: 24px; border-radius: 50%;
+  border: 2.5px solid var(--linea); transition: border-color .2s, background .2s;
+}
+.hecho:active::before, .tarea.lista-hecha .hecho::before { border-color: var(--feliz); background: var(--feliz); }
+.tarea.lista-hecha .titulo { text-decoration: line-through; color: var(--tenue); }
+.tarea.saliendo { animation: salir .35s ease forwards; }
+@keyframes salir { to { opacity: 0; transform: translateX(24px); } }
+
+.vacio { margin: 40px 8px; color: var(--tenue); text-align: center; }
+
+/* ------------------------------------------------------------ escribir */
+.redactar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 3;
+  max-width: 560px; margin: 0 auto;
+  padding: 8px 12px calc(10px + var(--abajo));
+  background: linear-gradient(transparent, var(--noche) 30%);
+}
+.vista { margin: 0 6px 6px; min-height: 20px; font-size: 13px; color: var(--tenue); }
+.vista[data-tipo="comando"] { color: var(--escuchando); }
+.vista[data-tipo="error"] { color: var(--alerta); }
+.caja {
+  display: grid; grid-template-columns: 1fr 48px; gap: 6px;
+  padding: 5px; background: var(--superficie); border: 1.5px solid var(--linea); border-radius: 18px;
+}
+.caja:focus-within { border-color: var(--acento); }
+.caja input { border: 0; background: none; padding: 10px 10px; }
+.b-enviar {
+  border: 0; border-radius: 14px; background: var(--acento); color: #071a18;
+  display: grid; place-items: center;
+}
+.b-enviar:disabled { opacity: .45; }
+
+/* ------------------------------------------------------------ hoja */
+.velo { position: fixed; inset: 0; z-index: 4; background: rgb(0 0 0 / .55); }
+.hoja {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  max-width: 560px; margin: 0 auto; max-height: 86dvh; overflow: auto;
+  padding: 18px 16px calc(18px + var(--abajo));
+  background: var(--superficie); border-radius: 22px 22px 0 0;
+  animation: subir .22s ease-out;
+}
+@keyframes subir { from { transform: translateY(40px); opacity: 0; } }
+.hoja:focus { outline: none; }
+.hoja h2 { margin: 0 4px 12px; font-size: 18px; font-weight: 800; }
+.hoja .sub { margin: -6px 4px 14px; color: var(--tenue); font-size: 14px; }
+.opcion {
+  display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 12px; background: none; border: 0; border-radius: 12px; text-align: left; font-weight: 600;
+}
+.opcion:active { background: var(--linea); }
+.opcion .extra { color: var(--tenue); font-weight: 400; font-size: 14px; }
+.opcion.peligro { color: var(--alerta); }
+.opcion.principal-op { color: var(--feliz); }
+.separador { height: 1px; background: var(--linea); margin: 6px 8px; }
+.fila { display: grid; gap: 10px; margin: 6px 4px 12px; }
+.fila-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px; }
+.b-secundario { padding: 13px 16px; border: 1.5px solid var(--linea); border-radius: 12px; background: none; font-weight: 700; }
+.ajuste { margin: 4px 4px 18px; }
+.ajuste h3 { margin: 0 0 4px; font-size: 15px; }
+.ajuste p { margin: 0 0 10px; color: var(--tenue); font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}

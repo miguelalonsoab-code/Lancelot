@@ -1,11 +1,20 @@
-## Novedades v3.8.1
-- Conectado a GitHub: desde esta versión, Lancelot se actualiza solo.
-
-# Lancelot — asistente de escritorio · v3.8
+# Lancelot — asistente de escritorio · v3.8.1
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
 te muestra una burbuja y Windows lanza una notificación.
+
+## Lancelot en el celular (Fase 2, etapas 1 y 2)
+- Nueva carpeta **`movil/`**: un servidor gratis en Cloudflare y una app web para tu Android, con la misma cara.
+  Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
+  con botones **✓ Hecho** y **+10 min**.
+- Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
+- Por ahora la laptop y el celular tienen listas separadas: la sincronización es la etapa 3.
+- La app de escritorio no cambia (sigue siendo la v3.8.1); solo se arregló cómo `construir.py --publicar`
+  lee las novedades del README.
+
+## Novedades v3.8.1
+- Conectado a GitHub: desde esta versión, Lancelot se actualiza solo.
 
 ## Novedades v3.8: actualizaciones y voz incluida
 - **Actualizaciones automáticas**: Lancelot revisa en GitHub si hay una versión nueva (al minuto de abrir y cada
@@ -278,6 +287,7 @@ voz/
   atajo.py               Ctrl+Alt+Espacio desde cualquier app
   web.py                 páginas conocidas, búsquedas y "abrir en Chrome/Edge/Firefox…"
 probar_voz.py            diagnóstico de voz paso a paso
+movil/                   Lancelot en el celular: servidor Cloudflare + app web (ver movil/LEEME.md)
 notificadores/           canales de aviso (en la Fase 2 se agrega el del celular)
   base.py                contrato común
   windows.py             notificación nativa + sonido
@@ -298,4 +308,7 @@ datos/tareas.db          se crea solo (puedes abrirlo con DB Browser for SQLite)
 ## Pruebas
 ```powershell
 python -m unittest discover tests -v
+cd movil; npm test                 # el intérprete JavaScript da lo mismo que el de Python, y más
 ```
+`tests/casos_interprete.json` es el "contrato" entre los dos intérpretes (laptop y celular).
+Si cambias el de Python, regenéralo con `python tests/generar_casos.py`.

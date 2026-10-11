@@ -54,6 +54,9 @@ class TestVersiones(unittest.TestCase):
         self.assertIn("Actualizaciones", notas_de_version(readme, "3.8"))
         self.assertNotIn("## Novedades v3.7", notas_de_version(readme, "3.8"))      # solo su sección
         self.assertEqual(notas_de_version(readme, "9.9"), "Lancelot 9.9")
+        falso = "## Novedades v3.8.1\n- Arreglo\n\n# Título\nIntro\n## Novedades v3.8: algo\n- Uno\n"
+        self.assertEqual(notas_de_version(falso, "3.8.1"), "- Arreglo")     # no se lleva el título
+        self.assertEqual(notas_de_version(falso, "3.8"), "- Uno")           # 3.8 no es 3.8.1
         self.assertEqual(resumen_notas("- **Uno** con `código`\n- Dos"), "• Uno con código\n• Dos")
 
 

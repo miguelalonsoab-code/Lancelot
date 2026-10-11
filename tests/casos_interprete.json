@@ -1,0 +1,869 @@
+{
+ "_comentario": "Generado por tests/generar_casos.py con el intérprete de Python (la referencia). La versión JavaScript del celular debe dar exactamente lo mismo.",
+ "casos": [
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "mañana 8pm pagar la luz",
+   "titulo": "Pagar la luz",
+   "fecha": "2026-10-08 20:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "en 20 minutos estirar la espalda",
+   "titulo": "Estirar la espalda",
+   "fecha": "2026-10-07 06:50",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "en media hora sacar la ropa",
+   "titulo": "Sacar la ropa",
+   "fecha": "2026-10-07 07:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el viernes a las 3 llamar al banco",
+   "titulo": "Llamar al banco",
+   "fecha": "2026-10-09 15:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "15/10 10:30 entregar informe",
+   "titulo": "Entregar informe",
+   "fecha": "2026-10-15 10:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el 20 de octubre cumple de Juan",
+   "titulo": "Cumple de Juan",
+   "fecha": "2026-10-20 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cada lunes 9am reunión de equipo",
+   "titulo": "Reunión de equipo",
+   "fecha": "2026-10-12 09:00",
+   "repeticion": "semanal"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "tomar pastilla todos los días a las 10 de la noche",
+   "titulo": "Tomar pastilla",
+   "fecha": "2026-10-07 22:00",
+   "repeticion": "diaria"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "esta noche a las 8 llamar a mamá",
+   "titulo": "Llamar a mamá",
+   "fecha": "2026-10-07 20:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "recuérdame que mañana por la tarde debo ir al banco",
+   "titulo": "Debo ir al banco",
+   "fecha": "2026-10-08 15:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "a las 8 de la mañana correr",
+   "titulo": "Correr",
+   "fecha": "2026-10-07 08:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "al mediodía almorzar",
+   "titulo": "Almorzar",
+   "fecha": "2026-10-07 12:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "a la 1 y media cita",
+   "titulo": "Cita",
+   "fecha": "2026-10-07 13:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "comprar 2 panes",
+   "titulo": "Comprar 2 panes",
+   "fecha": null,
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "revisar 31/02",
+   "titulo": "Revisar 31/02",
+   "fecha": null,
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "de lunes a viernes a las 7 tomar agua",
+   "titulo": "Tomar agua",
+   "fecha": "2026-10-07 19:00",
+   "repeticion": "laborables"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "en 2 horas revisar el horno",
+   "titulo": "Revisar el horno",
+   "fecha": "2026-10-07 08:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "pasado mañana a las 5 llamar a Dagi",
+   "titulo": "Llamar a Dagi",
+   "fecha": "2026-10-09 17:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el lunes entregar trabajo",
+   "titulo": "Entregar trabajo",
+   "fecha": "2026-10-12 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "hoy 8am desayunar",
+   "titulo": "Desayunar",
+   "fecha": "2026-10-07 08:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "18 hrs salir del trabajo",
+   "titulo": "Salir del trabajo",
+   "fecha": "2026-10-07 18:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "a medianoche apagar la compu",
+   "titulo": "Apagar la compu",
+   "fecha": "2026-10-08 00:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cada mes pagar el internet",
+   "titulo": "Pagar el internet",
+   "fecha": "2026-10-07 09:00",
+   "repeticion": "mensual"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el 3 de enero de 2027 renovar DNI",
+   "titulo": "Renovar DNI",
+   "fecha": "2027-01-03 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "en 3 días devolver libro",
+   "titulo": "Devolver libro",
+   "fecha": "2026-10-10 06:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "Recuérdame a las 7 y 40 sacar al perro",
+   "titulo": "Sacar al perro",
+   "fecha": "2026-10-07 19:40",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cada domingo lavar ropa",
+   "titulo": "Lavar ropa",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": "semanal"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "mañana a las 12 almuerzo con Juan",
+   "titulo": "Almuerzo con Juan",
+   "fecha": "2026-10-08 12:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "a las 9:15 pm ver serie",
+   "titulo": "Ver serie",
+   "fecha": "2026-10-07 21:15",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "Anota: comprar leche mañana",
+   "titulo": "Comprar leche",
+   "fecha": "2026-10-08 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "dentro de 1 hora tomar agua",
+   "titulo": "Tomar agua",
+   "fecha": "2026-10-07 07:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el próximo martes a las 4 dentista",
+   "titulo": "Dentista",
+   "fecha": "2026-10-13 16:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "1/1 año nuevo",
+   "titulo": "Año nuevo",
+   "fecha": "2027-01-01 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "mañana",
+   "titulo": "",
+   "fecha": "2026-10-08 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "llamar al médico",
+   "titulo": "Llamar al médico",
+   "fecha": null,
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "esta tarde ir al gimnasio",
+   "titulo": "Ir al gimnasio",
+   "fecha": "2026-10-07 15:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cada semana regar plantas",
+   "titulo": "Regar plantas",
+   "fecha": "2026-10-07 09:00",
+   "repeticion": "semanal"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "a las 7 de la tarde clase de inglés",
+   "titulo": "Clase de inglés",
+   "fecha": "2026-10-07 19:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el sábado por la mañana correr",
+   "titulo": "Correr",
+   "fecha": "2026-10-10 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "hoy a las 11 de la noche dormir",
+   "titulo": "Dormir",
+   "fecha": "2026-10-07 23:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "mañana 8pm pagar la luz",
+   "titulo": "Pagar la luz",
+   "fecha": "2026-10-11 20:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "en 20 minutos estirar la espalda",
+   "titulo": "Estirar la espalda",
+   "fecha": "2026-10-10 22:35",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "en media hora sacar la ropa",
+   "titulo": "Sacar la ropa",
+   "fecha": "2026-10-10 22:45",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el viernes a las 3 llamar al banco",
+   "titulo": "Llamar al banco",
+   "fecha": "2026-10-16 15:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "15/10 10:30 entregar informe",
+   "titulo": "Entregar informe",
+   "fecha": "2026-10-15 10:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el 20 de octubre cumple de Juan",
+   "titulo": "Cumple de Juan",
+   "fecha": "2026-10-20 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cada lunes 9am reunión de equipo",
+   "titulo": "Reunión de equipo",
+   "fecha": "2026-10-12 09:00",
+   "repeticion": "semanal"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "tomar pastilla todos los días a las 10 de la noche",
+   "titulo": "Tomar pastilla",
+   "fecha": "2026-10-11 22:00",
+   "repeticion": "diaria"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "esta noche a las 8 llamar a mamá",
+   "titulo": "Llamar a mamá",
+   "fecha": "2026-10-11 20:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "recuérdame que mañana por la tarde debo ir al banco",
+   "titulo": "Debo ir al banco",
+   "fecha": "2026-10-11 15:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "a las 8 de la mañana correr",
+   "titulo": "Correr",
+   "fecha": "2026-10-11 08:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "al mediodía almorzar",
+   "titulo": "Almorzar",
+   "fecha": "2026-10-11 12:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "a la 1 y media cita",
+   "titulo": "Cita",
+   "fecha": "2026-10-11 13:30",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "comprar 2 panes",
+   "titulo": "Comprar 2 panes",
+   "fecha": null,
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "revisar 31/02",
+   "titulo": "Revisar 31/02",
+   "fecha": null,
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "de lunes a viernes a las 7 tomar agua",
+   "titulo": "Tomar agua",
+   "fecha": "2026-10-12 19:00",
+   "repeticion": "laborables"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "en 2 horas revisar el horno",
+   "titulo": "Revisar el horno",
+   "fecha": "2026-10-11 00:15",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "pasado mañana a las 5 llamar a Dagi",
+   "titulo": "Llamar a Dagi",
+   "fecha": "2026-10-12 17:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el lunes entregar trabajo",
+   "titulo": "Entregar trabajo",
+   "fecha": "2026-10-12 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "hoy 8am desayunar",
+   "titulo": "Desayunar",
+   "fecha": "2026-10-11 08:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "18 hrs salir del trabajo",
+   "titulo": "Salir del trabajo",
+   "fecha": "2026-10-11 18:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "a medianoche apagar la compu",
+   "titulo": "Apagar la compu",
+   "fecha": "2026-10-11 00:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cada mes pagar el internet",
+   "titulo": "Pagar el internet",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": "mensual"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el 3 de enero de 2027 renovar DNI",
+   "titulo": "Renovar DNI",
+   "fecha": "2027-01-03 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "en 3 días devolver libro",
+   "titulo": "Devolver libro",
+   "fecha": "2026-10-13 22:15",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "Recuérdame a las 7 y 40 sacar al perro",
+   "titulo": "Sacar al perro",
+   "fecha": "2026-10-11 19:40",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cada domingo lavar ropa",
+   "titulo": "Lavar ropa",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": "semanal"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "mañana a las 12 almuerzo con Juan",
+   "titulo": "Almuerzo con Juan",
+   "fecha": "2026-10-11 12:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "a las 9:15 pm ver serie",
+   "titulo": "Ver serie",
+   "fecha": "2026-10-11 21:15",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "Anota: comprar leche mañana",
+   "titulo": "Comprar leche",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "dentro de 1 hora tomar agua",
+   "titulo": "Tomar agua",
+   "fecha": "2026-10-10 23:15",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el próximo martes a las 4 dentista",
+   "titulo": "Dentista",
+   "fecha": "2026-10-13 16:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "1/1 año nuevo",
+   "titulo": "Año nuevo",
+   "fecha": "2027-01-01 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "mañana",
+   "titulo": "",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "llamar al médico",
+   "titulo": "Llamar al médico",
+   "fecha": null,
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "esta tarde ir al gimnasio",
+   "titulo": "Ir al gimnasio",
+   "fecha": "2026-10-11 15:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cada semana regar plantas",
+   "titulo": "Regar plantas",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": "semanal"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "a las 7 de la tarde clase de inglés",
+   "titulo": "Clase de inglés",
+   "fecha": "2026-10-11 19:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el sábado por la mañana correr",
+   "titulo": "Correr",
+   "fecha": "2026-10-17 09:00",
+   "repeticion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "hoy a las 11 de la noche dormir",
+   "titulo": "Dormir",
+   "fecha": "2026-10-10 23:00",
+   "repeticion": null
+  }
+ ],
+ "comandos": [
+  {
+   "texto": "modo estudio",
+   "comando": {
+    "accion": "estudio",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "modo estudio 50",
+   "comando": {
+    "accion": "estudio",
+    "minutos": 50,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "a estudiar",
+   "comando": {
+    "accion": "estudio",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "pausa",
+   "comando": {
+    "accion": "pausa",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "seguir",
+   "comando": {
+    "accion": "seguir",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "terminar",
+   "comando": {
+    "accion": "terminar",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "modo silencio",
+   "comando": {
+    "accion": "silencio",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "quita el silencio",
+   "comando": {
+    "accion": "normal",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "resumen",
+   "comando": {
+    "accion": "resumen",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "resumen semanal",
+   "comando": {
+    "accion": "semana",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Cómo voy esta semana?",
+   "comando": {
+    "accion": "semana",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Buenos días",
+   "comando": {
+    "accion": "saludo",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "hola",
+   "comando": {
+    "accion": "saludo",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "qué tengo vencido",
+   "comando": {
+    "accion": "vencidas",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "pasa las vencidas a mañana",
+   "comando": {
+    "accion": "vencidas_manana",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mueve todas las tareas vencidas para mañana",
+   "comando": {
+    "accion": "vencidas_manana",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "busca actualizaciones",
+   "comando": {
+    "accion": "actualizacion",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿qué versión tienes?",
+   "comando": {
+    "accion": "actualizacion",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "cuando diga el código abre visual studio code",
+   "comando": {
+    "accion": "apodo",
+    "minutos": null,
+    "texto": "el codigo",
+    "destino": "visual studio code",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "olvida el apodo código",
+   "comando": {
+    "accion": "olvidar_apodo",
+    "minutos": null,
+    "texto": "codigo",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mis apodos",
+   "comando": {
+    "accion": "apodos",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "abre netflix desde chrome",
+   "comando": {
+    "accion": "abrir_web",
+    "minutos": null,
+    "texto": "netflix",
+    "destino": null,
+    "navegador": "chrome"
+   }
+  },
+  {
+   "texto": "busca lofi en youtube desde edge",
+   "comando": {
+    "accion": "buscar",
+    "minutos": null,
+    "texto": "lofi",
+    "destino": "youtube",
+    "navegador": "edge"
+   }
+  },
+  {
+   "texto": "abre spotify",
+   "comando": {
+    "accion": "abrir",
+    "minutos": null,
+    "texto": "spotify",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Qué hora es?",
+   "comando": {
+    "accion": "hora",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Qué tengo para hoy?",
+   "comando": {
+    "accion": "agenda",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mis pendientes",
+   "comando": {
+    "accion": "agenda",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "escúchame",
+   "comando": {
+    "accion": "escucha_on",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "deja de escuchar",
+   "comando": {
+    "accion": "escucha_off",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mañana 8pm pagar la luz",
+   "comando": null
+  },
+  {
+   "texto": "estudiar para el examen mañana",
+   "comando": null
+  },
+  {
+   "texto": "pagar vencidas mañana 8pm",
+   "comando": null
+  }
+ ]
+}

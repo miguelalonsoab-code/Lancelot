@@ -17,3 +17,9 @@ datos/
 build/
 dist/
 *.spec
+
+# Lancelot móvil (carpeta movil/): dependencias de Node y secretos locales
+movil/node_modules/
+movil/.wrangler/
+movil/.dev.vars
+movil/.lancelot-local.json

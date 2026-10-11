@@ -1,0 +1,33 @@
+// Configuración del servidor de Lancelot en Cloudflare.
+// "npm run configurar" completa database_id la primera vez; lo demás no hace falta tocarlo.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lancelot",
+  "main": "src/index.js",
+  "compatibility_date": "2025-09-01",
+
+  // La app del celular (HTML, JS, íconos): Cloudflare la sirve tal cual
+  "assets": { "directory": "./publico", "binding": "ASSETS" },
+
+  // Base de datos (SQLite en Cloudflare)
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lancelot",
+      "database_id": "PENDIENTE",
+      "migrations_dir": "migraciones"
+    }
+  ],
+
+  // Cada minuto: revisar qué venció y avisar al celular
+  "triggers": { "crons": ["* * * * *"] },
+
+  "vars": {
+    "ZONA_HORARIA": "America/Lima",
+    "CONTACTO_PUSH": "https://github.com/miguelalonsoab-code/Lancelot"
+  },
+
+  // Registro de errores visible en el panel de Cloudflare (Workers → lancelot → Logs)
+  "observability": { "enabled": true }
+}
+// Secretos (NO van aquí ni en GitHub; los sube configurar.mjs): CLAVE, VAPID_PUBLICA, VAPID_PRIVADA
