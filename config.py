@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.8"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.8.1"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
@@ -41,7 +41,7 @@ HORA_DESPERTAR = 6
 # --- Actualizaciones -------------------------------------------------------------
 # Repositorio de GitHub donde publicas las versiones ("usuario/repositorio"). Vacío = no busca.
 # Debe ser PÚBLICO (o tener sus Releases en un repositorio público): ver README, "Actualizaciones".
-REPO_ACTUALIZACIONES = ""
+REPO_ACTUALIZACIONES = "miguelalonsoab-code/Lancelot"
 HORAS_ENTRE_BUSQUEDAS = 6
 BUSCAR_ACTUALIZACIONES_EN_DESARROLLO = False   # con "python main.py" se actualiza con git pull
 

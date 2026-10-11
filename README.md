@@ -1,3 +1,6 @@
+## Novedades v3.8.1
+- Conectado a GitHub: desde esta versión, Lancelot se actualiza solo.
+
 # Lancelot — asistente de escritorio · v3.8
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
