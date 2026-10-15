@@ -6,560 +6,1200 @@
    "texto": "mañana 8pm pagar la luz",
    "titulo": "Pagar la luz",
    "fecha": "2026-10-08 20:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "en 20 minutos estirar la espalda",
    "titulo": "Estirar la espalda",
    "fecha": "2026-10-07 06:50",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "en media hora sacar la ropa",
    "titulo": "Sacar la ropa",
    "fecha": "2026-10-07 07:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "el viernes a las 3 llamar al banco",
    "titulo": "Llamar al banco",
    "fecha": "2026-10-09 15:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "15/10 10:30 entregar informe",
    "titulo": "Entregar informe",
    "fecha": "2026-10-15 10:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "el 20 de octubre cumple de Juan",
    "titulo": "Cumple de Juan",
    "fecha": "2026-10-20 09:00",
-   "repeticion": null
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "cada lunes 9am reunión de equipo",
    "titulo": "Reunión de equipo",
    "fecha": "2026-10-12 09:00",
-   "repeticion": "semanal"
+   "repeticion": "semanal",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "1"
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "tomar pastilla todos los días a las 10 de la noche",
    "titulo": "Tomar pastilla",
    "fecha": "2026-10-07 22:00",
-   "repeticion": "diaria"
+   "repeticion": "diaria",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "esta noche a las 8 llamar a mamá",
    "titulo": "Llamar a mamá",
    "fecha": "2026-10-07 20:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "recuérdame que mañana por la tarde debo ir al banco",
    "titulo": "Debo ir al banco",
    "fecha": "2026-10-08 15:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "a las 8 de la mañana correr",
    "titulo": "Correr",
    "fecha": "2026-10-07 08:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "al mediodía almorzar",
    "titulo": "Almorzar",
    "fecha": "2026-10-07 12:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "a la 1 y media cita",
    "titulo": "Cita",
    "fecha": "2026-10-07 13:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "comprar 2 panes",
    "titulo": "Comprar 2 panes",
    "fecha": null,
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "revisar 31/02",
    "titulo": "Revisar 31/02",
    "fecha": null,
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "de lunes a viernes a las 7 tomar agua",
    "titulo": "Tomar agua",
    "fecha": "2026-10-07 19:00",
-   "repeticion": "laborables"
+   "repeticion": "laborables",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "en 2 horas revisar el horno",
    "titulo": "Revisar el horno",
    "fecha": "2026-10-07 08:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "pasado mañana a las 5 llamar a Dagi",
    "titulo": "Llamar a Dagi",
    "fecha": "2026-10-09 17:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "el lunes entregar trabajo",
    "titulo": "Entregar trabajo",
    "fecha": "2026-10-12 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "hoy 8am desayunar",
    "titulo": "Desayunar",
    "fecha": "2026-10-07 08:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "18 hrs salir del trabajo",
    "titulo": "Salir del trabajo",
    "fecha": "2026-10-07 18:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "a medianoche apagar la compu",
    "titulo": "Apagar la compu",
    "fecha": "2026-10-08 00:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "cada mes pagar el internet",
    "titulo": "Pagar el internet",
    "fecha": "2026-10-07 09:00",
-   "repeticion": "mensual"
+   "repeticion": "mensual",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "el 3 de enero de 2027 renovar DNI",
    "titulo": "Renovar DNI",
    "fecha": "2027-01-03 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "en 3 días devolver libro",
    "titulo": "Devolver libro",
    "fecha": "2026-10-10 06:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "Recuérdame a las 7 y 40 sacar al perro",
    "titulo": "Sacar al perro",
    "fecha": "2026-10-07 19:40",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "cada domingo lavar ropa",
    "titulo": "Lavar ropa",
    "fecha": "2026-10-11 09:00",
-   "repeticion": "semanal"
+   "repeticion": "semanal",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "mañana a las 12 almuerzo con Juan",
    "titulo": "Almuerzo con Juan",
    "fecha": "2026-10-08 12:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "a las 9:15 pm ver serie",
    "titulo": "Ver serie",
    "fecha": "2026-10-07 21:15",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "Anota: comprar leche mañana",
    "titulo": "Comprar leche",
    "fecha": "2026-10-08 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "dentro de 1 hora tomar agua",
    "titulo": "Tomar agua",
    "fecha": "2026-10-07 07:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "el próximo martes a las 4 dentista",
    "titulo": "Dentista",
    "fecha": "2026-10-13 16:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "1/1 año nuevo",
    "titulo": "Año nuevo",
    "fecha": "2027-01-01 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "mañana",
    "titulo": "",
    "fecha": "2026-10-08 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "llamar al médico",
    "titulo": "Llamar al médico",
    "fecha": null,
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "esta tarde ir al gimnasio",
    "titulo": "Ir al gimnasio",
    "fecha": "2026-10-07 15:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "cada semana regar plantas",
    "titulo": "Regar plantas",
    "fecha": "2026-10-07 09:00",
-   "repeticion": "semanal"
+   "repeticion": "semanal",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "a las 7 de la tarde clase de inglés",
    "titulo": "Clase de inglés",
    "fecha": "2026-10-07 19:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "el sábado por la mañana correr",
    "titulo": "Correr",
    "fecha": "2026-10-10 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-07 06:30",
    "texto": "hoy a las 11 de la noche dormir",
    "titulo": "Dormir",
    "fecha": "2026-10-07 23:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el 15 de noviembre aniversario",
+   "titulo": "Aniversario",
+   "fecha": "2026-11-15 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el 15 de noviembre es mi aniversario",
+   "titulo": "Mi aniversario",
+   "fecha": "2026-11-15 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cumpleaños de mamá 3 de mayo",
+   "titulo": "Cumpleaños de mamá",
+   "fecha": "2027-05-03 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "evento: cena con amigos el sábado, avísame 3 días antes",
+   "titulo": "Cena con amigos",
+   "fecha": "2026-10-10 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "3",
+   "avisos": "3"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "estudiar para el examen mañana",
+   "titulo": "Estudiar para el examen",
+   "fecha": "2026-10-08 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "examen de cálculo el 20/10 a las 8am",
+   "titulo": "Examen de cálculo",
+   "fecha": "2026-10-20 08:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "comprar regalo de cumpleaños el viernes",
+   "titulo": "Comprar regalo de cumpleaños",
+   "fecha": "2026-10-09 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "evento de la empresa el viernes a las 7pm",
+   "titulo": "Evento de la empresa",
+   "fecha": "2026-10-09 19:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "boda de Ana el 12/12 con una semana de anticipación",
+   "titulo": "Boda de Ana",
+   "fecha": "2026-12-12 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "7",
+   "avisos": "7"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "avísame 2 semanas antes del viaje a Cusco el 30 de noviembre",
+   "titulo": "Viaje a Cusco",
+   "fecha": "2026-11-30 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "14",
+   "avisos": "14"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "limpiar la sala el sábado",
+   "titulo": "Limpiar la sala",
+   "fecha": "2026-10-10 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "tarea: examen de prueba mañana",
+   "titulo": "Examen de prueba",
+   "fecha": "2026-10-08 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "primer parcial el 2/11",
+   "titulo": "Primer parcial",
+   "fecha": "2026-11-02 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "viaje cada año 1/1",
+   "titulo": "Viaje",
+   "fecha": "2027-01-01 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "evento",
+   "titulo": "Evento",
+   "fecha": null,
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "nuevo evento concierto el 5/12 a las 9 de la noche",
+   "titulo": "Concierto",
+   "fecha": "2026-12-05 21:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "pagar el seguro cada año el 10 de enero",
+   "titulo": "Pagar el seguro",
+   "fecha": "2027-01-10 09:00",
+   "repeticion": "anual",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cita con el dentista el jueves a las 4, avísame un día antes",
+   "titulo": "Cita con el dentista",
+   "fecha": "2026-10-08 16:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "1",
+   "avisos": "1"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "ir al concierto el sábado",
+   "titulo": "Ir al concierto",
+   "fecha": "2026-10-10 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cada día a las 8 reunión diaria",
+   "titulo": "Reunión diaria",
+   "fecha": "2026-10-07 08:00",
+   "repeticion": "diaria",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "mañana 8pm pagar la luz",
    "titulo": "Pagar la luz",
    "fecha": "2026-10-11 20:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "en 20 minutos estirar la espalda",
    "titulo": "Estirar la espalda",
    "fecha": "2026-10-10 22:35",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "en media hora sacar la ropa",
    "titulo": "Sacar la ropa",
    "fecha": "2026-10-10 22:45",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "el viernes a las 3 llamar al banco",
    "titulo": "Llamar al banco",
    "fecha": "2026-10-16 15:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "15/10 10:30 entregar informe",
    "titulo": "Entregar informe",
    "fecha": "2026-10-15 10:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "el 20 de octubre cumple de Juan",
    "titulo": "Cumple de Juan",
    "fecha": "2026-10-20 09:00",
-   "repeticion": null
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "cada lunes 9am reunión de equipo",
    "titulo": "Reunión de equipo",
    "fecha": "2026-10-12 09:00",
-   "repeticion": "semanal"
+   "repeticion": "semanal",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "1"
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "tomar pastilla todos los días a las 10 de la noche",
    "titulo": "Tomar pastilla",
    "fecha": "2026-10-11 22:00",
-   "repeticion": "diaria"
+   "repeticion": "diaria",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "esta noche a las 8 llamar a mamá",
    "titulo": "Llamar a mamá",
    "fecha": "2026-10-11 20:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "recuérdame que mañana por la tarde debo ir al banco",
    "titulo": "Debo ir al banco",
    "fecha": "2026-10-11 15:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "a las 8 de la mañana correr",
    "titulo": "Correr",
    "fecha": "2026-10-11 08:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "al mediodía almorzar",
    "titulo": "Almorzar",
    "fecha": "2026-10-11 12:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "a la 1 y media cita",
    "titulo": "Cita",
    "fecha": "2026-10-11 13:30",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "comprar 2 panes",
    "titulo": "Comprar 2 panes",
    "fecha": null,
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "revisar 31/02",
    "titulo": "Revisar 31/02",
    "fecha": null,
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "de lunes a viernes a las 7 tomar agua",
    "titulo": "Tomar agua",
    "fecha": "2026-10-12 19:00",
-   "repeticion": "laborables"
+   "repeticion": "laborables",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "en 2 horas revisar el horno",
    "titulo": "Revisar el horno",
    "fecha": "2026-10-11 00:15",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "pasado mañana a las 5 llamar a Dagi",
    "titulo": "Llamar a Dagi",
    "fecha": "2026-10-12 17:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "el lunes entregar trabajo",
    "titulo": "Entregar trabajo",
    "fecha": "2026-10-12 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "hoy 8am desayunar",
    "titulo": "Desayunar",
    "fecha": "2026-10-11 08:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "18 hrs salir del trabajo",
    "titulo": "Salir del trabajo",
    "fecha": "2026-10-11 18:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "a medianoche apagar la compu",
    "titulo": "Apagar la compu",
    "fecha": "2026-10-11 00:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "cada mes pagar el internet",
    "titulo": "Pagar el internet",
    "fecha": "2026-10-11 09:00",
-   "repeticion": "mensual"
+   "repeticion": "mensual",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "el 3 de enero de 2027 renovar DNI",
    "titulo": "Renovar DNI",
    "fecha": "2027-01-03 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "en 3 días devolver libro",
    "titulo": "Devolver libro",
    "fecha": "2026-10-13 22:15",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "Recuérdame a las 7 y 40 sacar al perro",
    "titulo": "Sacar al perro",
    "fecha": "2026-10-11 19:40",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "cada domingo lavar ropa",
    "titulo": "Lavar ropa",
    "fecha": "2026-10-11 09:00",
-   "repeticion": "semanal"
+   "repeticion": "semanal",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "mañana a las 12 almuerzo con Juan",
    "titulo": "Almuerzo con Juan",
    "fecha": "2026-10-11 12:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "a las 9:15 pm ver serie",
    "titulo": "Ver serie",
    "fecha": "2026-10-11 21:15",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "Anota: comprar leche mañana",
    "titulo": "Comprar leche",
    "fecha": "2026-10-11 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "dentro de 1 hora tomar agua",
    "titulo": "Tomar agua",
    "fecha": "2026-10-10 23:15",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "el próximo martes a las 4 dentista",
    "titulo": "Dentista",
    "fecha": "2026-10-13 16:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "1/1 año nuevo",
    "titulo": "Año nuevo",
    "fecha": "2027-01-01 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "mañana",
    "titulo": "",
    "fecha": "2026-10-11 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "llamar al médico",
    "titulo": "Llamar al médico",
    "fecha": null,
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "esta tarde ir al gimnasio",
    "titulo": "Ir al gimnasio",
    "fecha": "2026-10-11 15:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "cada semana regar plantas",
    "titulo": "Regar plantas",
    "fecha": "2026-10-11 09:00",
-   "repeticion": "semanal"
+   "repeticion": "semanal",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "a las 7 de la tarde clase de inglés",
    "titulo": "Clase de inglés",
    "fecha": "2026-10-11 19:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "el sábado por la mañana correr",
    "titulo": "Correr",
    "fecha": "2026-10-17 09:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
   },
   {
    "ahora": "2026-10-10 22:15",
    "texto": "hoy a las 11 de la noche dormir",
    "titulo": "Dormir",
    "fecha": "2026-10-10 23:00",
-   "repeticion": null
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el 15 de noviembre aniversario",
+   "titulo": "Aniversario",
+   "fecha": "2026-11-15 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el 15 de noviembre es mi aniversario",
+   "titulo": "Mi aniversario",
+   "fecha": "2026-11-15 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cumpleaños de mamá 3 de mayo",
+   "titulo": "Cumpleaños de mamá",
+   "fecha": "2027-05-03 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "evento: cena con amigos el sábado, avísame 3 días antes",
+   "titulo": "Cena con amigos",
+   "fecha": "2026-10-17 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "3",
+   "avisos": "3"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "estudiar para el examen mañana",
+   "titulo": "Estudiar para el examen",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "examen de cálculo el 20/10 a las 8am",
+   "titulo": "Examen de cálculo",
+   "fecha": "2026-10-20 08:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "comprar regalo de cumpleaños el viernes",
+   "titulo": "Comprar regalo de cumpleaños",
+   "fecha": "2026-10-16 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "evento de la empresa el viernes a las 7pm",
+   "titulo": "Evento de la empresa",
+   "fecha": "2026-10-16 19:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "boda de Ana el 12/12 con una semana de anticipación",
+   "titulo": "Boda de Ana",
+   "fecha": "2026-12-12 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "7",
+   "avisos": "7"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "avísame 2 semanas antes del viaje a Cusco el 30 de noviembre",
+   "titulo": "Viaje a Cusco",
+   "fecha": "2026-11-30 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "14",
+   "avisos": "14"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "limpiar la sala el sábado",
+   "titulo": "Limpiar la sala",
+   "fecha": "2026-10-17 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "tarea: examen de prueba mañana",
+   "titulo": "Examen de prueba",
+   "fecha": "2026-10-11 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "primer parcial el 2/11",
+   "titulo": "Primer parcial",
+   "fecha": "2026-11-02 09:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "viaje cada año 1/1",
+   "titulo": "Viaje",
+   "fecha": "2027-01-01 09:00",
+   "repeticion": "anual",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "evento",
+   "titulo": "Evento",
+   "fecha": null,
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "nuevo evento concierto el 5/12 a las 9 de la noche",
+   "titulo": "Concierto",
+   "fecha": "2026-12-05 21:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "pagar el seguro cada año el 10 de enero",
+   "titulo": "Pagar el seguro",
+   "fecha": "2027-01-10 09:00",
+   "repeticion": "anual",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cita con el dentista el jueves a las 4, avísame un día antes",
+   "titulo": "Cita con el dentista",
+   "fecha": "2026-10-15 16:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": "1",
+   "avisos": "1"
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "ir al concierto el sábado",
+   "titulo": "Ir al concierto",
+   "fecha": "2026-10-17 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cada día a las 8 reunión diaria",
+   "titulo": "Reunión diaria",
+   "fecha": "2026-10-11 08:00",
+   "repeticion": "diaria",
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": null
   }
  ],
  "comandos": [
@@ -864,6 +1504,209 @@
   {
    "texto": "pagar vencidas mañana 8pm",
    "comando": null
+  },
+  {
+   "texto": "Guarda esta frase: El que persevera, alcanza.",
+   "comando": {
+    "accion": "guardar_frase",
+    "minutos": null,
+    "texto": "El que persevera, alcanza",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "guarda esta frase la constancia gana",
+   "comando": {
+    "accion": "guardar_frase",
+    "minutos": null,
+    "texto": "la constancia gana",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Motívame",
+   "comando": {
+    "accion": "frase",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Me dices una frase?",
+   "comando": {
+    "accion": "frase",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "dime una frase",
+   "comando": {
+    "accion": "frase",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "anota esta frase:   Sonríe, que hoy sale bien",
+   "comando": {
+    "accion": "guardar_frase",
+    "minutos": null,
+    "texto": "Sonríe, que hoy sale bien",
+    "destino": null,
+    "navegador": null
+   }
+  }
+ ],
+ "avisos_previos": [
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-08 08:59",
+   "toca": null
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-08 09:00",
+   "toca": 7
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-11-08 09:00",
+   "ahora": "2026-11-10 12:00",
+   "toca": null
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-11-08 09:00",
+   "ahora": "2026-11-14 09:30",
+   "toca": 1
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-14 18:00",
+   "toca": 1
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-11-12 15:00",
+   "ahora": "2026-11-12 16:00",
+   "toca": null
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-11-12 15:00",
+   "ahora": "2026-11-14 09:00",
+   "toca": 1
+  },
+  {
+   "fecha": "2026-11-15 09:00",
+   "avisos": "7,1",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-15 09:00",
+   "toca": null
+  },
+  {
+   "fecha": "2026-11-15 20:00",
+   "avisos": "3",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-12 09:00",
+   "toca": 3
+  },
+  {
+   "fecha": "2026-11-15 20:00",
+   "avisos": "",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-14 09:00",
+   "toca": null
+  },
+  {
+   "fecha": "2026-11-15 20:00",
+   "avisos": "1,x,0,999",
+   "desde": "2026-10-01 10:00",
+   "ahora": "2026-11-14 09:00",
+   "toca": 1
+  }
+ ],
+ "faltan": [
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-10-07 23:00",
+   "texto": "hoy"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-10-08 08:00",
+   "texto": "mañana"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-10-09 08:00",
+   "texto": "faltan 2 días"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-10-14 08:00",
+   "texto": "falta 1 semana"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-10-21 10:00",
+   "texto": "faltan 2 semanas"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-11-04 10:00",
+   "texto": "faltan 4 semanas"
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "fecha": "2026-12-02 10:00",
+   "texto": "faltan 56 días"
+  }
+ ],
+ "textos_avisos": {
+  "7,1": "avisa 7 y 1 días antes",
+  "1": "avisa 1 día antes",
+  "3": "avisa 3 días antes",
+  "14,7,1": "avisa 14, 7 y 1 días antes",
+  "None": ""
+ },
+ "repeticiones": [
+  {
+   "fecha": "2026-02-28 09:00",
+   "repeticion": "anual",
+   "ahora": "2026-10-07 06:30",
+   "siguiente": "2027-02-28 09:00"
+  },
+  {
+   "fecha": "2028-02-29 09:00",
+   "repeticion": "anual",
+   "ahora": "2028-03-01 06:30",
+   "siguiente": "2029-02-28 09:00"
+  },
+  {
+   "fecha": "2026-10-31 09:00",
+   "repeticion": "mensual",
+   "ahora": "2026-11-01 06:30",
+   "siguiente": "2026-11-30 09:00"
   }
  ]
 }

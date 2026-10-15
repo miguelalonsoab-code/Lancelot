@@ -27,7 +27,38 @@ function avanzar(f, repeticion) {
     while (!esValida(anio, mes, dia)) dia -= 1;          // 31 -> último día del mes siguiente
     return crear(anio, mes, dia, f.getUTCHours(), f.getUTCMinutes());
   }
+  if (repeticion === "anual") {                         // un 29 de febrero pasa al 28
+    const anio = f.getUTCFullYear() + 1, mes = f.getUTCMonth() + 1;
+    let dia = f.getUTCDate();
+    while (!esValida(anio, mes, dia)) dia -= 1;
+    return crear(anio, mes, dia, f.getUTCHours(), f.getUTCMinutes());
+  }
   throw new Error(`Repetición desconocida: ${repeticion}`);
+}
+
+// ------------------------------------------------------------ avisos previos
+export const HORA_AVISO_PREVIO = [9, 0];
+
+/** "7,1" -> [7, 1] (de mayor a menor, sin repetidos ni basura). */
+export function diasDeAviso(avisos) {
+  const dias = new Set(String(avisos || "").split(",").filter((x) => /^\s*\d+\s*$/.test(x)).map(Number));
+  return [...dias].filter((d) => d >= 1 && d <= 365).sort((a, b) => b - a);
+}
+
+/**
+ * ¿Toca avisar con anticipación? Cada aviso sale a las 9:00 del día (fecha − N días).
+ * 'desde': lo anterior ya se avisó o no correspondía (último aviso previo, o cuándo se creó/cambió).
+ * Devuelve N del aviso que toca (si se juntaron varios, el más cercano a la fecha) o null.
+ * Igual que aviso_previo_pendiente de la laptop.
+ */
+export function avisoPrevioPendiente(fecha, avisos, desde, ahora, hora = HORA_AVISO_PREVIO) {
+  if (fecha <= ahora) return null;
+  let toca = null;
+  for (const n of diasDeAviso(avisos)) {
+    const momento = conHora(sumarDias(soloFecha(fecha), -n), ...hora);
+    if (desde < momento && momento <= ahora) toca = n;
+  }
+  return toca;
 }
 
 /** Misma hora, pero mañana ("pasar todas las vencidas a mañana"). */

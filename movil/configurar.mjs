@@ -10,7 +10,8 @@
  *   3. Crea las tablas (migraciones).
  *   4. Sube el servidor y la app del celular.
  *   5. Genera la CLAVE y las claves de notificación, y las guarda como secretos en Cloudflare.
- *   6. Muestra un código QR: lo escaneas con el celular y la app se abre ya conectada.
+ *   6. Deja la conexión lista para la laptop (nube.json en sus carpetas de datos): así se sincronizan.
+ *   7. Muestra un código QR: lo escaneas con el celular y la app se abre ya conectada.
  *
  * La dirección y la clave quedan en movil/.lancelot-local.json (NO se sube a GitHub).
  *
@@ -18,7 +19,8 @@
  *     npm run configurar -- --nuevas-claves-push  <- regenera las claves de notificación (casi nunca hace falta)
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -163,8 +165,19 @@ async function main() {
   if (!listo) fallar(`El servidor no responde bien todavía. Espera un minuto y abre ${url}/api/estado`);
   console.log("Todo funciona.");
 
-  // 6 ------------------------------------------------------------ celular
-  paso(6, "Tu celular");
+  // 6 ------------------------------------------------------------ laptop
+  paso(6, "Tu laptop");
+  // Las dos carpetas de datos de Lancelot: la del .exe instalado y la de "python main.py"
+  const carpetas = [join(process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "Lancelot"),
+                    join(AQUI, "..", "datos")];
+  for (const carpeta of carpetas) {
+    mkdirSync(carpeta, { recursive: true });
+    writeFileSync(join(carpeta, "nube.json"), JSON.stringify({ url, clave }, null, 2));
+  }
+  console.log("Listo: reinicia Lancelot en la laptop (clic derecho en la cara → Salir, y ábrelo) y se sincronizará solo.");
+
+  // 7 ------------------------------------------------------------ celular
+  paso(7, "Tu celular");
   const enlace = `${url}/#clave=${encodeURIComponent(clave)}`;
   const { default: qr } = await import("qrcode-terminal");
   qr.generate(enlace, { small: true }, (dibujo) => console.log(dibujo));

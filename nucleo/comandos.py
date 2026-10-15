@@ -22,6 +22,7 @@ class Comando:
     #                           abrir | hora | agenda | escucha_on | escucha_off
     #                           apodo | olvidar_apodo | apodos | abrir_web | buscar
     #                           saludo | semana | vencidas | vencidas_manana | actualizacion
+    #                           frase | guardar_frase
     minutos: int | None = None
     texto: str | None = None  # p. ej. el nombre de la app en "abre spotify", o el apodo
     destino: str | None = None  # a qué app apunta un apodo nuevo, o dónde buscar (youtube, google)
@@ -73,13 +74,21 @@ REGLAS = [
      r"pendientes(?: de hoy)?|agenda(?: de hoy)?)$", "agenda", None),
     (r"^(?:escuchame|escucha|activa(?:r)? la escucha|empieza a escuchar)$", "escucha_on", None),
     (r"^(?:deja de escuchar|no escuches|desactiva(?:r)? la escucha)$", "escucha_off", None),
+    # Frases (v3.10). "guarda esta frase: …" conserva tus mayúsculas y tildes (ver "original")
+    (r"^(?:guarda|guardar|guardame|anota|agrega|aprende|aprendete|recuerda) (?:esta|la|una|mi|esta otra|otra) "
+     r"frase:? (.+)$", "guardar_frase", "original"),
+    (r"^(?:dime una frase|una frase|frase del dia|dame una frase|me (?:dices|das) una frase|motivame|dame animos|necesito animos|"
+     r"dime algo bonito|inspirame)$", "frase", None),
 ]
 _COMPILADAS = [(re.compile(p), a, t) for p, a, t in REGLAS]
 
 
 def interpretar_comando(texto: str) -> Comando | None:
-    t = normalizar(texto).strip(" .!¡?¿,")
-    t = re.sub(r"\s+", " ", t)
+    # 'original' y 't' tienen el mismo largo (normalizar no cambia la cantidad de letras):
+    # lo encontrado en 't' se puede recortar de 'original' con sus tildes y mayúsculas.
+    original = re.sub(r"\s+", " ", texto.strip(" .!¡?¿,\t\n"))
+    original = original.strip(" .!¡?¿,")
+    t = normalizar(original)
     for patron, accion, captura in _COMPILADAS:
         m = patron.match(t)
         if not m:
@@ -92,6 +101,8 @@ def interpretar_comando(texto: str) -> Comando | None:
             return Comando(accion, minutos=minutos)
         if captura == "texto":
             return Comando(accion, texto=valor.strip(" .") if valor else None)
+        if captura == "original":
+            return Comando(accion, texto=original[m.start(1):m.end(1)].strip(" ."))
         if captura == "sitio_navegador":
             navegador = None if m.group(2) == "navegador" else m.group(2)
             return Comando(accion, texto=m.group(1).strip(" ."), navegador=navegador)

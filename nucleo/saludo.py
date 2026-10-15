@@ -7,6 +7,7 @@ Saludo del día: lo primero que te dice Lancelot cada día.
     • 14:30 Llamar al banco
     • 20:00 Pagar la luz
     ⚠ 1 vencida sin resolver
+    📅 Se acerca: Aniversario (faltan 3 días)
     🔥 Racha de estudio: 4 días. ¡Que no se corte!
 
 Lógica pura: no sabe de SQLite ni de ventanas, solo arma los textos.
@@ -18,6 +19,7 @@ from datetime import datetime
 
 from nucleo.almacen import Tarea
 from nucleo.hablado import hora_hablada
+from nucleo.interprete import describir_faltan
 
 
 @dataclass
@@ -51,7 +53,7 @@ def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: s
     if hoy:
         n = len(hoy)
         lineas.append(f"Hoy tienes {n} pendiente{'s' if n > 1 else ''}:")
-        lineas += [f"• {t.fecha:%H:%M} {t.titulo}" for t in hoy[:max_lista]]
+        lineas += [f"• {t.fecha:%H:%M} {'📅 ' if t.es_evento else ''}{t.titulo}" for t in hoy[:max_lista]]
         if n > max_lista:
             lineas.append(f"  … y {n - max_lista} más")
         primera = hoy[0]
@@ -64,6 +66,13 @@ def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: s
         n = len(vencidas)
         lineas.append(f"⚠ {n} vencida{'s' if n > 1 else ''} sin resolver")
         frases.append(f"Además tienes {_cantidad(n, 'tarea vencida', 'tareas vencidas')}.")
+    # Eventos de los próximos 7 días (los de hoy ya están en la lista de arriba)
+    pronto = [t for t in pendientes if t.es_evento and 1 <= (t.fecha.date() - ahora.date()).days <= 7]
+    if pronto:
+        lineas.append("📅 Se acerca: " + ", ".join(f"{t.titulo} ({describir_faltan(t.fecha, ahora)})"
+                                                  for t in pronto[:3]))
+        frases.append("Se acerca " + " y ".join(f"{t.titulo}, {describir_faltan(t.fecha, ahora)}"
+                                                for t in pronto[:2]) + ".")
     if racha >= 2:
         lineas.append(f"🔥 Racha de estudio: {racha} días. ¡Que no se corte!")
         frases.append(f"Llevas {racha} días seguidos estudiando. ¡Que no se corte!")

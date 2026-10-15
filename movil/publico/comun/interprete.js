@@ -1,5 +1,5 @@
 /**
- * Intérprete de texto en español -> { titulo, fecha, repeticion }.
+ * Intérprete de texto en español -> { titulo, fecha, repeticion, tipo, anticipacion, avisos }.
  *
  * Es una traducción línea por línea de nucleo/interprete.py (la laptop). Las dos versiones
  * se prueban contra los mismos casos (tests/casos_interprete.json), así que
@@ -9,6 +9,7 @@
  *  1. Se trabaja sobre una copia en minúsculas y SIN tildes, del mismo largo que el original.
  *  2. Cada regla (repetición, tiempo relativo, día, hora) anota el tramo de texto que usó.
  *  3. Lo que sobra es el título de la tarea.
+ *  4. Por último se decide si es TAREA o EVENTO (un evento avisa además con días de anticipación).
  */
 import { conHora, crear, diaSemana, esValida, soloFecha, sumarDias, sumarMinutos } from "./fechas.js";
 
@@ -16,18 +17,49 @@ const SIN_TILDES = { "á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ü"
 export const DIAS_SEMANA = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
   "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const NUMEROS_TEXTO = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, diez: 10, quince: 15,
-  veinte: 20, treinta: 30 };
+const NUMEROS_TEXTO = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8,
+  nueve: 9, diez: 10, quince: 15, veinte: 20, treinta: 30 };
 const HORA_MOMENTO = { manana: [9, 0], tarde: [15, 0], noche: [20, 0] };
 export const HORA_POR_DEFECTO = [9, 0];
 
 /** Repeticiones (clave -> texto para mostrar). "" = sin repetir. */
 export const REPETICIONES = {
   "": "Sin repetir", diaria: "Todos los días", laborables: "Lunes a viernes",
-  semanal: "Cada semana", mensual: "Cada mes",
+  semanal: "Cada semana", mensual: "Cada mes", anual: "Cada año",
 };
 
-const RELLENO_INICIAL = /^(?:recuerdame|recordarme|recordar|avisame|avisarme|anota|anotame|apunta|agrega|que|de|a|para|y)\b\s*/;
+export const TIPOS = { tarea: "Tarea", evento: "📅 Evento" };
+
+/** Palabras que convierten algo en EVENTO (cosas que pasan un día, no algo que "haces"). */
+const PALABRAS_EVENTO = ["aniversario", "cumpleanos", "cumple", "boda", "matrimonio", "bautizo", "graduacion",
+  "viaje", "vuelo", "examen", "parcial", "exposicion", "sustentacion", "cita", "concierto", "fiesta", "reunion",
+  "entrevista", "conferencia", "evento"];
+const PALABRA_EVENTO = new RegExp(String.raw`\b(?:` + PALABRAS_EVENTO.join("|") + String.raw`)\b`);
+const PALABRA_ANUAL = /\b(?:aniversario|cumpleanos|cumple)\b/;          // vuelven cada año
+const VERBO = /^(?:ir|[a-z]+(?:ar|er|ir)(?:me|te|le|les|lo|la|los|las|se)?)$/;
+const NO_VERBOS = new Set(["primer", "tercer", "mujer", "ayer", "taller", "lugar", "hogar", "bar", "alquiler",
+  "familiar", "militar", "collar", "altar", "mar", "super", "seminar"]);
+export const AVISOS_PREVIOS_POR_DEFECTO = "7,1";
+
+/**
+ * Con cuántos días de anticipación avisar ("7,1"), o null = solo a su hora.
+ * Lo pedido manda; si no, un evento usa el valor por defecto (un evento semanal solo 1 día antes; uno diario, nunca).
+ */
+export function avisosPrevios(tipo, repeticion, pedida) {
+  if (pedida) return pedida;
+  if (tipo !== "evento" || repeticion === "diaria" || repeticion === "laborables") return null;
+  return repeticion === "semanal" ? "1" : AVISOS_PREVIOS_POR_DEFECTO;
+}
+
+/** "7,1" -> "avisa 7 y 1 días antes". */
+export function describirAvisos(avisos) {
+  if (!avisos) return "";
+  const dias = avisos.split(",");
+  const texto = dias.length <= 2 ? dias.join(" y ") : dias.slice(0, -1).join(", ") + " y " + dias[dias.length - 1];
+  return `avisa ${texto} día${dias.length === 1 && dias[0] === "1" ? "" : "s"} antes`;
+}
+
+const RELLENO_INICIAL = /^(?:recuerdame|recordarme|recordar|avisame|avisarme|anota|anotame|apunta|agrega|que|de|del|a|para|y|es)\b\s*/;
 
 const P_DIA = "(lunes|martes|miercoles|jueves|viernes|sabados?|domingos?)";
 const PATRONES_REPETICION = [
@@ -36,7 +68,14 @@ const PATRONES_REPETICION = [
   [new RegExp(String.raw`\b(?:cada|todos los) ` + P_DIA + String.raw`\b`, "g"), "semanal"],
   [/\b(?:cada semana|semanalmente|semanal)\b/g, "semanal"],
   [/\b(?:cada mes|mensualmente|mensual)\b/g, "mensual"],
+  [/\b(?:cada ano|todos los anos|anualmente|anual)\b/g, "anual"],
 ];
+const PATRON_MARCA_EVENTO = /^\s*(?:(?:anota|agrega|apunta|crea|nuevo|un) )?evento(?:\s*:\s*|\s*,\s*|\s+(?!de\b|del\b))/g;
+const PATRON_MARCA_TAREA = /^\s*(?:nueva )?tarea\s*:\s*/g;
+const PATRON_ANTICIPACION = new RegExp(
+  String.raw`(?:\b(?:y )?(?:avisame|avisarme|recuerdame|recordarme|recuerdamelo|avisamelo) )?(?:\bcon )?` +
+  String.raw`\b(\d{1,3}|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta) ` +
+  String.raw`(dias?|semanas?) (?:antes|de anticipacion)\b`, "g");
 const PATRON_RELATIVO = /\b(?:en|dentro de) (\d+|un|una|dos|tres|cuatro|cinco|diez|quince|veinte|treinta|media) ?(minutos?|mins?|m|horas?|hrs?|h|dias?)\b/g;
 const PATRON_PASADO_MANANA = /\bpasado manana\b/g;
 const PATRON_MANANA = /(?<!la )\bmanana\b/g;
@@ -76,13 +115,19 @@ export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO) {
   const usar = (m) => { tramos.push([m.index, m.index + m[0].length]); return m; };
 
   let repeticion = null, diaSem = null, dia = null, relativo = null, momento = null, hora = null;
+  let tipo = null, anticipacion = null;
   let m;
 
+  // 0) ¿Evento o tarea dicho explícito? ¿Con cuánta anticipación avisar?
+  if ((m = buscar(PATRON_MARCA_EVENTO))) { usar(m); tipo = "evento"; }
+  else if ((m = buscar(PATRON_MARCA_TAREA))) { usar(m); tipo = "tarea"; }
+  if ((m = buscar(PATRON_ANTICIPACION))) { usar(m); anticipacion = aAnticipacion(m[1], m[2]); }
+
   // 1) Repetición
-  for (const [patron, tipo] of PATRONES_REPETICION) {
+  for (const [patron, clave] of PATRONES_REPETICION) {
     if ((m = buscar(patron))) {
       usar(m);
-      repeticion = tipo;
+      repeticion = clave;
       if (m.length > 1 && m[1]) diaSem = indiceDia(m[1]);
       break;
     }
@@ -132,13 +177,33 @@ export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO) {
 
   const horaFinal = resolverHora(hora, momento);
   const fecha = combinar(ahora, dia, diaSem, horaFinal, relativo, repeticion, horaPorDefecto);
-  return { titulo: limpiarTitulo(texto, tramos), fecha, repeticion };
+  const titulo = limpiarTitulo(texto, tramos);
+
+  // 6) ¿Tarea o evento?
+  tipo = tipo || (esEvento(titulo) ? "evento" : "tarea");
+  if (tipo === "evento" && repeticion === null && PALABRA_ANUAL.test(normalizar(titulo))) repeticion = "anual";
+  return { titulo, fecha, repeticion, tipo, anticipacion, avisos: avisosPrevios(tipo, repeticion, anticipacion) };
 }
 
 // ----------------------------------------------------------------- ayudantes
 function indiceDia(nombre) {
   if (nombre === "sabados" || nombre === "domingos") nombre = nombre.slice(0, -1);
   return DIAS_SEMANA.indexOf(nombre);
+}
+
+const numero = (c) => (/^\d+$/.test(c) ? +c : (NUMEROS_TEXTO[c] ?? 1));
+
+function aAnticipacion(cantidad, unidad) {
+  const dias = numero(cantidad) * (unidad.startsWith("semana") ? 7 : 1);
+  return dias >= 1 && dias <= 365 ? String(dias) : null;
+}
+
+/** Menciona un aniversario, examen, cita… y NO empieza con un verbo ("estudiar para el examen"). */
+function esEvento(titulo) {
+  const t = normalizar(titulo);
+  if (!PALABRA_EVENTO.test(t)) return false;
+  const primera = /^[a-z]*/.exec(t)[0];
+  return !(VERBO.test(primera) && !NO_VERBOS.has(primera));
 }
 
 function aMinutos(cantidad, unidad) {

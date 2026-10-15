@@ -4,6 +4,7 @@
  *   - Escribes como en la laptop: "mañana 8pm pagar la luz". Si falta algo, pregunta.
  *   - La lista se agrupa en: vencidas, hoy, mañana y los días siguientes.
  *   - Tocar el círculo = hecho. Tocar la tarea = más opciones (posponer, reprogramar, editar, borrar).
+ *   - Los EVENTOS (aniversario, examen, viaje…) llevan 📅 y "faltan N días"; avisan con anticipación.
  *   - Las notificaciones las manda el servidor cada minuto, aunque la app esté cerrada (ver sw.js).
  *
  * Todo lo que el usuario escribe se muestra con textContent (nunca como HTML).
@@ -11,15 +12,15 @@
 import { Cara } from "./cara.js";
 import { ACCIONES_CELULAR, interpretarComando } from "./comun/comandos.js";
 import {
-  aTexto, ahoraEn, conHora, DIAS, describirAtraso, describirFecha, desdeTexto, diasEntre, diaSemana, hhmm,
-  MESES, soloFecha, sumarDias, sumarMinutos,
+  aTexto, ahoraEn, conHora, DIAS, describirAtraso, describirFaltan, describirFecha, desdeTexto, diasEntre, diaSemana,
+  hhmm, MESES, soloFecha, sumarDias, sumarMinutos,
 } from "./comun/fechas.js";
-import { interpretar, REPETICIONES } from "./comun/interprete.js";
+import { avisosPrevios, describirAvisos, interpretar, REPETICIONES, TIPOS } from "./comun/interprete.js";
 import { opcionesReprogramar } from "./comun/planificador.js";
 
 const ZONA = "America/Lima";
 const NOMBRE = "Miguel";
-const VERSION_APP = "1.0";
+const VERSION_APP = "1.1";
 
 const $ = (id) => document.getElementById(id);
 const ahora = () => ahoraEn(ZONA);
@@ -28,7 +29,7 @@ const cara = new Cara($("cara"));
 const estado = {
   clave: leer("clave"),
   tareas: [],
-  espera: null,          // { falta: "titulo" | "fecha", titulo, fecha, repeticion } mientras Lancelot pregunta
+  espera: null,          // { falta: "titulo" | "fecha", titulo, fecha, repeticion, tipo, anticipacion } mientras pregunta
   saludado: false,
   instalar: null,        // aviso de "instalar app" que ofrece Chrome
 };
@@ -53,6 +54,8 @@ function el(tag, attrs = {}, ...hijos) {
 }
 
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+const esEvento = (t) => t.tipo === "evento";
+const conIcono = (t) => (esEvento(t) ? `📅 ${t.titulo}` : t.titulo);
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const aInput = (texto) => texto.replace(" ", "T");                 // '2026-10-11 20:00' -> datetime-local
 const deInput = (valor) => (valor ? valor.replace("T", " ").slice(0, 16) : "");
@@ -187,12 +190,14 @@ function pintar() {
 
 function fila(t, tipo, now) {
   const f = desdeTexto(t.fecha);
+  const faltan = esEvento(t) && tipo === "futuro" ? describirFaltan(f, now) : null;
   const detalle = [tipo === "vencidas" ? describirAtraso(f, now) : null,
+    faltan && capital(faltan),
     t.repeticion ? `Se repite: ${REPETICIONES[t.repeticion].toLowerCase()}` : null].filter(Boolean).join(". ");
-  const nodo = el("div", { class: "tarea", "data-id": t.id },
+  const nodo = el("div", { class: "tarea", "data-id": t.id, "data-evento": esEvento(t) },
     el("span", { class: "hora" }, hhmm(f)),
     el("button", { class: "que", onclick: () => opcionesDeTarea(t) },
-      el("span", { class: "titulo" }, t.titulo), detalle && el("span", { class: "detalle" }, detalle)),
+      el("span", { class: "titulo" }, conIcono(t)), detalle && el("span", { class: "detalle" }, detalle)),
     el("button", { class: "hecho", "aria-label": `Marcar «${t.titulo}» como hecha`, onclick: () => completar(t, nodo) }));
   return nodo;
 }
@@ -227,6 +232,12 @@ function resumen(now, conSaludo = false) {
     partes.push("No tienes nada más para hoy.");
   }
   if (vencidas.length) partes.push(`Y ${plural(vencidas.length, "vencida", "vencidas")}: tócala para reprogramar.`);
+  // Eventos de los próximos 7 días (los de hoy ya salieron arriba)
+  const pronto = estado.tareas.filter((t) => esEvento(t) && t.fecha > limite &&
+    diasEntre(now, desdeTexto(t.fecha)) >= 1 && diasEntre(now, desdeTexto(t.fecha)) <= 7);
+  if (pronto.length) {
+    partes.push(`Se acerca: ${pronto.slice(0, 2).map((t) => `${t.titulo} (${describirFaltan(desdeTexto(t.fecha), now)})`).join(" y ")}.`);
+  }
   return partes.join(" ");
 }
 
@@ -277,14 +288,16 @@ function terminarEspera() {
   entrada.placeholder = PISTA;
 }
 
-async function crear(titulo, fecha, repeticion) {
-  const r = await intentar(() => api("/api/tareas", { metodo: "POST", cuerpo: { titulo, fecha, repeticion } }));
+async function crear(titulo, fecha, repeticion, tipo = "tarea", anticipacion = null) {
+  const r = await intentar(() => api("/api/tareas", { metodo: "POST", cuerpo: { titulo, fecha, repeticion, tipo, anticipacion } }));
   if (!r) return false;
   terminarEspera();                                  // antes de cerrar la hoja: así no dice "no la anoté"
   cerrarHoja();
   cara.celebrar();
   const cuando = describirFecha(desdeTexto(r.tarea.fecha), ahora());
-  decir(`Anotado: ${r.tarea.titulo}, ${cuando}${repeticion ? ` (${REPETICIONES[repeticion].toLowerCase()})` : ""}.`);
+  const avisos = anticipacion ? ` Te aviso ${describirAvisos(anticipacion).replace("avisa ", "")} y ese día.` : "";
+  decir(`Anotado${tipo === "evento" ? " el evento" : ""}: ${r.tarea.titulo}, ${cuando}` +
+    `${repeticion ? ` (${REPETICIONES[repeticion].toLowerCase()})` : ""}.${avisos}`);
   await recargar();
   return true;
 }
@@ -313,8 +326,10 @@ function vistaPrevia(texto) {
     vista.textContent = r.fecha ? `Para: ${describirFecha(r.fecha, ahora())}` : "Dime cuándo: «mañana a las 5», «en 2 horas»…";
     return;
   }
-  const partes = [`«${r.titulo || "…"}»`, r.fecha ? describirFecha(r.fecha, ahora()) : "te preguntaré cuándo"];
+  const partes = [`${r.tipo === "evento" ? "📅 " : ""}«${r.titulo || "…"}»`,
+    r.fecha ? describirFecha(r.fecha, ahora()) : "te preguntaré cuándo"];
   if (r.repeticion) partes.push(REPETICIONES[r.repeticion].toLowerCase());
+  if (r.avisos) partes.push(describirAvisos(r.avisos));
   vista.textContent = "Entendí: " + partes.join(", ");
 }
 
@@ -341,25 +356,35 @@ async function procesar(texto) {
     decir("Listo, no anoto nada.");
     return true;
   }
-  if (espera?.falta === "titulo") return crear(capital(texto), espera.fecha, espera.repeticion);
+  if (espera?.falta === "titulo") {
+    // El título recién llega ahora: recién ahora se sabe si es un evento ("aniversario")
+    const r = interpretar(texto, now);
+    const titulo = r.titulo || capital(texto);
+    const tipo = r.tipo === "evento" ? "evento" : espera.tipo;
+    const repeticion = espera.repeticion || (r.tipo === "evento" ? r.repeticion : null);
+    return crear(titulo, espera.fecha, repeticion, tipo, espera.anticipacion || avisosPrevios(tipo, repeticion, null));
+  }
   if (espera?.falta === "fecha") {
     const r = interpretar(texto, now);
     if (!r.fecha) { decir("No entendí la fecha. Prueba con «mañana a las 5» o «en 2 horas»."); return false; }
-    return crear(espera.titulo, aTexto(r.fecha), r.repeticion || espera.repeticion);
+    const repeticion = r.repeticion || espera.repeticion;
+    return crear(espera.titulo, aTexto(r.fecha), repeticion, espera.tipo,
+      espera.anticipacion || avisosPrevios(espera.tipo, repeticion, null));
   }
   const c = interpretarComando(texto);
   if (c) { await comando(c); return true; }
 
   const r = interpretar(texto, now);
   if (!r.titulo && r.fecha) {
-    estado.espera = { falta: "titulo", fecha: aTexto(r.fecha), repeticion: r.repeticion };
+    estado.espera = { falta: "titulo", fecha: aTexto(r.fecha), repeticion: r.repeticion, tipo: r.tipo,
+                      anticipacion: r.anticipacion };
     decir(`¿Qué te recuerdo ${describirFecha(r.fecha, now)}? (Escribe «olvídalo» para cancelar.)`);
     entrada.placeholder = "Por ejemplo: pagar la luz";
     return true;
   }
-  if (!r.fecha) { pedirFecha(r.titulo, r.repeticion); return true; }
+  if (!r.fecha) { pedirFecha(r.titulo, r.repeticion, r.tipo, r.anticipacion); return true; }
   if (aTexto(r.fecha) <= aTexto(now) && !r.repeticion) { decir("Esa hora ya pasó. Dime una hora futura."); return false; }
-  return crear(r.titulo, aTexto(r.fecha), r.repeticion);
+  return crear(r.titulo, aTexto(r.fecha), r.repeticion, r.tipo, r.avisos);
 }
 
 async function comando(c) {
@@ -369,7 +394,7 @@ async function comando(c) {
   if (c.accion === "saludo") return decir(resumen(now, true));
   if (c.accion === "agenda") {
     const hoy = estado.tareas.filter((t) => t.fecha > limite && diasEntre(now, desdeTexto(t.fecha)) === 0);
-    return decir(hoy.length ? `Hoy:\n${hoy.map((t) => `${hhmm(desdeTexto(t.fecha))}  ${t.titulo}`).join("\n")}` : resumen(now));
+    return decir(hoy.length ? `Hoy:\n${hoy.map((t) => `${hhmm(desdeTexto(t.fecha))}  ${conIcono(t)}`).join("\n")}` : resumen(now));
   }
   if (c.accion === "vencidas") {
     const v = estado.tareas.filter((t) => t.fecha <= limite);
@@ -427,8 +452,9 @@ function selectorFecha(inicial, alGuardar, textoBoton = "Guardar") {
     } }, textoBoton));
 }
 
-function pedirFecha(titulo, repeticion) {
-  estado.espera = { falta: "fecha", titulo, repeticion };
+function pedirFecha(titulo, repeticion, tipo = "tarea", anticipacion = null) {
+  estado.espera = { falta: "fecha", titulo, repeticion, tipo, anticipacion };
+  const anotar = (f) => crear(titulo, f, repeticion, tipo, anticipacion || avisosPrevios(tipo, repeticion, null));
   decir(`¿Para cuándo «${titulo}»?`);
   const now = ahora();
   const atajos = [["En 1 hora", sumarMinutos(now, 60)]];
@@ -436,16 +462,18 @@ function pedirFecha(titulo, repeticion) {
   atajos.push(["Mañana en la mañana", conHora(sumarDias(now, 1), 9, 0)], ["Mañana en la noche", conHora(sumarDias(now, 1), 20, 0)]);
   abrirHoja("¿Para cuándo?",
     el("p", { class: "sub" }, titulo),
-    atajos.map(([texto, f]) => opcion(texto, () => crear(titulo, aTexto(f), repeticion), { extra: describirFecha(f, now) })),
+    atajos.map(([texto, f]) => opcion(texto, () => anotar(aTexto(f)), { extra: describirFecha(f, now) })),
     el("div", { class: "separador" }),
-    selectorFecha(aTexto(conHora(sumarDias(now, 1), 9, 0)), (f) => crear(titulo, f, repeticion), "Anotar"));
+    selectorFecha(aTexto(conHora(sumarDias(now, 1), 9, 0)), anotar, "Anotar"));
 }
 
 function opcionesDeTarea(t) {
   const now = ahora();
   const f = desdeTexto(t.fecha);
   const vencida = t.fecha <= aTexto(now);
-  const cuando = vencida ? describirAtraso(f, now) : describirFecha(f, now);
+  const cuando = vencida ? describirAtraso(f, now)
+    : describirFecha(f, now) + (esEvento(t) ? ` · ${describirFaltan(f, now)}` : "") +
+      (t.anticipacion ? ` · ${describirAvisos(t.anticipacion)}` : "");
   const reprogramar = vencida
     ? [opcion("+10 minutos", () => posponer(t, 10)),
        ...opcionesReprogramar(f, now).map(([texto, nueva]) => opcion(texto, () => cambiarFecha(t, aTexto(nueva))))]
@@ -462,7 +490,7 @@ function opcionesDeTarea(t) {
     }
   }, { clase: "peligro" });
 
-  abrirHoja(t.titulo,
+  abrirHoja(conIcono(t),
     el("p", { class: "sub" }, capital(cuando)),
     opcion("✓ Hecho", () => { cerrarHoja(); completar(t, document.querySelector(`[data-id="${t.id}"]`)); }, { clase: "principal-op" }),
     reprogramar,
@@ -480,12 +508,29 @@ function editar(t) {
   const repeticion = el("select", { "aria-label": "Repetición" },
     Object.entries(REPETICIONES).map(([clave, texto]) =>
       el("option", { value: clave, selected: (t.repeticion || "") === clave }, texto)));
-  abrirHoja("Editar tarea",
-    el("div", { class: "fila" }, titulo, fecha, repeticion),
+  const tipo = el("select", { "aria-label": "Tarea o evento" },
+    Object.entries(TIPOS).map(([clave, texto]) => el("option", { value: clave, selected: (t.tipo || "tarea") === clave }, texto)));
+  const nota = el("p", { class: "sub" });
+  const explicar = () => {
+    nota.textContent = tipo.value === "evento"
+      ? `Evento: ${describirAvisos(t.tipo === "evento" && t.anticipacion ? t.anticipacion
+        : avisosPrevios("evento", repeticion.value || null, null)) || "solo avisa ese día"} y ese día.`
+      : "Tarea: avisa a su hora.";
+  };
+  tipo.addEventListener("change", explicar);
+  repeticion.addEventListener("change", explicar);
+  explicar();
+  abrirHoja(esEvento(t) ? "Editar evento" : "Editar tarea",
+    el("div", { class: "fila" }, titulo, fecha, repeticion, tipo),
+    nota,
     el("div", { class: "fila-botones" },
       el("button", { class: "b-secundario", onclick: cerrarHoja }, "Cancelar"),
       el("button", { class: "b-principal", onclick: async () => {
         const datos = { titulo: titulo.value.trim(), fecha: deInput(fecha.value), repeticion: repeticion.value || null };
+        if (tipo.value !== (t.tipo || "tarea")) {      // cambió de tarea a evento (o al revés): avisos por defecto
+          datos.tipo = tipo.value;
+          datos.anticipacion = avisosPrevios(tipo.value, datos.repeticion, null);
+        }
         if (!datos.titulo) return decir("El título no puede quedar vacío.");
         const r = await intentar(() => api(`/api/tareas/${t.id}`, { metodo: "PATCH", cuerpo: datos }));
         if (r) { cerrarHoja(); decir(`Guardado: ${datos.titulo}.`); cara.celebrar(); recargar(); }

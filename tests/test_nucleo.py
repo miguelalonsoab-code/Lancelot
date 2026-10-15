@@ -26,7 +26,7 @@ class TestInterprete(unittest.TestCase):
         ("en media hora sacar la ropa",                  "Sacar la ropa",      datetime(2026, 10, 7, 7, 0),   None),
         ("el viernes a las 3 llamar al banco",           "Llamar al banco",    datetime(2026, 10, 9, 15, 0),  None),
         ("15/10 10:30 entregar informe",                 "Entregar informe",   datetime(2026, 10, 15, 10, 30), None),
-        ("el 20 de octubre cumple de Juan",              "Cumple de Juan",     datetime(2026, 10, 20, 9, 0),  None),
+        ("el 20 de octubre cumple de Juan",              "Cumple de Juan",     datetime(2026, 10, 20, 9, 0),  "anual"),  # cumpleaños: cada año
         ("cada lunes 9am reunión de equipo",             "Reunión de equipo",  datetime(2026, 10, 12, 9, 0),  "semanal"),
         ("tomar pastilla todos los días a las 10 de la noche", "Tomar pastilla", datetime(2026, 10, 7, 22, 0), "diaria"),
         ("esta noche a las 8 llamar a mamá",             "Llamar a mamá",      datetime(2026, 10, 7, 20, 0),  None),

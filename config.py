@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.8.1"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.10"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
@@ -43,6 +43,12 @@ HORA_DESPERTAR = 6
 # Debe ser PÚBLICO (o tener sus Releases en un repositorio público): ver README, "Actualizaciones".
 REPO_ACTUALIZACIONES = "miguelalonsoab-code/Lancelot"
 HORAS_ENTRE_BUSQUEDAS = 6
+
+# --- Sincronización con el celular (Fase 2, etapa 3) -------------------------------
+# "npm run configurar" (carpeta movil) crea nube.json en tu carpeta de datos con la dirección y la clave.
+# Si no existe, Lancelot no sincroniza (funciona igual que antes).
+NOMBRE_ARCHIVO_NUBE = "nube.json"
+SEGUNDOS_ENTRE_SINCRONIZACIONES = 60
 BUSCAR_ACTUALIZACIONES_EN_DESARROLLO = False   # con "python main.py" se actualiza con git pull
 
 # --- Saludo del día ------------------------------------------------------------
@@ -50,6 +56,15 @@ SALUDO_ACTIVO = True              # el primer saludo del día con tus pendientes
 HORA_SALUDO = HORA_DESPERTAR      # no saluda antes de esta hora (laptop prendida toda la noche)
 SALUDO_HABLADO = True             # además de la burbuja, lo dice en voz alta (salvo modo silencio)
 SEGUNDOS_SALUDO = 20              # cuánto queda visible la burbuja del saludo
+
+# --- Frases al dejar el mouse sobre la cara (v3.10) ----------------------------
+# Si dejas el mouse quieto sobre la cara, te dice una frase (solo si no hay avisos ni modo estudio).
+# Tus propias frases: frases.txt en la carpeta de datos (una por línea), o di «guarda esta frase: …».
+FRASES_ACTIVAS = True
+SEGUNDOS_MOUSE_PARA_FRASE = 1.5   # cuánto tiempo quieto encima antes de hablar
+SEGUNDOS_ENTRE_FRASES = 120       # como mucho una frase cada 2 minutos (para que no canse)
+SEGUNDOS_FRASE = 9                # cuánto queda visible
+NOMBRE_ARCHIVO_FRASES = "frases.txt"
 
 # --- Apariencia de la cara ---------------------------------------------------
 TAMANO_CARA = 150                 # diámetro en píxeles
@@ -65,6 +80,7 @@ COLORES = {
     "alerta": "#ff6b4a",          # algo venció y está esperando respuesta
     "feliz": "#5be37d",           # acabas de completar algo
     "dormido": "#3a4a6b",         # de noche y sin pendientes
+    "evento": "#c9b8ff",          # avisos anticipados de eventos (aniversario, examen…)
     # Modo estudio
     "estudio": "#8b7cf6",         # enfocado (el anillo se va vaciando con el tiempo)
     "descanso": "#5be3c8",        # en descanso

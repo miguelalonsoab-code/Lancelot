@@ -40,6 +40,10 @@ def _avanzar(fecha: datetime, repeticion: str) -> datetime:
         # Si era día 31 y el mes siguiente tiene 30, se usa el último día del mes
         dia = min(fecha.day, calendar.monthrange(anio, mes)[1])
         return fecha.replace(year=anio, month=mes, day=dia)
+    if repeticion == "anual":
+        # Un 29 de febrero pasa al 28 (y desde ahí queda en 28: es lo más simple y predecible)
+        dia = min(fecha.day, calendar.monthrange(fecha.year + 1, fecha.month)[1])
+        return fecha.replace(year=fecha.year + 1, day=dia)
     raise ValueError(f"Repetición desconocida: {repeticion}")
 
 
@@ -60,6 +64,36 @@ def estado_del_dia(fechas_pendientes: list[datetime], hay_alertas: bool, ahora: 
         return "dormido"
     return "tranquilo"
 
+# ------------------------------------------------------------ avisos previos
+HORA_AVISO_PREVIO = (9, 0)
+
+
+def dias_de_aviso(avisos: str | None) -> list[int]:
+    """'7,1' -> [7, 1] (de mayor a menor, sin repetidos ni basura)."""
+    dias = {int(x) for x in (avisos or "").split(",") if x.strip().isdigit()}
+    return sorted((d for d in dias if 1 <= d <= 365), reverse=True)
+
+
+def aviso_previo_pendiente(fecha: datetime, avisos: str | None, desde: datetime, ahora: datetime,
+                           hora: tuple[int, int] = HORA_AVISO_PREVIO) -> int | None:
+    """
+    ¿Toca avisar con anticipación? Cada aviso previo sale a las 9:00 del día (fecha − N días).
+
+    'desde': lo que tocaba antes de este momento ya se avisó o no correspondía. Es el más reciente
+    entre el último aviso previo y la última vez que se creó o cambió el evento: así, un evento
+    creado 3 días antes no avisa "falta 1 semana" justo al crearlo.
+
+    Devuelve N (los días de anticipación) del aviso que toca, o None. Si se juntaron varios
+    (la laptop estuvo apagada), solo el más cercano a la fecha: un aviso, no tres seguidos.
+    """
+    if fecha <= ahora:
+        return None                               # ya es la hora: ahora avisa el aviso normal
+    toca = None
+    for n in dias_de_aviso(avisos):               # de mayor a menor: se queda con el más chico
+        momento = datetime.combine(fecha.date() - timedelta(days=n), time(*hora))
+        if desde < momento <= ahora:
+            toca = n
+    return toca
 
 
 # ------------------------------------------------------------------ vencidas

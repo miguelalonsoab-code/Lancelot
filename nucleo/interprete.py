@@ -8,6 +8,8 @@ Ejemplos que entiende:
     "15/10 10:30 entregar informe"
     "cada lunes 9am reunión de equipo"
     "de lunes a viernes a las 7 tomar agua"
+    "el 15 de noviembre aniversario"                 -> EVENTO (avisa 1 semana y 1 día antes, y ese día)
+    "evento: cena con amigos el sábado, avísame 3 días antes"
     "tomar pastilla todos los días a las 10 de la noche"
     "esta noche a las 8 llamar a mamá"
 
@@ -18,6 +20,8 @@ Idea general:
 2. Cada regla (repetición, tiempo relativo, día, hora) busca su patrón y anota
    el tramo de texto que usó, para que la siguiente regla no lo vuelva a usar.
 3. Lo que sobra después de quitar esos tramos es el título de la tarea.
+4. Por último se decide si es TAREA o EVENTO (ver _es_evento): un evento avisa además
+   con días de anticipación ("avisos previos").
 
 No se usa ninguna librería externa a propósito: el comportamiento es predecible
 y cada regla se puede explicar.
@@ -39,8 +43,8 @@ DIAS_SEMANA = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "d
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
          "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
 
-NUMEROS_TEXTO = {"un": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5,
-                 "diez": 10, "quince": 15, "veinte": 20, "treinta": 30}
+NUMEROS_TEXTO = {"un": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7,
+                 "ocho": 8, "nueve": 9, "diez": 10, "quince": 15, "veinte": 20, "treinta": 30}
 
 # Hora que se asume cuando solo se dice el momento del día
 HORA_MOMENTO = {"manana": (9, 0), "tarde": (15, 0), "noche": (20, 0)}
@@ -52,12 +56,29 @@ REPETICIONES = {
     "laborables": "Lunes a viernes",
     "semanal": "Cada semana",
     "mensual": "Cada mes",
+    "anual": "Cada año",
 }
+
+TIPOS = {"tarea": "Tarea", "evento": "📅 Evento"}
+
+# Palabras que convierten algo en EVENTO: cosas que pasan un día (no algo que "haces")
+PALABRAS_EVENTO = ("aniversario", "cumpleanos", "cumple", "boda", "matrimonio", "bautizo", "graduacion",
+                   "viaje", "vuelo", "examen", "parcial", "exposicion", "sustentacion", "cita", "concierto",
+                   "fiesta", "reunion", "entrevista", "conferencia", "evento")
+_PALABRA_EVENTO = re.compile(r"\b(?:" + "|".join(PALABRAS_EVENTO) + r")\b")
+# Fechas que vuelven cada año: si no dijiste otra repetición, se repiten solas
+_PALABRA_ANUAL = re.compile(r"\b(?:aniversario|cumpleanos|cumple)\b")
+# Primera palabra que parece un verbo ("estudiar para el examen", "comprar regalo de cumpleaños"):
+# entonces es algo que HACES -> tarea, aunque mencione un examen o un cumpleaños
+_VERBO = re.compile(r"^(?:ir|[a-z]+(?:ar|er|ir)(?:me|te|le|les|lo|la|los|las|se)?)$")
+_NO_VERBOS = {"primer", "tercer", "mujer", "ayer", "taller", "lugar", "hogar", "bar", "alquiler", "familiar",
+              "militar", "collar", "altar", "mar", "super", "seminar"}
+AVISOS_PREVIOS_POR_DEFECTO = "7,1"        # una semana antes y un día antes (y el mismo día, a su hora)
 
 # Palabras de "relleno" que se quitan del inicio del título
 _RELLENO_INICIAL = re.compile(
     r"^(?:recuerdame|recordarme|recordar|avisame|avisarme|anota|anotame|apunta|agrega|"
-    r"que|de|a|para|y)\b\s*"
+    r"que|de|del|a|para|y|es)\b\s*"
 )
 
 
@@ -66,6 +87,26 @@ class Interpretacion:
     titulo: str
     fecha: datetime | None          # None = no se encontró ninguna referencia de tiempo
     repeticion: str | None          # una de las claves de REPETICIONES
+    tipo: str = "tarea"             # "tarea" | "evento"
+    anticipacion: str | None = None  # lo que PEDISTE: "avísame 3 días antes" -> "3"
+
+    @property
+    def avisos(self) -> str | None:
+        """Días de anticipación con que se avisa ("7,1"), o None = solo a su hora."""
+        return avisos_previos(self.tipo, self.repeticion, self.anticipacion)
+
+
+def avisos_previos(tipo: str, repeticion: str | None, pedida: str | None) -> str | None:
+    """
+    Con cuántos días de anticipación avisar, como texto: "7,1" = una semana antes y un día antes.
+    Lo que pediste manda; si no pediste nada, un evento usa el valor por defecto, salvo que se repita
+    tan seguido que no tiene sentido (un evento semanal solo avisa un día antes; uno diario, nunca antes).
+    """
+    if pedida:
+        return pedida
+    if tipo != "evento" or repeticion in ("diaria", "laborables"):
+        return None
+    return "1" if repeticion == "semanal" else AVISOS_PREVIOS_POR_DEFECTO
 
 
 # ---------------------------------------------------------------------------
@@ -79,7 +120,18 @@ PATRONES_REPETICION = [
     (re.compile(r"\b(?:cada|todos los) " + _P_DIA + r"\b"), "semanal"),  # captura el día
     (re.compile(r"\b(?:cada semana|semanalmente|semanal)\b"), "semanal"),
     (re.compile(r"\b(?:cada mes|mensualmente|mensual)\b"), "mensual"),
+    (re.compile(r"\b(?:cada ano|todos los anos|anualmente|anual)\b"), "anual"),
 ]
+
+# "evento: …" al inicio = es un evento, lo diga o no la palabra clave ("evento de la empresa" se queda en el título)
+PATRON_MARCA_EVENTO = re.compile(r"^\s*(?:(?:anota|agrega|apunta|crea|nuevo|un) )?evento(?:\s*:\s*|\s*,\s*|\s+(?!de\b|del\b))")
+PATRON_MARCA_TAREA = re.compile(r"^\s*(?:nueva )?tarea\s*:\s*")
+# "avísame 3 días antes", "con una semana de anticipación", "2 semanas antes"
+PATRON_ANTICIPACION = re.compile(
+    r"(?:\b(?:y )?(?:avisame|avisarme|recuerdame|recordarme|recuerdamelo|avisamelo) )?(?:\bcon )?"
+    r"\b(\d{1,3}|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince|veinte|treinta) "
+    r"(dias?|semanas?) (?:antes|de anticipacion)\b"
+)
 
 # "en 20 minutos", "dentro de 2 horas", "en media hora", "en 5m"
 PATRON_RELATIVO = re.compile(
@@ -137,6 +189,8 @@ def interpretar(texto: str, ahora: datetime | None = None) -> Interpretacion:
         tramos.append(m.span())
         return m
 
+    tipo = None                # "evento" / "tarea" si se dijo explícito
+    anticipacion = None
     repeticion = None
     dia_semana = None          # 0-6 si se dijo "el lunes" o "cada lunes"
     dia: date | None = None
@@ -144,11 +198,22 @@ def interpretar(texto: str, ahora: datetime | None = None) -> Interpretacion:
     momento = None             # "manana" / "tarde" / "noche" como pista
     hora = None                # (h, m, decidida) -> decidida=False si es ambigua
 
+    # 0) ¿Evento o tarea dicho explícito? ¿Con cuánta anticipación avisar? ------
+    if m := buscar(PATRON_MARCA_EVENTO):
+        usar(m)
+        tipo = "evento"
+    elif m := buscar(PATRON_MARCA_TAREA):
+        usar(m)
+        tipo = "tarea"
+    if m := buscar(PATRON_ANTICIPACION):
+        usar(m)
+        anticipacion = _anticipacion(m.group(1), m.group(2))
+
     # 1) Repetición ----------------------------------------------------------
-    for patron, tipo in PATRONES_REPETICION:
+    for patron, clave in PATRONES_REPETICION:
         if m := buscar(patron):
             usar(m)
-            repeticion = tipo
+            repeticion = clave
             if m.groups():
                 dia_semana = _indice_dia(m.group(1))
             break
@@ -201,7 +266,13 @@ def interpretar(texto: str, ahora: datetime | None = None) -> Interpretacion:
 
     # 5) Combinar todo en una fecha ---------------------------------------------
     fecha = _combinar(ahora, dia, dia_semana, hora_final, relativo, repeticion)
-    return Interpretacion(titulo=_limpiar_titulo(texto, tramos), fecha=fecha, repeticion=repeticion)
+    titulo = _limpiar_titulo(texto, tramos)
+
+    # 6) ¿Tarea o evento? -------------------------------------------------------
+    tipo = tipo or ("evento" if _es_evento(titulo) else "tarea")
+    if tipo == "evento" and repeticion is None and _PALABRA_ANUAL.search(normalizar(titulo)):
+        repeticion = "anual"                        # un cumpleaños vuelve cada año
+    return Interpretacion(titulo=titulo, fecha=fecha, repeticion=repeticion, tipo=tipo, anticipacion=anticipacion)
 
 
 def describir_fecha(fecha: datetime, ahora: datetime | None = None) -> str:
@@ -217,6 +288,29 @@ def describir_fecha(fecha: datetime, ahora: datetime | None = None) -> str:
         return f"mañana {hora}"
     abrev = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"][fecha.weekday()]
     return f"{abrev} {fecha.strftime('%d/%m')} {hora}"
+
+
+def describir_faltan(fecha: datetime, ahora: datetime | None = None) -> str:
+    """Para eventos: 'hoy', 'mañana', 'faltan 5 días', 'falta 1 semana'."""
+    ahora = ahora or datetime.now()
+    dias = (fecha.date() - ahora.date()).days
+    if dias <= 0:
+        return "hoy"
+    if dias == 1:
+        return "mañana"
+    if dias % 7 == 0 and dias <= 28:
+        semanas = dias // 7
+        return "falta 1 semana" if semanas == 1 else f"faltan {semanas} semanas"
+    return f"faltan {dias} días"
+
+
+def describir_avisos(avisos: str | None) -> str:
+    """'7,1' -> 'avisa 7 y 1 día antes'. Para mostrar en el panel."""
+    if not avisos:
+        return ""
+    dias = avisos.split(",")
+    texto = " y ".join(dias) if len(dias) <= 2 else ", ".join(dias[:-1]) + " y " + dias[-1]
+    return f"avisa {texto} día{'s' if dias != ['1'] else ''} antes"
 
 
 def describir_atraso(fecha: datetime, ahora: datetime | None = None) -> str:
@@ -241,6 +335,24 @@ def _indice_dia(nombre: str) -> int:
     if nombre in ("sabados", "domingos"):
         nombre = nombre[:-1]
     return DIAS_SEMANA.index(nombre)
+
+
+def _numero(cantidad: str) -> int:
+    return int(cantidad) if cantidad.isdigit() else NUMEROS_TEXTO.get(cantidad, 1)
+
+
+def _anticipacion(cantidad: str, unidad: str) -> str | None:
+    dias = _numero(cantidad) * (7 if unidad.startswith("semana") else 1)
+    return str(dias) if 1 <= dias <= 365 else None
+
+
+def _es_evento(titulo: str) -> bool:
+    """Menciona un aniversario, examen, cita… y NO empieza con un verbo ("estudiar para el examen")."""
+    t = normalizar(titulo)
+    if not _PALABRA_EVENTO.search(t):
+        return False
+    primera = re.match(r"[a-z]*", t).group(0)
+    return not (_VERBO.match(primera) and primera not in _NO_VERBOS)
 
 
 def _a_timedelta(cantidad: str, unidad: str) -> timedelta:

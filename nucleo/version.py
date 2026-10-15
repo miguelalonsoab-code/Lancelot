@@ -65,7 +65,7 @@ def leer_release(datos: dict, version_local: str) -> Actualizacion | None:
 def notas_de_version(readme: str, version: str) -> str:
     """
     Saca del README la sección '## Novedades vX.Y…' (hasta el siguiente título '# ' o '## ').
-    (?![\w.]) evita que "3.8" confunda la sección de la "3.8.1".
+    El (?!…) del patrón evita que "3.8" confunda la sección de la "3.8.1".
     """
     m = re.search(rf"^## Novedades v{re.escape(version)}(?![\w.]).*?$(.*?)(?=^##? |\Z)", readme, re.M | re.S)
     return m.group(1).strip() if m else f"Lancelot {version}"

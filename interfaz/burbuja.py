@@ -72,9 +72,9 @@ class Burbuja(QWidget):
     def mostrar_tarea(self, tarea: Tarea, junto_a: QRect, en_cola: int):
         self.tipo, self.tarea_id = "tarea", tarea.id
         self._auto_ocultar.stop()
-        self._pintar(COLORES["alerta"],
-                     f"⏰ {NOMBRE_ASISTENTE} · {tarea.fecha.strftime('%H:%M')}",
-                     tarea.titulo,
+        cabecera = (f"📅 Hoy · {tarea.fecha:%H:%M}" if tarea.es_evento
+                    else f"⏰ {NOMBRE_ASISTENTE} · {tarea.fecha:%H:%M}")
+        self._pintar(COLORES["evento"] if tarea.es_evento else COLORES["alerta"], cabecera, tarea.titulo,
                      f"+{en_cola} aviso(s) más esperando" if en_cola else "")
         self._poner_botones([
             ("✓ Hecho", lambda: self.hecho.emit(tarea.id), True),

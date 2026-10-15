@@ -76,6 +76,15 @@ export function describirFecha(f, ahora) {
   return `${DIAS_CORTOS[diaSemana(f)]} ${ddmm(f)} ${hhmm(f)}`;
 }
 
+/** Para eventos: 'hoy', 'mañana', 'faltan 5 días', 'falta 1 semana' (igual que describir_faltan). */
+export function describirFaltan(f, ahora) {
+  const dias = diasEntre(ahora, f);
+  if (dias <= 0) return "hoy";
+  if (dias === 1) return "mañana";
+  if (dias % 7 === 0 && dias <= 28) return dias === 7 ? "falta 1 semana" : `faltan ${dias / 7} semanas`;
+  return `faltan ${dias} días`;
+}
+
 /** 'venció hace 12 min', 'venció ayer 20:00', 'venció hace 3 días (mié 07/10)'. */
 export function describirAtraso(f, ahora) {
   const minutos = Math.floor((ahora - f) / 60000);

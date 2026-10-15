@@ -24,7 +24,10 @@ class NotificadorWindows(Notificador):
         self.bandeja = bandeja
 
     def notificar(self, tarea: Tarea) -> None:
-        self.mensaje(f"⏰ {NOMBRE_ASISTENTE}", f"{tarea.titulo}\n{tarea.fecha.strftime('%H:%M')}")
+        if tarea.es_evento:
+            self.mensaje(f"📅 Hoy · {NOMBRE_ASISTENTE}", f"{tarea.titulo}\n{tarea.fecha:%H:%M}")
+        else:
+            self.mensaje(f"⏰ {NOMBRE_ASISTENTE}", f"{tarea.titulo}\n{tarea.fecha:%H:%M}")
 
     def mensaje(self, titulo: str, texto: str) -> None:
         """También lo usa el modo estudio (fin de pomodoro, fin de descanso)."""

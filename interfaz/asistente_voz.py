@@ -24,7 +24,7 @@ from nucleo.almacen import Tarea
 from nucleo.comandos import Comando, interpretar_comando
 from nucleo.dialogo import DialogoTarea, Paso
 from nucleo.hablado import fecha_hablada, hora_hablada
-from nucleo.interprete import describir_fecha, interpretar, normalizar
+from nucleo.interprete import describir_avisos, describir_faltan, describir_fecha, interpretar, normalizar
 from nucleo.numeros import numeros_a_digitos
 from voz.apps import CatalogoApps
 from voz.atajo import AtajoTeclado
@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 
 # Frases que, dichas por voz, indican que quieres crear una tarea
 _PEDIDO_TAREA = re.compile(r"^(?:recuerdame|recordarme|recordar|avisame|anota|anotame|apunta|agrega|"
-                           r"nueva tarea|tarea)\b")
+                           r"nueva tarea|tarea|nuevo evento|evento)\b")
 
 # Acciones que resuelve este controlador (el resto las resuelve app.py)
 ACCIONES_DE_VOZ = {"abrir", "abrir_web", "buscar", "hora", "agenda", "vencidas", "apodo", "olvidar_apodo",
@@ -56,7 +56,8 @@ class NotificadorVoz(Notificador):
     def notificar(self, tarea: Tarea) -> None:
         if HABLAR_RECORDATORIOS:
             saludo = f"{NOMBRE_USUARIO}, " if NOMBRE_USUARIO else ""
-            self.voz.decir(f"{saludo}es hora de: {tarea.titulo}.")
+            self.voz.decir(f"{saludo}hoy es: {tarea.titulo}." if tarea.es_evento
+                           else f"{saludo}es hora de: {tarea.titulo}.")
 
 
 class ControladorVoz:
@@ -116,10 +117,13 @@ class ControladorVoz:
         if comando := interpretar_comando(texto):
             self.a.ejecutar_comando(comando, por_voz=True)
             return
-        if _PEDIDO_TAREA.match(normalizar(texto)):
-            r = interpretar(texto)
+        r = interpretar(texto)
+        # "Lancelot, recuérdame…" o, sin pedirlo así, algo que claramente es un evento con fecha:
+        # "Lancelot, el 15 de noviembre es mi aniversario"
+        if _PEDIDO_TAREA.match(normalizar(texto)) or (r.tipo == "evento" and r.fecha and r.titulo):
             fecha = r.fecha if r.fecha and (r.fecha > datetime.now() or r.repeticion) else None
-            self.dialogo = DialogoTarea(texto, r.titulo, fecha, r.repeticion)
+            self.dialogo = DialogoTarea(texto, r.titulo, fecha, r.repeticion, tipo=r.tipo,
+                                        anticipacion=r.anticipacion)
             self._continuar_dialogo(self.dialogo.siguiente())   # crea ya, o pregunta lo que falta
             return
         self.responder(f"No entendí: «{texto}». Prueba con «abre…», «modo estudio» o «recuérdame…».",
@@ -165,9 +169,16 @@ class ControladorVoz:
         self.a.avisos.ocultar_mensaje()
         if paso.tipo == "crear":
             ahora = datetime.now()
-            self.a.agregar(paso.titulo, paso.fecha, paso.repeticion)
-            self.responder(f"Listo: «{paso.titulo}», {describir_fecha(paso.fecha, ahora)}.",
-                           f"Listo. Te aviso {fecha_hablada(paso.fecha, ahora)}: {paso.titulo}.")
+            self.a.agregar(paso.titulo, paso.fecha, paso.repeticion, paso.clase, paso.avisos)
+            if paso.clase == "evento":
+                avisos = describir_avisos(paso.avisos).replace("avisa ", "")
+                extra = f" Te aviso {avisos} y ese día." if avisos else ""
+                self.responder(f"📅 Evento: «{paso.titulo}», {describir_fecha(paso.fecha, ahora)} "
+                               f"({describir_faltan(paso.fecha, ahora)}).{extra}",
+                               f"Listo, anoté el evento {paso.titulo}, {fecha_hablada(paso.fecha, ahora)}.{extra}")
+            else:
+                self.responder(f"Listo: «{paso.titulo}», {describir_fecha(paso.fecha, ahora)}.",
+                               f"Listo. Te aviso {fecha_hablada(paso.fecha, ahora)}: {paso.titulo}.")
         elif paso.tipo == "cancelar":
             self.responder(paso.texto)
         elif paso.tipo == "rendirse":
@@ -288,6 +299,10 @@ class ControladorVoz:
             n = len(vencidas)
             texto += f"\n⚠ Y {n} vencida{'s' if n > 1 else ''}. Di «vencidas» para escucharlas."
             voz += f" Además tienes {n} vencida{'s' if n > 1 else ''}."
+        pronto = [t for t in pendientes if t.es_evento and 1 <= (t.fecha.date() - ahora.date()).days <= 7]
+        if pronto:
+            texto += "\n📅 Se acerca: " + ", ".join(f"{t.titulo} ({describir_faltan(t.fecha, ahora)})" for t in pronto[:3])
+            voz += " Se acerca " + " y ".join(f"{t.titulo}, {describir_faltan(t.fecha, ahora)}" for t in pronto[:2]) + "."
         self.responder(texto, voz)
 
     def _decir_vencidas(self):

@@ -4,7 +4,9 @@ Panel "Mis tareas": modos, tareas y el cuadro donde le "hablas" al asistente.
 El cuadro de texto entiende dos cosas:
   - COMANDOS: "modo estudio", "modo estudio 50", "pausa", "terminar", "modo silencio"...
   - TAREAS:   "mañana 8pm pagar la luz", "cada lunes 9am reunión"...
-Primero se revisa si es comando; si no, se interpreta como tarea.
+  - EVENTOS:  "el 15 de noviembre aniversario", "examen de cálculo el 20/10" (📅: avisan días antes)
+Primero se revisa si es comando; si no, se interpreta como tarea (o evento: el selector Tarea/Evento
+muestra lo que entendió y se puede cambiar).
 
 Pestañas:
   - Tareas:  arriba las VENCIDAS (con ↻ para reprogramar), luego las próximas.
@@ -25,7 +27,8 @@ from interfaz.grafico import GraficoSemana
 from nucleo.almacen import Tarea
 from nucleo.comandos import Comando, interpretar_comando
 from nucleo.estadisticas import ResumenSemana, describir_semana, rango
-from nucleo.interprete import REPETICIONES, describir_atraso, describir_fecha, interpretar
+from nucleo.interprete import (REPETICIONES, TIPOS, avisos_previos, describir_atraso, describir_avisos,
+                               describir_faltan, describir_fecha, interpretar)
 from nucleo.planificador import opciones_reprogramar
 
 DESCRIPCION_COMANDO = {
@@ -51,6 +54,8 @@ DESCRIPCION_COMANDO = {
     "vencidas": "decir tus tareas vencidas",
     "vencidas_manana": "pasar todas las vencidas a mañana (misma hora)",
     "actualizacion": "buscar una versión nueva de Lancelot",
+    "frase": "decirte una frase",
+    "guardar_frase": "guardar la frase «{texto}»",
 }
 
 ESTILO = f"""
@@ -75,6 +80,8 @@ QPushButton:checked {{ background: #3a3550; color: #d9d3ff; }}
 #estudio_estado {{ color: #cfc8ff; font-size: 15px; font-weight: 600; }}
 #hoy {{ color: #8b93a1; font-size: 12px; }}
 #voz {{ color: #6fb8e0; font-size: 11px; }}
+#nube {{ color: #8b93a1; font-size: 11px; }}
+#nube[error="true"] {{ color: {COLORES['pendiente']}; }}
 QListWidget {{ background: transparent; border: none; outline: none; }}
 QListWidget::item {{ border-bottom: 1px solid #1d212a; }}
 QListWidget::item:selected {{ background: transparent; }}
@@ -82,6 +89,7 @@ QListWidget::item:selected {{ background: transparent; }}
 #fila_fecha {{ color: #8b93a1; font-size: 12px; background: transparent; }}
 #fila_fecha[atrasada="true"] {{ color: {COLORES['alerta']}; }}
 #fila_fecha[hoy="true"] {{ color: {COLORES['pendiente']}; }}
+#fila_fecha[evento="true"] {{ color: {COLORES['evento']}; }}
 #mini {{ background: transparent; padding: 4px 8px; font-size: 14px; }}
 #mini:hover {{ background: #232731; }}
 #pie {{ color: #5d6573; font-size: 11px; }}
@@ -104,10 +112,10 @@ QMenu::item:selected {{ background: #2e3340; }}
 
 
 class Panel(QWidget):
-    agregar_pedido = Signal(str, datetime, object)    # titulo, fecha, repeticion (str|None)
+    agregar_pedido = Signal(str, datetime, object, str, object)  # titulo, fecha, repeticion, tipo, anticipacion
     completar_pedido = Signal(int)
     eliminar_pedido = Signal(int)
-    editar_pedido = Signal(int, str, datetime, object)  # id, titulo, fecha, repeticion
+    editar_pedido = Signal(int, str, datetime, object, str, object)  # id + lo mismo
     comando_pedido = Signal(object)                   # Comando
     hablar_pedido = Signal()                          # botón 🗣: escuchar una orden ahora
     reprogramar_pedido = Signal(int, datetime)        # id, nueva fecha (atajos de ↻)
@@ -118,7 +126,7 @@ class Panel(QWidget):
         super().__init__()
         self.setWindowTitle(f"Mis tareas · {NOMBRE_ASISTENTE} {VERSION}")
         self.setStyleSheet(ESTILO)
-        self.resize(460, 660)
+        self.resize(520, 660)
 
         titulo = QLabel("Mis tareas", objectName="titulo")
 
@@ -145,6 +153,8 @@ class Panel(QWidget):
         fila_modos.addStretch()
         fila_modos.addWidget(b_hablar)
         self.voz = QLabel(objectName="voz", wordWrap=True)
+        self.nube = QLabel(objectName="nube", wordWrap=True)
+        self.nube.hide()                                  # solo si la sincronización está configurada
 
         # --- Tarjeta del modo estudio (solo visible durante una sesión)
         self.tarjeta = QFrame(objectName="tarjeta_estudio")
@@ -177,6 +187,11 @@ class Panel(QWidget):
         self.selector_repeticion = QComboBox()
         for clave, texto in REPETICIONES.items():
             self.selector_repeticion.addItem(texto, clave)
+        self.selector_tipo = QComboBox(toolTip="Un evento (aniversario, examen, viaje…) avisa además "
+                                               "una semana y un día antes")
+        for clave, texto in TIPOS.items():
+            self.selector_tipo.addItem(texto, clave)
+        self.selector_tipo.setMinimumWidth(118)              # que "📅 Evento" no se corte (con el padding del estilo)
         self.boton_enviar = QPushButton("Agregar", objectName="agregar", cursor=Qt.PointingHandCursor)
         self.boton_enviar.clicked.connect(self._al_enviar)
         self.boton_cancelar = QPushButton("Cancelar", cursor=Qt.PointingHandCursor)
@@ -185,6 +200,7 @@ class Panel(QWidget):
         fila_opciones = QHBoxLayout()
         fila_opciones.addWidget(self.selector_fecha, 3)
         fila_opciones.addWidget(self.selector_repeticion, 2)
+        fila_opciones.addWidget(self.selector_tipo)
         fila_opciones.addWidget(self.boton_enviar)
         fila_opciones.addWidget(self.boton_cancelar)
 
@@ -243,11 +259,13 @@ class Panel(QWidget):
         capa.addWidget(titulo)
         capa.addLayout(fila_modos)
         capa.addWidget(self.voz)
+        capa.addWidget(self.nube)
         capa.addWidget(self.tarjeta)
         capa.addWidget(self.hoy)
         capa.addWidget(self.pestanas, 1)
 
         self._editando: int | None = None    # id de la tarea que se está editando
+        self._tarea_editada: Tarea | None = None
         self._menu_reprogramar: QMenu | None = None
         self._reiniciar_formulario()
 
@@ -279,6 +297,11 @@ class Panel(QWidget):
     def mostrar_voz(self, texto: str):
         self.voz.setText(texto)
 
+    def mostrar_nube(self, texto: str, error: bool = False):
+        self.nube.setVisible(bool(texto))
+        self.nube.setText(texto)
+        self._repintar(self.nube, error=error)
+
     # ------------------------------------------------------------- formulario
     def _reiniciar_formulario(self):
         self._editando = None
@@ -289,6 +312,8 @@ class Panel(QWidget):
         sugerida = (datetime.now() + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
         self.selector_fecha.setDateTime(QDateTime(sugerida))
         self.selector_repeticion.setCurrentIndex(0)
+        self.selector_tipo.setCurrentIndex(0)
+        self._tarea_editada = None
         self._mostrar_vista("Escribe una tarea y cuándo, o un comando como «modo estudio 50».")
 
     def empezar_edicion(self, tarea: Tarea):
@@ -297,7 +322,9 @@ class Panel(QWidget):
         self.entrada.setText(tarea.titulo)
         self.selector_fecha.setDateTime(QDateTime(tarea.fecha))
         self.selector_repeticion.setCurrentIndex(self.selector_repeticion.findData(tarea.repeticion))
+        self.selector_tipo.setCurrentIndex(self.selector_tipo.findData(tarea.tipo))
         self._editando = tarea.id
+        self._tarea_editada = tarea
         self.boton_enviar.setText("Guardar")
         self._repintar(self.boton_enviar, editando=True)
         self.boton_cancelar.show()
@@ -315,6 +342,8 @@ class Panel(QWidget):
                 self.selector_fecha.setDateTime(QDateTime(r.fecha))
             if r.repeticion:
                 self.selector_repeticion.setCurrentIndex(self.selector_repeticion.findData(r.repeticion))
+            if r.tipo == "evento":
+                self.selector_tipo.setCurrentIndex(self.selector_tipo.findData("evento"))
             return
         if not texto.strip():
             self._mostrar_vista("Escribe una tarea y cuándo, o un comando como «modo estudio 50».")
@@ -333,10 +362,13 @@ class Panel(QWidget):
         if r.fecha:
             self.selector_fecha.setDateTime(QDateTime(r.fecha))
         self.selector_repeticion.setCurrentIndex(self.selector_repeticion.findData(r.repeticion))
-        partes = [f"«{r.titulo or '…'}»",
+        self.selector_tipo.setCurrentIndex(self.selector_tipo.findData(r.tipo))
+        partes = [f"{'📅 ' if r.tipo == 'evento' else ''}«{r.titulo or '…'}»",
                   describir_fecha(r.fecha) if r.fecha else "sin hora en el texto → usa el selector"]
         if r.repeticion:
             partes.append("🔁 " + REPETICIONES[r.repeticion].lower())
+        if r.avisos:
+            partes.append(describir_avisos(r.avisos))
         self._mostrar_vista("Entendí: " + " · ".join(partes))
 
     def _al_enviar(self):
@@ -351,14 +383,26 @@ class Panel(QWidget):
         titulo = r.titulo or texto
         fecha = self.selector_fecha.dateTime().toPython().replace(second=0, microsecond=0)
         repeticion = self.selector_repeticion.currentData()
+        tipo = self.selector_tipo.currentData()
         if fecha <= datetime.now() and not repeticion:
             self._mostrar_vista("Esa fecha ya pasó. Elige una hora futura.", error=True)
             return
+        anticipacion = self._anticipacion(r.anticipacion, tipo, repeticion)
         if self._editando is not None:
-            self.editar_pedido.emit(self._editando, titulo, fecha, repeticion)
+            self.editar_pedido.emit(self._editando, titulo, fecha, repeticion, tipo, anticipacion)
         else:
-            self.agregar_pedido.emit(titulo, fecha, repeticion)
+            self.agregar_pedido.emit(titulo, fecha, repeticion, tipo, anticipacion)
         self._reiniciar_formulario()
+
+    def _anticipacion(self, pedida: str | None, tipo: str, repeticion: str | None) -> str | None:
+        """
+        Con cuántos días avisar antes: lo que escribiste ("avísame 3 días antes") manda; si editas sin
+        cambiar el tipo, se conserva la que tenía; si no, la de siempre para ese tipo (evento: 7 y 1 días).
+        """
+        t = self._tarea_editada
+        if not pedida and t is not None and t.tipo == tipo:
+            return t.anticipacion
+        return avisos_previos(tipo, repeticion, pedida)
 
     def _mostrar_vista(self, texto: str, error: bool = False, comando: bool = False,
                        editando: bool = False):
@@ -440,13 +484,18 @@ class Panel(QWidget):
 
     def _crear_fila(self, t: Tarea, ahora: datetime, vencida: bool = False) -> QWidget:
         fila = QWidget()
-        nombre = QLabel(t.titulo, objectName="fila_titulo", wordWrap=True)
+        nombre = QLabel(("📅 " if t.es_evento else "") + t.titulo, objectName="fila_titulo", wordWrap=True)
         detalle = describir_atraso(t.fecha, ahora) if vencida else describir_fecha(t.fecha, ahora)
+        if t.es_evento and not vencida and t.fecha.date() > ahora.date():
+            detalle += f" · {describir_faltan(t.fecha, ahora)}"
         if t.repeticion:
             detalle += "  🔁 " + REPETICIONES[t.repeticion].lower()
         fecha = QLabel(detalle, objectName="fila_fecha")
+        if t.anticipacion:
+            fecha.setToolTip(describir_avisos(t.anticipacion).capitalize() + " (a las 9:00) y a su hora.")
         fecha.setProperty("atrasada", vencida)
         fecha.setProperty("hoy", t.fecha.date() == ahora.date() and not vencida)
+        fecha.setProperty("evento", t.es_evento and not vencida and t.fecha.date() != ahora.date())
 
         if vencida:   # en vez de ✎, el menú de reprogramar (que también trae "Elegir fecha…")
             b_primero = QPushButton("↻", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Reprogramar")

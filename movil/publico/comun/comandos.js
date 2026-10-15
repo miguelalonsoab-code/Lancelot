@@ -36,13 +36,19 @@ const REGLAS = [
   ["^(?:que tengo(?: para)? hoy|que tengo pendiente|mis tareas|mis pendientes|pendientes(?: de hoy)?|agenda(?: de hoy)?)$", "agenda", null],
   ["^(?:escuchame|escucha|activa(?:r)? la escucha|empieza a escuchar)$", "escucha_on", null],
   ["^(?:deja de escuchar|no escuches|desactiva(?:r)? la escucha)$", "escucha_off", null],
+  ["^(?:guarda|guardar|guardame|anota|agrega|aprende|aprendete|recuerda) (?:esta|la|una|mi|esta otra|otra) frase:? (.+)$",
+    "guardar_frase", "original"],
+  ["^(?:dime una frase|una frase|frase del dia|dame una frase|me (?:dices|das) una frase|motivame|dame animos|necesito animos|dime algo bonito|inspirame)$",
+    "frase", null],
 ].map(([p, a, c]) => [new RegExp(p), a, c]);
 
 const limpiar = (s) => s.replace(/^[ .]+|[ .]+$/g, "");
 
 /** Devuelve { accion, minutos, texto, destino, navegador } o null si es una tarea. */
 export function interpretarComando(texto) {
-  const t = normalizar(texto).replace(/^[ .!¡?¿,]+|[ .!¡?¿,]+$/g, "").replace(/\s+/g, " ");
+  // Mismo largo que el original: lo encontrado en 't' se recorta del original con sus tildes ("guarda esta frase")
+  const original = texto.replace(/\s+/g, " ").replace(/^[ .!¡?¿,]+|[ .!¡?¿,]+$/g, "");
+  const t = normalizar(original);
   for (const [patron, accion, captura] of REGLAS) {
     const m = patron.exec(t);
     if (!m) continue;
@@ -57,6 +63,9 @@ export function interpretarComando(texto) {
       c.navegador = m[2] === "navegador" ? null : m[2];
     } else if (captura === "busqueda") {
       c.texto = limpiar(m[1]); c.destino = m[2]; c.navegador = m[3] || null;
+    } else if (captura === "original") {
+      const inicio = m.index + m[0].length - m[1].length;            // el grupo llega hasta el final
+      c.texto = limpiar(original.slice(inicio));
     } else if (captura === "dos_textos") {
       c.texto = m[1].replace(/^[ ,.]+|[ ,.]+$/g, ""); c.destino = limpiar(m[2]);
     }

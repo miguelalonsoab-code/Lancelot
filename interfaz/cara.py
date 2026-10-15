@@ -265,6 +265,7 @@ class Cara(QWidget):
     clicada = Signal()
     menu_pedido = Signal(QPoint)
     movida = Signal(QPoint)
+    reposo = Signal()                  # el mouse se quedó encima un rato (sin hacer clic)
 
     def __init__(self):
         super().__init__(None, Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
@@ -298,6 +299,11 @@ class Cara(QWidget):
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(int(1000 / FPS_ANIMACION))
+
+        # Mouse encima sin hacer clic -> señal 'reposo' (Lancelot dice una frase)
+        self.segundos_reposo = 1.5
+        self._reloj_reposo = QTimer(self, singleShot=True)
+        self._reloj_reposo.timeout.connect(self._al_reposar)
 
     # ------------------------------------------------------------ API pública
     @property
@@ -368,7 +374,20 @@ class Cara(QWidget):
         p.end()
 
     # ------------------------------------------------------------------ mouse
+    def enterEvent(self, e):
+        self._reloj_reposo.start(int(self.segundos_reposo * 1000))
+        super().enterEvent(e)
+
+    def leaveEvent(self, e):
+        self._reloj_reposo.stop()
+        super().leaveEvent(e)
+
+    def _al_reposar(self):
+        if self.underMouse() and self._pos_presion is None:     # sigue encima y no lo está arrastrando
+            self.reposo.emit()
+
     def mousePressEvent(self, e):
+        self._reloj_reposo.stop()                  # un clic es otra cosa: abre el panel o el menú
         if e.button() == Qt.LeftButton:
             self._pos_presion = e.globalPosition().toPoint()
             self._pos_ventana = self.pos()

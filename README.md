@@ -1,17 +1,45 @@
-# Lancelot — asistente de escritorio · v3.8.1
+# Lancelot — asistente de escritorio · v3.10
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
 te muestra una burbuja y Windows lanza una notificación.
 
-## Lancelot en el celular (Fase 2, etapas 1 y 2)
-- Nueva carpeta **`movil/`**: un servidor gratis en Cloudflare y una app web para tu Android, con la misma cara.
+## Lancelot en el celular (Fase 2)
+- Carpeta **`movil/`**: un servidor gratis en Cloudflare y una app web para tu Android, con la misma cara.
   Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
   con botones **✓ Hecho** y **+10 min**.
 - Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
-- Por ahora la laptop y el celular tienen listas separadas: la sincronización es la etapa 3.
-- La app de escritorio no cambia (sigue siendo la v3.8.1); solo se arregló cómo `construir.py --publicar`
-  lee las novedades del README.
+
+## Novedades v3.10: eventos y frases
+- 📅 Eventos: aniversarios, exámenes o viajes te avisan una semana y un día antes.
+- 💬 Frases: deja el mouse sobre la cara y te dice una (también las tuyas).
+- **Eventos además de tareas.** Un evento es algo que *pasa* un día (aniversario, cumpleaños, examen, viaje, cita,
+  boda, concierto, reunión…); una tarea es algo que *haces* (limpiar la sala). Lancelot los distingue solo:
+  «el 15 de noviembre aniversario» es evento; «estudiar para el examen mañana» es tarea (empieza con un verbo).
+- Los eventos te avisan **una semana antes y un día antes** (a las 9:00), además del aviso a su hora ese día.
+  Para otro plazo: «…, avísame 3 días antes» o «con 2 semanas de anticipación». Para forzarlo: «evento: …».
+- Cumpleaños y aniversarios **se repiten cada año** solos. Nueva repetición: **cada año** («pagar el seguro cada año el 10 de enero»).
+- En la lista se ven con 📅 y **«faltan 5 días»**. El saludo de la mañana y «¿qué tengo para hoy?» mencionan los
+  eventos de la semana. Cuando el día de un evento pasa, se cierra solo (no queda como «vencida»).
+- En el panel, el selector **Tarea / 📅 Evento** muestra lo que entendió; si se equivocó, cámbialo antes de Agregar.
+- Por voz: «Lancelot, el 15 de noviembre es mi aniversario» o «Lancelot, nuevo evento: examen final el 2 de diciembre».
+- Todo se sincroniza con el celular, y el servidor también manda los avisos anticipados como notificación.
+- **Frases**: deja el mouse quieto sobre la cara 1,5 s y te dice una frase (solo si no hay avisos ni estás
+  estudiando; como mucho una cada 2 minutos y sin repetir hasta usarlas todas). El clic sigue abriendo el panel.
+  Trae 42 (las tuyas incluidas). Agrega las tuyas: **«guarda esta frase: …»** o escribiendo en `frases.txt`
+  (carpeta de datos, una por línea). Pide una cuando quieras: **«dime una frase»** o **«motívame»**.
+- Celular: ejecuta `npm run configurar` en `movil` (aplica la tabla nueva y sube el servidor).
+
+## Novedades v3.9: laptop y celular sincronizados
+- **Una sola lista** en la laptop, el celular y la web: lo que agregas, completas, editas o borras en un lado
+  aparece en el otro en menos de un minuto (y a los pocos segundos cuando el cambio es en la laptop).
+- Si cambias la misma tarea en los dos lados, **gana el cambio más reciente**.
+- **Sin internet** la laptop funciona igual: guarda los cambios y los sube cuando vuelve la conexión.
+- Si completas en el celular una tarea que estaba sonando en la laptop, **deja de sonar** sola.
+- El panel muestra el estado: «☁ Sincronizado con el celular · 14:05». En el menú: **☁ Sincronizar ahora**.
+- La primera vez se suben todas tus tareas actuales. Tu base de datos se actualiza sola, sin perder nada.
+- Para activarla: dentro de `movil`, `npm run configurar` (crea `nube.json` en tus carpetas de datos)
+  y reinicia Lancelot. Sin ese archivo, Lancelot funciona como antes.
 
 ## Novedades v3.8.1
 - Conectado a GitHub: desde esta versión, Lancelot se actualiza solo.
@@ -227,6 +255,8 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | `vencidas` · `qué tengo vencido` | Lista tus tareas vencidas |
 | `pasa las vencidas a mañana` | Las mueve todas a mañana, a la misma hora |
 | `busca actualizaciones` · `qué versión tienes` | Revisa si hay una versión nueva en GitHub |
+| `dime una frase` · `motívame` | Una frase (las tuyas incluidas) |
+| `guarda esta frase: …` | La agrega a `frases.txt` para que te la diga de vez en cuando |
 
 Si el texto no es un comando, se guarda como tarea. Mientras escribes, debajo dice cuál de los dos entendió.
 
@@ -248,6 +278,9 @@ el viernes a las 3 llamar al banco  15/10 10:30 entregar informe
 esta noche a las 8 llamar a mamá    el 20 de octubre cumple de Juan
 cada lunes 9am reunión              de lunes a viernes a las 7am tomar agua
 todos los días a las 10 de la noche tomar pastilla
+el 15 de noviembre aniversario      📅 evento: avisa 1 semana y 1 día antes (y se repite cada año)
+evento: cena con amigos el sábado, avísame 3 días antes
+pagar el seguro cada año el 10 de enero
 ```
 Mientras escribes ves cómo lo entendió ("Entendí: …"). Si se equivocó, corrige
 la fecha o la repetición en los selectores antes de pulsar **Agregar**.
@@ -263,11 +296,11 @@ registro.py              registro de errores en datos/lancelot.log
 config.py                nombre, colores, tiempos (personaliza aquí)
 nucleo/                  lógica pura, sin interfaz
   almacen.py             SQLite: guardar, completar, posponer
-  interprete.py          texto en español -> título + fecha + repetición
-  planificador.py        repeticiones y "ánimo" de la cara
+  interprete.py          texto en español -> título + fecha + repetición + ¿tarea o evento?
+  planificador.py        repeticiones, avisos anticipados de eventos y "ánimo" de la cara
   pomodoro.py            máquina de estados del pomodoro (sin reloj propio: fácil de probar)
   comandos.py            "modo estudio 50" -> Comando("estudio", 50)
-  frases.py              frases de aliento por momento (edítalas a tu gusto)
+  frases.py              frases de aliento (estudio) y las que dice al dejar el mouse sobre la cara
   distraccion.py         ¿la ventana activa es una distracción?
   numeros.py             "a las ocho y media" -> "a las 8 y media" (para la voz)
   hablado.py             20:40 -> "a las 8 y 40 de la noche"
@@ -298,11 +331,13 @@ interfaz/                todo lo visual (PySide6)
   panel.py               ventana "Mis tareas" (pestañas Tareas y 📊 Estudio)
   grafico.py             gráfico de barras de la semana (QPainter)
   actualizador.py        buscar, descargar (verificando) e instalar versiones nuevas
+  sincronizador.py       sincronización con el servidor (y el celular), en segundo plano
   app.py                 director: crea las piezas, tareas, comandos, estado de la cara, menú
   avisos.py              qué muestra la burbuja y en qué orden (tareas primero, mensajes después)
   asistente_voz.py       oír, hablar, diálogo, abrir apps y páginas, apodos
 tests/                   pruebas: núcleo, estudio, voz e integración del asistente completo
 datos/tareas.db          se crea solo (puedes abrirlo con DB Browser for SQLite)
+datos/frases.txt         tus frases, una por línea (se crea sola la primera vez)
 ```
 
 ## Pruebas

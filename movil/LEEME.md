@@ -1,4 +1,4 @@
-# Lancelot en el celular (Fase 2: etapas 1 y 2)
+# Lancelot en el celular (Fase 2)
 
 Un servidor gratis en tu cuenta de Cloudflare y una app web que se instala en tu Android:
 
@@ -10,7 +10,10 @@ Un servidor gratis en tu cuenta de Cloudflare y una app web que se instala en tu
   una tarea; toca la tarea para posponerla, reprogramarla, editarla o borrarla.
 - Preguntas que entiende: «¿qué tengo para hoy?», «¿qué tengo vencido?», «pasa las vencidas a mañana», «¿qué hora es?».
 
-> En esta etapa el celular y la laptop todavía tienen **listas separadas**. La sincronización es la etapa 3.
+- **Una sola lista** con la laptop (desde la v3.9): lo que haces en un lado aparece en el otro en menos de un minuto.
+- **Eventos** (desde la v3.10): «el 15 de noviembre aniversario», «examen de cálculo el 20/10». Salen con 📅 y
+  «faltan N días», y llega una notificación **una semana antes y un día antes** (a las 9:00), además de la del día.
+  Al tocar uno → Editar puedes cambiarlo entre Tarea y 📅 Evento.
 
 ## Instalación (una sola vez)
 
@@ -28,7 +31,8 @@ npm install
 npm run configurar
 ```
 - La primera vez se abre el navegador: entra a Cloudflare (con tu GitHub) y pulsa **Allow**.
-- El script crea la base de datos, sube el servidor y genera tu **clave**.
+- El script crea la base de datos, sube el servidor, genera tu **clave** y deja la laptop conectada
+  (escribe `nube.json` en sus carpetas de datos). **Reinicia Lancelot** en la laptop para que empiece a sincronizar.
 - Al final muestra un **código QR**, la dirección (`https://lancelot.TU-SUBDOMINIO.workers.dev`) y la clave.
 - Si dice que tu cuenta no tiene subdominio: entra a dash.cloudflare.com → *Workers & Pages*, elige uno
   (por ejemplo `miguel`) y vuelve a ejecutar `npm run configurar`.
@@ -48,7 +52,7 @@ La dirección y la clave quedan guardadas en `movil/.lancelot-local.json` (no se
 
 | Quiero… | Comando (dentro de `movil`) |
 |---|---|
-| Subir cambios del servidor o de la app | `npm run publicar` |
+| Subir cambios del servidor o de la app | `npm run configurar` (aplica también los cambios de la base de datos) |
 | Cambiar la clave (perdí el celular) | `npm run configurar -- --nueva-clave` |
 | Configurar desde otra PC | Copia `movil/.lancelot-local.json` de esta laptop; si no lo tienes, `npm run configurar` crea una clave nueva |
 | Probar todo en la laptop, sin internet | `npm test` y `npm run test:servidor` |
@@ -60,13 +64,20 @@ La app del celular se actualiza sola: cada vez que la abres con internet descarg
 
 ```
  celular (app web) ──/api + clave──►  Worker de Cloudflare  ──►  D1 (base de datos SQLite)
-        ▲                                   │
+        ▲                              ▲    │
+        │       laptop ──/api/sync─────┘    │   cada minuto: la laptop sube sus cambios y baja los del celular
         └── notificación cifrada ◄── cada minuto revisa qué venció (Cron)
 ```
 
+**Sincronización (etapa 3).** Cada tarea tiene un identificador que es el mismo en todos lados y la hora de su
+último cambio. La laptop manda lo que cambió desde la última vez y recibe lo que cambió en el servidor; si una
+tarea cambió en los dos lados, gana el cambio más reciente. Al borrar, la tarea se marca como borrada (no
+desaparece) para que el otro lado se entere. Lo que no se sincroniza es «ya avisé»: cada dispositivo avisa por
+su cuenta (la cara en la laptop, la notificación en el celular).
+
 | Archivo | Qué hace |
 |---|---|
-| `src/index.js` | La API (`/api/tareas`…) y lo que corre cada minuto |
+| `src/index.js` | La API (`/api/tareas`, `/api/sync`…) y lo que corre cada minuto |
 | `src/almacen.js` | Las tareas en D1: mismas operaciones que `nucleo/almacen.py` |
 | `src/push.js` | Notificaciones: firma VAPID y cifrado aes128gcm, solo con WebCrypto |
 | `src/seguridad.js` | La clave y las firmas de los botones de las notificaciones |
@@ -74,7 +85,7 @@ La app del celular se actualiza sola: cada vez que la abres con internet descarg
 | `publico/app.js` | La app: lista, escribir, preguntas, opciones, ajustes |
 | `publico/cara.js` | La cara animada (el mismo personaje de la laptop) |
 | `publico/sw.js` | Recibe las notificaciones y hace funcionar sus botones con la app cerrada |
-| `migraciones/` | Las tablas de la base de datos (se aplican en orden, una sola vez) |
+| `migraciones/` | Las tablas de la base de datos (se aplican en orden, una sola vez; `0003` = eventos) |
 | `configurar.mjs` | La instalación de arriba |
 
 **El intérprete existe dos veces** (Python en la laptop, JavaScript aquí). Las dos versiones se prueban contra los

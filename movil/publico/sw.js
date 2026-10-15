@@ -7,7 +7,7 @@
  *
  * La copia guardada se renueva sola cada vez que abres la app con internet.
  */
-const VERSION = "lancelot-1.0";
+const VERSION = "lancelot-1.1";
 const ARCHIVOS = [
   "/", "/index.html", "/estilos.css", "/app.js", "/cara.js", "/manifest.webmanifest",
   "/comun/fechas.js", "/comun/interprete.js", "/comun/comandos.js", "/comun/planificador.js",
@@ -52,9 +52,9 @@ self.addEventListener("push", (e) => {
   const comun = { icon: "/iconos/icono-192.png", badge: "/iconos/insignia-96.png", lang: "es" };
   let aviso;
   if (datos.tipo === "tarea") {
-    aviso = self.registration.showNotification(datos.titulo, {
+    aviso = self.registration.showNotification(datos.evento ? `📅 ${datos.titulo}` : datos.titulo, {
       ...comun,
-      body: `Era para las ${datos.hora}`,
+      body: datos.evento ? `Es hoy, a las ${datos.hora}` : `Era para las ${datos.hora}`,
       tag: datos.id,                       // si llega otra de la misma tarea, reemplaza a la anterior
       renotify: true,
       requireInteraction: true,            // se queda hasta que la atiendas
@@ -63,7 +63,10 @@ self.addEventListener("push", (e) => {
       actions: [{ action: "hecho", title: "✓ Hecho" }, { action: "posponer", title: "+10 min" }],
     });
   } else {
-    aviso = self.registration.showNotification(datos.titulo || "Lancelot", { ...comun, body: datos.cuerpo || "", data: datos });
+    aviso = self.registration.showNotification(datos.titulo || "Lancelot", {
+      ...comun, body: datos.cuerpo || "", data: datos,
+      ...(datos.id ? { tag: `${datos.tipo}-${datos.id}` } : {}),     // un aviso anticipado por evento a la vez
+    });
   }
   e.waitUntil(Promise.all([aviso, avisarALaApp({ tipo: "actualizar" })]));
 });

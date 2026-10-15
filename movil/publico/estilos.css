@@ -115,6 +115,7 @@ input:focus, select:focus { border-color: var(--acento); }
 .tarea .que { text-align: left; background: none; border: 0; padding: 8px 6px; line-height: 1.3; }
 .tarea .titulo { display: block; font-weight: 700; }
 .tarea .detalle { display: block; color: var(--tenue); font-size: 13px; margin-top: 2px; }
+.tarea[data-evento] .detalle { color: #c9b8ff; }          /* eventos: "faltan N días" en lila suave */
 .hecho {                                   /* el círculo recuerda al anillo de la cara */
   justify-self: end; width: 40px; height: 40px; border-radius: 50%;
   background: none; border: 0; display: grid; place-items: center;

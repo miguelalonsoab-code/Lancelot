@@ -19,12 +19,21 @@ Cada día, la primera vez que te ve frente a la laptop, te saluda con tus pendie
 
 Actualizaciones (solo con Lancelot.exe y REPO_ACTUALIZACIONES configurado): al minuto de abrir
 y cada pocas horas pregunta a GitHub si hay una versión nueva; si la hay, te ofrece instalarla.
+
+Sincronización con el celular (si existe nube.json): cada minuto y poco después de cada cambio
+(ver sincronizar() y _cambio_local()).
+
+Eventos (v3.10): además del aviso a su hora, avisan con días de anticipación (ver _avisar_eventos_proximos),
+y cuando su día pasa se cierran solos (o pasan al próximo año, si se repiten).
+
+Frases (v3.10): si dejas el mouse sobre la cara, te dice una frase (ver decir_frase()).
 """
 from __future__ import annotations
 
 import logging
 import os
 import sys
+import time
 from datetime import date, datetime, timedelta
 
 from PySide6.QtCore import QObject, QPoint, QTimer
@@ -35,7 +44,9 @@ from config import (ATAJO_HABLAR, CARPETA_RESPALDOS, COLORES, HORA_DESPERTAR, HO
                     HORA_SALUDO, META_ESTUDIO_DIARIO, NOMBRE_ASISTENTE, NOMBRE_USUARIO, NOMBRES_MODO,
                     RESPALDOS_A_CONSERVAR, RUTA_BD, SALUDO_ACTIVO, SALUDO_HABLADO, SEGUNDOS_ENTRE_REVISIONES,
                     SEGUNDOS_MENSAJE, SEGUNDOS_SALUDO, VERSION, EMPAQUETADO, REPO_ACTUALIZACIONES,
-                    HORAS_ENTRE_BUSQUEDAS, BUSCAR_ACTUALIZACIONES_EN_DESARROLLO)
+                    HORAS_ENTRE_BUSQUEDAS, BUSCAR_ACTUALIZACIONES_EN_DESARROLLO, NOMBRE_ARCHIVO_NUBE,
+                    SEGUNDOS_ENTRE_SINCRONIZACIONES, FRASES_ACTIVAS, SEGUNDOS_MOUSE_PARA_FRASE,
+                    SEGUNDOS_ENTRE_FRASES, SEGUNDOS_FRASE, NOMBRE_ARCHIVO_FRASES, HABLAR_RECORDATORIOS)
 from interfaz.actualizador import Actualizador
 from interfaz.asistente_voz import ControladorVoz, NotificadorVoz
 from interfaz.avisos import GestorAvisos, NotificadorCara
@@ -43,12 +54,15 @@ from interfaz.burbuja import Burbuja
 from interfaz.cara import Cara, pixmap_cara
 from interfaz.estudio import ModoEstudio
 from interfaz.panel import Panel
+from interfaz.sincronizador import Resultado, Sincronizador, leer_configuracion
 from notificadores.base import Notificador
 from notificadores.windows import NotificadorWindows
-from nucleo.almacen import Almacen
+from nucleo.almacen import SIN_CAMBIO, Almacen
 from nucleo.comandos import Comando
 from nucleo.estadisticas import ResumenSemana, describir_semana, resumen_semana
-from nucleo.interprete import describir_fecha
+from nucleo.frases import (REFLEXIONES, BolsaFrases, crear_archivo_frases, guardar_frase_usuario,
+                           leer_frases_usuario)
+from nucleo.interprete import describir_faltan, describir_fecha
 from nucleo.planificador import a_manana, estado_del_dia
 from nucleo.respaldo import hacer_respaldo
 from nucleo.saludo import armar_saludo, debe_saludar
@@ -93,6 +107,18 @@ class Asistente(QObject):
         self.notificador_windows = NotificadorWindows(self.bandeja)
         self.actualizador = Actualizador(REPO_ACTUALIZACIONES, VERSION, self.ruta_bd.parent / "actualizaciones")
         self._actualizacion: Actualizacion | None = None   # la última ofrecida
+        nube = leer_configuracion(self.ruta_bd.parent / NOMBRE_ARCHIVO_NUBE)
+        self.nube = Sincronizador(*nube, VERSION) if nube else None
+        self.estado_nube = ("", False)                     # (texto, ¿es un error?) para el panel
+        # Frases al dejar el mouse sobre la cara: las de fábrica + las tuyas (frases.txt)
+        self.ruta_frases = self.ruta_bd.parent / NOMBRE_ARCHIVO_FRASES
+        try:
+            crear_archivo_frases(self.ruta_frases)
+        except OSError:
+            log.warning("no se pudo crear %s", self.ruta_frases)
+        self._frases_leidas = None                         # fecha de modificación de frases.txt ya leída
+        self.bolsa_frases = BolsaFrases(REFLEXIONES)
+        self._ultima_frase: float | None = None            # time.monotonic() de la última frase dicha
         # Canales de aviso de tareas (en la Fase 2 se agrega aquí el del celular)
         self.notificadores: list[Notificador] = [NotificadorCara(self.avisos), self.notificador_windows,
                                                  NotificadorVoz(self.voz)]
@@ -104,6 +130,8 @@ class Asistente(QObject):
         self.cara.clicada.connect(self._alternar_panel)
         self.cara.menu_pedido.connect(self._menu_cara)
         self.cara.movida.connect(self._al_mover_cara)
+        self.cara.segundos_reposo = SEGUNDOS_MOUSE_PARA_FRASE
+        self.cara.reposo.connect(self.decir_frase)
         self.panel.agregar_pedido.connect(self.agregar)
         self.panel.completar_pedido.connect(self.completar)
         self.panel.eliminar_pedido.connect(self.eliminar)
@@ -113,6 +141,8 @@ class Asistente(QObject):
         self.panel.reprogramar_pedido.connect(self.reprogramar)
         self.panel.reprogramar_vencidas_pedido.connect(self.reprogramar_vencidas)
         self.panel.semana_pedida.connect(self.mostrar_semana)
+        if self.nube:
+            self.nube.terminado.connect(self._al_sincronizar)
         self.actualizador.encontrada.connect(self._al_encontrar_actualizacion)
         self.actualizador.sin_novedad.connect(self._al_no_haber_actualizacion)
         self.actualizador.descargada.connect(self._al_descargar_actualizacion)
@@ -135,6 +165,14 @@ class Asistente(QObject):
         self.reloj_respaldo = QTimer(self)                 # por si la laptop queda prendida de un día a otro
         self.reloj_respaldo.timeout.connect(self.respaldar)
         self.reloj_respaldo.start(3 * 60 * 60 * 1000)
+        if self.nube:
+            self.reloj_nube = QTimer(self)                 # cada minuto
+            self.reloj_nube.timeout.connect(self.sincronizar)
+            self.reloj_nube.start(SEGUNDOS_ENTRE_SINCRONIZACIONES * 1000)
+            self.nube_pronto = QTimer(self, singleShot=True)   # poco después de un cambio tuyo
+            self.nube_pronto.timeout.connect(self.sincronizar)
+            QTimer.singleShot(2000, self.sincronizar)
+            self.estado_nube = ("☁ Conectando con el celular…", False)
         if self.busca_actualizaciones:
             self.actualizador.limpiar_descargas()
             QTimer.singleShot(60 * 1000, self.actualizador.buscar)      # un minuto después de abrir
@@ -163,9 +201,15 @@ class Asistente(QObject):
     # ================================================================ tareas
     def revisar(self):
         """Se ejecuta cada pocos segundos: ¿llegó la hora de algo?"""
-        if self._avisos_en_pausa_hasta and datetime.now() < self._avisos_en_pausa_hasta:
+        ahora = datetime.now()
+        if self._avisos_en_pausa_hasta and ahora < self._avisos_en_pausa_hasta:
             return                                   # se está mostrando el saludo; avisa en un rato
-        vencidas = self.almacen.por_avisar(datetime.now())
+        cerrados = self.almacen.cerrar_eventos_pasados(ahora)   # eventos de días anteriores
+        for id_ in cerrados:
+            self.avisos.quitar(id_)
+        if cerrados:
+            self._cambio_local()
+        vencidas = self.almacen.por_avisar(ahora)
         for tarea in vencidas:
             self.almacen.marcar_avisada(tarea.id)
             for canal in self.notificadores:
@@ -175,38 +219,71 @@ class Asistente(QObject):
                     canal.notificar(tarea)
                 except Exception:                    # un canal caído no tumba a los demás
                     log.exception("el canal %s falló al avisar", type(canal).__name__)
-        if vencidas:
+        self._avisar_eventos_proximos(ahora)
+        if vencidas or cerrados:
             self.refrescar()
 
-    def agregar(self, titulo: str, fecha: datetime, repeticion):
-        self.almacen.agregar(titulo, fecha, repeticion)
+    def _avisar_eventos_proximos(self, ahora: datetime):
+        """
+        Avisos anticipados ("📅 Aniversario · falta 1 semana"). Si estás estudiando o hablándole,
+        esperan a que termines: no son urgentes. Si tocan varios a la vez, van juntos en una burbuja.
+        """
+        if self.estudio.activo or self.voz.dialogo or self.voz.escuchando_orden:
+            return
+        tocan = self.almacen.por_avisar_antes(ahora)
+        if not tocan:
+            return
+        for t, _ in tocan:
+            self.almacen.marcar_aviso_previo(t.id, ahora)
+        lineas = [f"{t.titulo}: {describir_faltan(t.fecha, ahora)} · {describir_fecha(t.fecha, ahora)}"
+                  for t, _ in tocan]
+        cabecera = "📅 Se acerca" if len(tocan) == 1 else f"📅 Se acercan {len(tocan)} eventos"
+        texto = lineas[0] if len(lineas) == 1 else "\n".join(f"• {l}" for l in lineas)
+        self.avisos.mostrar_mensaje(cabecera, texto, [("Entendido", "cerrar")], COLORES["evento"], 0, False)
+        if not self.silencio:
+            self.notificador_windows.mensaje(cabecera, texto)
+            if HABLAR_RECORDATORIOS:
+                t = tocan[0][0]
+                saludo = f"{NOMBRE_USUARIO}, " if NOMBRE_USUARIO else ""
+                self.voz.decir(f"{saludo}se acerca {t.titulo}: {describir_faltan(t.fecha, ahora)}.")
+        log.info("aviso anticipado de %d evento(s)", len(tocan))
+
+    def agregar(self, titulo: str, fecha: datetime, repeticion, tipo: str = "tarea", anticipacion=None):
+        self.almacen.agregar(titulo, fecha, repeticion, tipo, anticipacion)
+        self._cambio_local()
         self.cara.celebrar()
         self.refrescar()
 
     def completar(self, tarea_id: int):
         self.almacen.completar(tarea_id)
+        self._cambio_local()
         self.avisos.quitar(tarea_id)
         self.cara.celebrar()
         self.refrescar()
 
     def posponer(self, tarea_id: int, minutos: int):
         self.almacen.posponer(tarea_id, minutos)
+        self._cambio_local()
         self.avisos.quitar(tarea_id)
         self.refrescar()
 
-    def editar(self, tarea_id: int, titulo: str, fecha: datetime, repeticion):
-        self.almacen.editar(tarea_id, titulo, fecha, repeticion)
+    def editar(self, tarea_id: int, titulo: str, fecha: datetime, repeticion, tipo=SIN_CAMBIO,
+               anticipacion=SIN_CAMBIO):
+        self.almacen.editar(tarea_id, titulo, fecha, repeticion, tipo, anticipacion)
+        self._cambio_local()
         self.avisos.quitar(tarea_id)            # si estaba sonando y la moviste, deja de sonar
         self.cara.celebrar()
         self.refrescar()
 
     def eliminar(self, tarea_id: int):
         self.almacen.eliminar(tarea_id)
+        self._cambio_local()
         self.avisos.quitar(tarea_id)
         self.refrescar()
 
     def reprogramar(self, tarea_id: int, fecha: datetime):
         self.almacen.reprogramar(tarea_id, fecha)
+        self._cambio_local()
         self.avisos.quitar(tarea_id)
         self.cara.celebrar()
         self.refrescar()
@@ -219,12 +296,49 @@ class Asistente(QObject):
             self.almacen.reprogramar(t.id, a_manana(t.fecha, ahora))
             self.avisos.quitar(t.id)
         if vencidas:
+            self._cambio_local()
             n = len(vencidas)
             self.avisos.mostrar_mensaje("↻ Reprogramadas", f"Pasé {n} tarea{'s' if n > 1 else ''} a mañana, "
                                         "a la misma hora.", [], COLORES["tranquilo"], 6, False)
             self.cara.celebrar()
         self.refrescar()
         return len(vencidas)
+
+    # ======================================================== sincronización
+    def _cambio_local(self):
+        """Algo cambió aquí: se sube en unos segundos (si haces varios cambios seguidos, va todo junto)."""
+        if self.nube:
+            self.nube_pronto.start(2500)
+
+    def sincronizar(self):
+        if not self.nube or self.nube.ocupado:
+            return
+        desde = int(self.almacen.leer_ajuste("nube_cursor", "0") or 0)
+        self.nube.sincronizar(desde, self.almacen.cambios_por_subir())
+
+    def _al_sincronizar(self, r: Resultado):
+        if not r.ok:
+            self.estado_nube = (f"☁ {r.error}", True)
+            self.actualizar_estado()
+            return
+        self.almacen.confirmar_subidas([(c["id"], c["actualizada"]) for c in r.subidos])
+        for x in r.rechazados:
+            log.warning("el servidor rechazó la tarea %s: %s", x.get("id"), x.get("error"))
+        tocadas = self.almacen.aplicar_remotos(r.cambios)
+        self.almacen.guardar_ajuste("nube_cursor", str(r.cursor))
+        for id_ in tocadas:                                  # completada o borrada en el celular: deja de sonar aquí
+            t = self.almacen.obtener(id_)
+            if not t or t.estado != "pendiente" or not t.fecha <= datetime.now():
+                self.avisos.quitar(id_)
+        self.estado_nube = (f"☁ Sincronizado con el celular · {datetime.now():%H:%M}", False)
+        if tocadas:
+            log.info("sincronización: %d tarea(s) llegaron del celular", len(tocadas))
+            self.refrescar()
+            self.revisar()
+        else:
+            self.actualizar_estado()
+        if len(r.subidos) >= 500 or not r.completo:          # quedó más por subir o bajar
+            QTimer.singleShot(500, self.sincronizar)
 
     # ================================================================ saludo
     def saludar(self, forzado: bool = False) -> bool:
@@ -251,6 +365,59 @@ class Asistente(QObject):
         self.cara.celebrar()
         log.info("saludo del día%s", " (pedido)" if forzado else "")
         return True
+
+    # ================================================================ frases
+    def puede_decir_frase(self) -> bool:
+        """Solo si está "libre": sin avisos, sin modo estudio, sin burbuja a la vista, sin conversación."""
+        return (FRASES_ACTIVAS and self.cara.isVisible() and not self.avisos.cola and not self.estudio.activo
+                and self.burbuja.tipo is None and not self.voz.dialogo and not self.voz.escuchando_orden)
+
+    def decir_frase(self, pedida: bool = False, por_voz: bool = False) -> bool:
+        """
+        Al dejar el mouse sobre la cara (pedida=False): como mucho una cada SEGUNDOS_ENTRE_FRASES.
+        Si la pides ("dime una frase", "motívame"), siempre. Devuelve True si dijo una.
+        """
+        ahora = time.monotonic()
+        if not pedida:
+            if not self.puede_decir_frase():
+                return False
+            if self._ultima_frase is not None and ahora - self._ultima_frase < SEGUNDOS_ENTRE_FRASES:
+                return False
+        self._leer_frases_si_cambiaron()
+        frase = self.bolsa_frases.sacar()
+        if not frase:
+            return False
+        self._ultima_frase = ahora
+        self.avisos.mostrar_mensaje(f"💬 {NOMBRE_ASISTENTE}", frase, [], COLORES["feliz"], SEGUNDOS_FRASE, False)
+        if por_voz:
+            self.voz.decir(frase)
+        return True
+
+    def guardar_frase(self, frase: str, por_voz: bool = False):
+        try:
+            nueva = guardar_frase_usuario(self.ruta_frases, frase)
+        except OSError:
+            log.exception("no se pudo guardar la frase")
+            self.avisos.mostrar_mensaje("💬 Frases", "No pude guardar la frase (¿frases.txt está abierto?).",
+                                        [], COLORES["alerta"], 8, False)
+            return
+        texto = (f"Guardada: «{frase.strip()}». Te la diré de vez en cuando." if nueva
+                 else "Esa frase ya la tenía. 😉")
+        self.avisos.mostrar_mensaje("💬 Frases", texto, [], COLORES["feliz"], 8, False)
+        if por_voz:
+            self.voz.decir("Listo, guardé tu frase." if nueva else "Esa frase ya la tenía.")
+        if nueva:
+            self.cara.celebrar()
+
+    def _leer_frases_si_cambiaron(self):
+        """frases.txt se vuelve a leer solo si lo editaste (así puedes cambiarlo sin cerrar Lancelot)."""
+        try:
+            modificado = self.ruta_frases.stat().st_mtime_ns
+        except OSError:
+            modificado = None
+        if modificado != self._frases_leidas:
+            self._frases_leidas = modificado
+            self.bolsa_frases.cambiar_frases(REFLEXIONES + leer_frases_usuario(self.ruta_frases))
 
     # ======================================================= actualizaciones
     @property
@@ -380,6 +547,10 @@ class Asistente(QObject):
             self.buscar_actualizaciones()
         elif accion == "saludo":
             self.saludar(forzado=True)
+        elif accion == "frase":
+            self.decir_frase(pedida=True, por_voz=por_voz)
+        elif accion == "guardar_frase":
+            self.guardar_frase(c.texto or "", por_voz)
         elif accion == "semana":
             texto, hablado = describir_semana(self.resumen_de_semana())
             mensaje("📊 Tu semana", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
@@ -454,6 +625,7 @@ class Asistente(QObject):
                                      self.estudio.descripcion(ahora) if p else "",
                                      bool(p and p.pausado), self.voz.escucha_activa)
             self.panel.mostrar_voz(self.voz.estado)
+            self.panel.mostrar_nube(*self.estado_nube)
             self.panel.mostrar_hoy(self.estudio.resumen_hoy(ahora))
 
     # ============================================================== ventanas
@@ -527,6 +699,7 @@ class Asistente(QObject):
             None,
             ("Mostrar / ocultar cara", self._alternar_cara),
             ("📁 Carpeta de datos", self._abrir_carpeta_datos),
+            *([("☁ Sincronizar ahora", self.sincronizar)] if self.nube else []),
             (f"🔄 Buscar actualizaciones (v{VERSION})", self.buscar_actualizaciones),
             ("Salir", self.salir),
         ]

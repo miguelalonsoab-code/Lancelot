@@ -5,20 +5,21 @@
  *   1. Sirve la app del celular (la carpeta publico/: HTML, JS, íconos…). Eso lo hace Cloudflare solo.
  *   2. Atiende la API /api/... : listar, agregar, completar, posponer, editar y borrar tareas.
  *   3. Cada minuto (Cron Trigger) revisa qué venció y manda la notificación al celular,
- *      aunque la laptop esté apagada.
+ *      aunque la laptop esté apagada. A los eventos, además, les avisa con días de anticipación.
  *
  *   celular ──/api──► este Worker ──► D1 (base de datos)
  *                         │
  *                    cada minuto ──► notificación push ──► celular
  */
-import { aTexto, ahoraEn, desdeTexto, hhmm, sumarMinutos } from "../publico/comun/fechas.js";
+import { DIAS_CORTOS, aTexto, ahoraEn, ddmm, desdeTexto, describirFaltan, diaSemana, hhmm, sumarMinutos }
+  from "../publico/comun/fechas.js";
 import { interpretar } from "../publico/comun/interprete.js";
 import { aManana } from "../publico/comun/planificador.js";
-import { Almacen, REPETICIONES_VALIDAS } from "./almacen.js";
+import { Almacen, REPETICIONES_VALIDAS, TIPOS_VALIDOS, limpiarAnticipacion } from "./almacen.js";
 import { enviar } from "./push.js";
 import { accionValida, autorizado, firmarAccion } from "./seguridad.js";
 
-const VERSION_SERVIDOR = "1.0";   // (el archivo principal de un Worker solo puede exportar "default")
+const VERSION_SERVIDOR = "1.1";   // (el archivo principal de un Worker solo puede exportar "default")
 
 export default {
   async fetch(request, env) {
@@ -45,7 +46,8 @@ const json = (datos, estado = 200) => new Response(JSON.stringify(datos), {
   headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
 });
 
-const ahoraDe = (env) => ahoraEn(env.ZONA_HORARIA || "America/Lima");
+const zonaDe = (env) => env.ZONA_HORARIA || "America/Lima";
+const ahoraDe = (env) => ahoraEn(zonaDe(env));
 
 /** Servicios de notificaciones de los navegadores: solo a ellos se les envía (nada de direcciones inventadas). */
 const SERVICIOS_PUSH = [/^fcm\.googleapis\.com$/, /\.push\.services\.mozilla\.com$/, /\.notify\.windows\.com$/,
@@ -86,8 +88,9 @@ async function atender(request, env) {
     const datos = await leerJson(request);
     const t = datos.texto !== undefined ? desdeTextoLibre(datos.texto, ahora) : validar(datos, ahora);
     if (t.falta) return json(t, 422);                  // la app pregunta lo que falta y vuelve a enviar
-    return json({ tarea: await almacen.agregar(t.titulo, t.fecha, t.repeticion, ahora) }, 201);
+    return json({ tarea: await almacen.agregar(t.titulo, t.fecha, t.repeticion, ahora, t.tipo, t.anticipacion) }, 201);
   }
+  if (ruta === "/api/sync" && metodo === "POST") return sincronizar(await leerJson(request), almacen, ahora);
   if (ruta === "/api/vencidas/manana" && metodo === "POST") {
     const vencidas = (await almacen.pendientes()).filter((t) => t.fecha <= aTexto(ahora));
     for (const t of vencidas) await almacen.reprogramar(t.id, aTexto(aManana(desdeTexto(t.fecha), ahora)));
@@ -100,7 +103,7 @@ async function atender(request, env) {
     let existia;
     if (!accion && metodo === "PATCH") {
       const t = validar(await leerJson(request), ahora, true);
-      existia = await almacen.editar(id, t.titulo, t.fecha, t.repeticion);
+      existia = await almacen.editar(id, t.titulo, t.fecha, t.repeticion, t.tipo, t.anticipacion);
     } else if (!accion && metodo === "DELETE") {
       existia = await almacen.eliminar(id);
     } else if (accion === "hecho" && metodo === "POST") {
@@ -157,6 +160,10 @@ async function atender(request, env) {
 }
 
 // ------------------------------------------------------------ validaciones
+/**
+ * tipo y anticipacion son opcionales: al crear, si faltan, es una tarea sin avisos previos;
+ * al editar (editando = true), si faltan, se deja lo que tenía (undefined).
+ */
 function validar(datos, ahora, editando = false) {
   const titulo = String(datos.titulo ?? "").trim().slice(0, 200);
   const f = desdeTexto(String(datos.fecha ?? ""));
@@ -165,16 +172,63 @@ function validar(datos, ahora, editando = false) {
   if (!f) throw new ErrorPedido("Fecha inválida (formato AAAA-MM-DD HH:MM)");
   const fecha = aTexto(f);                       // siempre igual de escrita: así se comparan bien como texto
   if (repeticion && !REPETICIONES_VALIDAS.has(repeticion)) throw new ErrorPedido("Repetición inválida");
-  if (fecha <= aTexto(ahora) && !repeticion && !editando) throw new ErrorPedido("Esa fecha ya pasó. Elige una hora futura.");
-  return { titulo, fecha, repeticion };
+  if (datos.tipo !== undefined && !TIPOS_VALIDOS.has(datos.tipo)) throw new ErrorPedido("Tipo inválido (tarea o evento)");
+  if (!editando && fecha <= aTexto(ahora) && !repeticion) throw new ErrorPedido("Esa fecha ya pasó. Elige una hora futura.");
+  const tipo = datos.tipo ?? (editando ? undefined : "tarea");
+  const anticipacion = datos.anticipacion !== undefined ? limpiarAnticipacion(datos.anticipacion)
+    : (editando ? undefined : null);
+  return { titulo, fecha, repeticion, tipo, anticipacion };
 }
 
 /** "mañana 8pm pagar la luz" -> tarea, o { falta: "fecha" | "titulo" } para que la app pregunte. */
 function desdeTextoLibre(texto, ahora) {
   const r = interpretar(String(texto).slice(0, 300), ahora);
-  if (!r.titulo) return { falta: "titulo", fecha: r.fecha && aTexto(r.fecha), repeticion: r.repeticion };
-  if (!r.fecha) return { falta: "fecha", titulo: r.titulo, repeticion: r.repeticion };
-  return validar({ titulo: r.titulo, fecha: aTexto(r.fecha), repeticion: r.repeticion }, ahora);
+  const extra = { repeticion: r.repeticion, tipo: r.tipo, anticipacion: r.avisos };
+  if (!r.titulo) return { falta: "titulo", fecha: r.fecha && aTexto(r.fecha), ...extra };
+  if (!r.fecha) return { falta: "fecha", titulo: r.titulo, ...extra };
+  return validar({ titulo: r.titulo, fecha: aTexto(r.fecha), ...extra }, ahora);
+}
+
+// ------------------------------------------------------------ sincronización
+/**
+ * La laptop manda sus cambios y recibe los de aquí, en un solo pedido:
+ *   → { desde: 1730000000000, cambios: [ {id, titulo, fecha, repeticion, estado, creada, completada, actualizada, borrada} ] }
+ *   ← { aceptados: 3, rechazados: [], cambios: [...lo que cambió aquí desde 'desde'...], cursor: 1730000123456 }
+ * 'cursor' es lo que la laptop manda como 'desde' la próxima vez.
+ */
+async function sincronizar(datos, almacen, ahora) {
+  const desde = Number(datos.desde) || 0;
+  const cambios = Array.isArray(datos.cambios) ? datos.cambios : [];
+  if (cambios.length > 500) throw new ErrorPedido("Demasiados cambios en un pedido (máximo 500)");
+  let aceptados = 0;
+  const rechazados = [];          // un cambio inválido no frena a los demás (si no, la laptop quedaría trabada)
+  for (const bruto of cambios) {
+    try {
+      if (await almacen.aplicarCambio(validarCambio(bruto), ahora)) aceptados++;
+    } catch (e) {
+      if (!(e instanceof ErrorPedido)) throw e;
+      rechazados.push({ id: String(bruto?.id ?? ""), error: e.message });
+    }
+  }
+  const filas = await almacen.cambiosDesde(desde);
+  const cursor = filas.length ? filas[filas.length - 1].recibida : desde;
+  return json({ aceptados, rechazados, cursor, completo: filas.length < 1000,
+                cambios: filas.map(({ recibida, ...t }) => ({ ...t, borrada: Boolean(t.borrada) })) });
+}
+
+function validarCambio(c) {
+  const id = String(c?.id ?? "");
+  if (!/^[\w-]{8,64}$/.test(id)) throw new ErrorPedido("Cambio con id inválido");
+  const t = validar({ titulo: c.titulo, fecha: c.fecha, repeticion: c.repeticion,
+                     tipo: TIPOS_VALIDOS.has(c.tipo) ? c.tipo : undefined, anticipacion: c.anticipacion }, null, true);
+  const actualizada = Number(c.actualizada);
+  if (!Number.isInteger(actualizada) || actualizada <= 0 || actualizada > Date.now() + 86400000) {
+    throw new ErrorPedido("Cambio con fecha de modificación inválida");
+  }
+  const estado = c.estado === "hecha" ? "hecha" : "pendiente";
+  const creada = desdeTexto(String(c.creada || "")) ? String(c.creada) : t.fecha;
+  const completada = c.completada && desdeTexto(String(c.completada)) ? String(c.completada) : null;
+  return { id, ...t, estado, creada, completada, actualizada, borrada: c.borrada ? 1 : 0 };
 }
 
 // ------------------------------------------------------------ notificaciones
@@ -217,11 +271,18 @@ async function enviarATodos(env, almacen, datos, firmas = new Map()) {
   return { enviadas, intentos: suscripciones.length };
 }
 
+/** "falta 1 semana · dom 15/11 09:00" */
+const textoPrevio = (f, ahora) => {
+  const faltan = describirFaltan(f, ahora);
+  return `${faltan.charAt(0).toUpperCase()}${faltan.slice(1)} · ${DIAS_CORTOS[diaSemana(f)]} ${ddmm(f)} ${hhmm(f)}`;
+};
+
 /** Lo que corre cada minuto. */
 async function avisarVencidas(env) {
   const almacen = new Almacen(env.DB);
   const ahora = ahoraDe(env);
   await almacen.adelantarRepetitivasOlvidadas(ahora);
+  await almacen.cerrarEventosPasados(ahora);
   const puedeAvisar = Boolean(env.VAPID_PUBLICA && env.VAPID_PRIVADA) && (await almacen.contarSuscripciones()) > 0;
   const hace10min = aTexto(sumarMinutos(ahora, -10));
   const firmas = new Map();
@@ -232,7 +293,7 @@ async function avisarVencidas(env) {
     if (!puedeAvisar) { await almacen.marcarAvisada(t.id, t.fecha); continue; }   // nadie a quien avisar
     if (intentos >= MAX_ENVIOS_POR_MINUTO) break;
     const r = await enviarATodos(env, almacen, {
-      tipo: "tarea", id: t.id, titulo: t.titulo, fecha: t.fecha, hora: hhmm(desdeTexto(t.fecha)),
+      tipo: "tarea", evento: t.tipo === "evento", id: t.id, titulo: t.titulo, fecha: t.fecha, hora: hhmm(desdeTexto(t.fecha)),
       firmas: { hecho: await firmarAccion(env, t.id, t.fecha, "hecho"),
                 posponer: await firmarAccion(env, t.id, t.fecha, "posponer") },
     }, firmas);
@@ -240,5 +301,17 @@ async function avisarVencidas(env) {
     // Una sola notificación por ocurrencia. Si no llegó a ningún celular (Google caído, sin internet),
     // se reintenta cada minuto durante 10 minutos.
     if (r.enviadas > 0 || t.fecha <= hace10min) await almacen.marcarAvisada(t.id, t.fecha);
+  }
+  // Avisos anticipados de eventos ("📅 Aniversario · falta 1 semana"). Un solo intento: si no llegó,
+  // el próximo aviso (o el del mismo día) lo cubre.
+  for (const { tarea: t } of await almacen.porAvisarAntes(ahora, zonaDe(env))) {
+    if (puedeAvisar) {
+      if (intentos >= MAX_ENVIOS_POR_MINUTO) break;
+      const r = await enviarATodos(env, almacen, {
+        tipo: "previo", id: t.id, titulo: `📅 ${t.titulo}`, cuerpo: textoPrevio(desdeTexto(t.fecha), ahora),
+      }, firmas);
+      intentos += r.intentos;
+    }
+    await almacen.marcarAvisoPrevio(t.id, ahora);
   }
 }
