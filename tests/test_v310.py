@@ -100,7 +100,7 @@ class TestAlmacenEventos(unittest.TestCase):
         [t] = self.abrir().pendientes()
         self.assertEqual((t.titulo, t.tipo, t.anticipacion), ("Pagar la luz", "tarea", None))
 
-    def test_aviso_anticipado_una_sola_vez_y_sin_sincronizar(self):
+    def test_aviso_anticipado_una_sola_vez_y_viaja_sin_ser_edicion(self):
         a = self.abrir()
         t = a.agregar("Aniversario", datetime(2026, 11, 15, 9, 0), "anual", "evento", "7,1")
         a.con.execute("UPDATE tareas SET actualizada = ? WHERE id = ?", (ms(datetime(2026, 10, 1)), t.id))
@@ -110,7 +110,8 @@ class TestAlmacenEventos(unittest.TestCase):
         self.assertEqual((evento.titulo, dias), ("Aniversario", 7))
         a.marcar_aviso_previo(evento.id, momento)
         self.assertEqual(a.por_avisar_antes(momento + timedelta(hours=3)), [])
-        self.assertEqual(a.cambios_por_subir(), [])                   # avisar no es un cambio para el celular
+        [subir] = a.cambios_por_subir()                               # v3.11: el celular se entera de que ya avisé…
+        self.assertEqual((subir["aviso_previo"], subir["actualizada"]), ("2026-11-08 09:05", ms(datetime(2026, 10, 1))))
         [(_, dias)] = a.por_avisar_antes(datetime(2026, 11, 14, 9, 0))
         self.assertEqual(dias, 1)
 
@@ -245,7 +246,7 @@ class TestAsistenteV310(unittest.TestCase):
     def test_aviso_anticipado_en_la_burbuja(self):
         ahora = datetime.now()
         t = self.a.almacen.agregar("Aniversario", ahora + timedelta(days=7), "anual", "evento", "7,1")
-        self.a.almacen.por_avisar_antes = lambda _ahora: [(self.a.almacen.obtener(t.id), 7)]
+        self.a.almacen.por_avisar_antes = lambda *_: [(self.a.almacen.obtener(t.id), 7)]
         self.a.revisar()
         self.assertEqual(self.a.burbuja.cabecera.text(), "📅 Se acerca")
         self.assertIn("Aniversario: falta 1 semana", self.a.burbuja.titulo.text())

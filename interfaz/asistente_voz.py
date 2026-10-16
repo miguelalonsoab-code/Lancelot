@@ -287,7 +287,7 @@ class ControladorVoz:
         ahora = datetime.now()
         pendientes = self.a.almacen.pendientes()
         hoy = [t for t in pendientes if t.fecha > ahora and t.fecha.date() == ahora.date()]
-        vencidas = [t for t in pendientes if t.fecha <= ahora]
+        vencidas = [t for t in pendientes if t.fecha <= ahora and not t.es_evento]
         if hoy:
             n = len(hoy)
             lineas = "\n".join(f"• {t.fecha:%H:%M} {t.titulo}" for t in hoy[:6])

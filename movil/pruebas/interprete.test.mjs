@@ -38,3 +38,17 @@ test("repeticiones (anual, 29 de febrero, fin de mes)", () => {
     assert.equal(aTexto(siguienteOcurrencia(desdeTexto(c.fecha), c.repeticion, desdeTexto(c.ahora))), c.siguiente);
   }
 });
+
+test("vocabulario aprendido de las correcciones: igual que en la laptop", () => {
+  for (const c of datos.con_vocabulario) {
+    assert.equal(interpretar(c.texto, desdeTexto("2026-10-07 06:30"), undefined, datos.vocabulario).tipo, c.tipo, c.texto);
+    assert.equal(interpretar(c.texto, desdeTexto("2026-10-07 06:30")).tipo, c.sin_vocabulario, c.texto);
+  }
+});
+
+test("las frases del celular son las mismas de la laptop, y la bolsa no repite", async () => {
+  const { REFLEXIONES, BolsaFrases } = await import("../publico/comun/frases.js");
+  assert.deepEqual(REFLEXIONES, datos.reflexiones);
+  const bolsa = new BolsaFrases(["a", "b", "c"]);
+  assert.deepEqual([bolsa.sacar(), bolsa.sacar(), bolsa.sacar()].sort(), ["a", "b", "c"]);
+});

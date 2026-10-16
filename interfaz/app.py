@@ -26,10 +26,16 @@ Sincronización con el celular (si existe nube.json): cada minuto y poco despué
 Eventos (v3.10): además del aviso a su hora, avisan con días de anticipación (ver _avisar_eventos_proximos),
 y cuando su día pasa se cierran solos (o pasan al próximo año, si se repiten).
 
-Frases (v3.10): si dejas el mouse sobre la cara, te dice una frase (ver decir_frase()).
+Frases (v3.10): si dejas el mouse sobre la cara, te dice una frase (ver decir_frase()); desde la v3.11
+también en voz alta. Tus frases viajan al celular junto con la sincronización (ver _preferencias_para_subir).
+
+Aprendizaje (v3.11): si corriges Tarea/Evento en el panel, lo anota y, si se repite, aprende
+(ver aprender_correccion() y nucleo/aprendizaje.py).
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import os
 import sys
@@ -46,7 +52,8 @@ from config import (ATAJO_HABLAR, CARPETA_RESPALDOS, COLORES, HORA_DESPERTAR, HO
                     SEGUNDOS_MENSAJE, SEGUNDOS_SALUDO, VERSION, EMPAQUETADO, REPO_ACTUALIZACIONES,
                     HORAS_ENTRE_BUSQUEDAS, BUSCAR_ACTUALIZACIONES_EN_DESARROLLO, NOMBRE_ARCHIVO_NUBE,
                     SEGUNDOS_ENTRE_SINCRONIZACIONES, FRASES_ACTIVAS, SEGUNDOS_MOUSE_PARA_FRASE,
-                    SEGUNDOS_ENTRE_FRASES, SEGUNDOS_FRASE, NOMBRE_ARCHIVO_FRASES, HABLAR_RECORDATORIOS)
+                    SEGUNDOS_ENTRE_FRASES, SEGUNDOS_FRASE, NOMBRE_ARCHIVO_FRASES, HABLAR_RECORDATORIOS,
+                    FRASES_HABLADAS, HORA_AVISO_PREVIO)
 from interfaz.actualizador import Actualizador
 from interfaz.asistente_voz import ControladorVoz, NotificadorVoz
 from interfaz.avisos import GestorAvisos, NotificadorCara
@@ -57,12 +64,13 @@ from interfaz.panel import Panel
 from interfaz.sincronizador import Resultado, Sincronizador, leer_configuracion
 from notificadores.base import Notificador
 from notificadores.windows import NotificadorWindows
-from nucleo.almacen import SIN_CAMBIO, Almacen
+from nucleo import aprendizaje
+from nucleo.almacen import LOTE_SINCRONIZACION, SIN_CAMBIO, Almacen
 from nucleo.comandos import Comando
 from nucleo.estadisticas import ResumenSemana, describir_semana, resumen_semana
 from nucleo.frases import (REFLEXIONES, BolsaFrases, crear_archivo_frases, guardar_frase_usuario,
                            leer_frases_usuario)
-from nucleo.interprete import describir_faltan, describir_fecha
+from nucleo.interprete import describir_faltan, describir_fecha, usar_vocabulario
 from nucleo.planificador import a_manana, estado_del_dia
 from nucleo.respaldo import hacer_respaldo
 from nucleo.saludo import armar_saludo, debe_saludar
@@ -119,6 +127,13 @@ class Asistente(QObject):
         self._frases_leidas = None                         # fecha de modificación de frases.txt ya leída
         self.bolsa_frases = BolsaFrases(REFLEXIONES)
         self._ultima_frase: float | None = None            # time.monotonic() de la última frase dicha
+        # Lo aprendido de tus correcciones Tarea/Evento: lo usan el panel, la voz y (sincronizado) el celular
+        self.aprendizaje = aprendizaje.cargar(self.almacen.leer_ajuste("aprendizaje"))
+        self.vocabulario = aprendizaje.vocabulario(self.aprendizaje)
+        usar_vocabulario(self.vocabulario)
+        # Con sincronización: los avisos anticipados esperan a la primera sincronización del día,
+        # por si el celular ya te lo mostró mientras la laptop estaba apagada
+        self._nube_lista = False
         # Canales de aviso de tareas (en la Fase 2 se agrega aquí el del celular)
         self.notificadores: list[Notificador] = [NotificadorCara(self.avisos), self.notificador_windows,
                                                  NotificadorVoz(self.voz)]
@@ -141,6 +156,8 @@ class Asistente(QObject):
         self.panel.reprogramar_pedido.connect(self.reprogramar)
         self.panel.reprogramar_vencidas_pedido.connect(self.reprogramar_vencidas)
         self.panel.semana_pedida.connect(self.mostrar_semana)
+        self.panel.correccion_pedida.connect(self.aprender_correccion)
+        self.panel.hora_aviso_previo = HORA_AVISO_PREVIO
         if self.nube:
             self.nube.terminado.connect(self._al_sincronizar)
         self.actualizador.encontrada.connect(self._al_encontrar_actualizacion)
@@ -230,11 +247,14 @@ class Asistente(QObject):
         """
         if self.estudio.activo or self.voz.dialogo or self.voz.escuchando_orden:
             return
-        tocan = self.almacen.por_avisar_antes(ahora)
+        if self.nube and not self._nube_lista:
+            return                                   # primero saber si el celular ya lo avisó
+        tocan = self.almacen.por_avisar_antes(ahora, HORA_AVISO_PREVIO)
         if not tocan:
             return
         for t, _ in tocan:
             self.almacen.marcar_aviso_previo(t.id, ahora)
+        self._cambio_local()                         # que el celular sepa que ya lo viste aquí
         lineas = [f"{t.titulo}: {describir_faltan(t.fecha, ahora)} · {describir_fecha(t.fecha, ahora)}"
                   for t, _ in tocan]
         cabecera = "📅 Se acerca" if len(tocan) == 1 else f"📅 Se acercan {len(tocan)} eventos"
@@ -314,13 +334,21 @@ class Asistente(QObject):
         if not self.nube or self.nube.ocupado:
             return
         desde = int(self.almacen.leer_ajuste("nube_cursor", "0") or 0)
-        self.nube.sincronizar(desde, self.almacen.cambios_por_subir())
+        self.nube.sincronizar(desde, self.almacen.cambios_por_subir(), self._preferencias_para_subir())
+
+    def _preferencias_para_subir(self) -> dict | None:
+        """Tus frases y lo aprendido, para el celular. Solo si cambiaron desde la última vez que se subieron."""
+        prefs = {"frases": aprendizaje_frases(self.ruta_frases), "vocabulario": self.vocabulario}
+        return None if _huella(prefs) == self.almacen.leer_ajuste("preferencias_subidas") else prefs
 
     def _al_sincronizar(self, r: Resultado):
+        self._nube_lista = True                      # (aunque falle: sin internet, la laptop avisa igual)
         if not r.ok:
             self.estado_nube = (f"☁ {r.error}", True)
             self.actualizar_estado()
             return
+        if r.preferencias:
+            self.almacen.guardar_ajuste("preferencias_subidas", _huella(r.preferencias))
         self.almacen.confirmar_subidas([(c["id"], c["actualizada"]) for c in r.subidos])
         for x in r.rechazados:
             log.warning("el servidor rechazó la tarea %s: %s", x.get("id"), x.get("error"))
@@ -337,7 +365,7 @@ class Asistente(QObject):
             self.revisar()
         else:
             self.actualizar_estado()
-        if len(r.subidos) >= 500 or not r.completo:          # quedó más por subir o bajar
+        if len(r.subidos) >= LOTE_SINCRONIZACION or not r.completo:   # quedó más por subir o bajar
             QTimer.singleShot(500, self.sincronizar)
 
     # ================================================================ saludo
@@ -389,9 +417,21 @@ class Asistente(QObject):
             return False
         self._ultima_frase = ahora
         self.avisos.mostrar_mensaje(f"💬 {NOMBRE_ASISTENTE}", frase, [], COLORES["feliz"], SEGUNDOS_FRASE, False)
-        if por_voz:
-            self.voz.decir(frase)
+        if FRASES_HABLADAS or por_voz:
+            self.voz.decir(frase)                    # en modo silencio, decir() no suena
         return True
+
+    def aprender_correccion(self, titulo: str, detectado: str, elegido: str):
+        """Corregiste Tarea/Evento en el panel: se anota y, si se repite, se aprende (nucleo/aprendizaje.py)."""
+        if not aprendizaje.registrar_correccion(self.aprendizaje, titulo, detectado, elegido):
+            return
+        self.almacen.guardar_ajuste("aprendizaje", aprendizaje.guardar(self.aprendizaje))
+        nuevo = aprendizaje.vocabulario(self.aprendizaje)
+        if nuevo != self.vocabulario:
+            log.info("aprendí de tus correcciones: %s", nuevo)
+            self.vocabulario = nuevo
+            usar_vocabulario(nuevo)
+            self._cambio_local()                     # que el celular también lo sepa
 
     def guardar_frase(self, frase: str, por_voz: bool = False):
         try:
@@ -726,3 +766,13 @@ class Asistente(QObject):
         self.bandeja.hide()
         log.info("Lancelot cerrado")
         self.app.quit()
+
+
+def aprendizaje_frases(ruta) -> list[str]:
+    """Tus frases de frases.txt (como mucho 300) para subirlas al celular."""
+    return leer_frases_usuario(ruta)[:300]
+
+
+def _huella(preferencias: dict) -> str:
+    """Para saber si las preferencias cambiaron desde la última vez que se subieron."""
+    return hashlib.sha1(json.dumps(preferencias, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()

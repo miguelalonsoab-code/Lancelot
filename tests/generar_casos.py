@@ -19,6 +19,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 
 from nucleo.comandos import interpretar_comando   # noqa: E402
+from nucleo.frases import REFLEXIONES             # noqa: E402
 from nucleo.interprete import describir_avisos, describir_faltan, interpretar   # noqa: E402
 from nucleo.planificador import aviso_previo_pendiente, siguiente_ocurrencia       # noqa: E402
 
@@ -68,6 +69,10 @@ AVISOS_PREVIOS = [
 FALTAN = [("2026-10-07 06:30", f) for f in ("2026-10-07 23:00", "2026-10-08 08:00", "2026-10-09 08:00",
                                               "2026-10-14 08:00", "2026-10-21 10:00", "2026-11-04 10:00",
                                               "2026-12-02 10:00")]
+# Vocabulario aprendido de las correcciones (ver nucleo/aprendizaje.py)
+VOCABULARIO = {"evento": ["taller"], "no_evento": ["cita"], "verbos": ["ir"]}
+CON_VOCABULARIO = ["cita con el banco mañana", "taller de cerámica el sábado", "ir al concierto el viernes",
+                   "ir a comprar pan mañana", "examen el lunes", "taller", "mañana llevar el carro al taller"]
 REPETICIONES = [("2026-02-28 09:00", "anual", "2026-10-07 06:30"), ("2028-02-29 09:00", "anual", "2028-03-01 06:30"),
                 ("2026-10-31 09:00", "mensual", "2026-11-01 06:30")]
 FORMATO = "%Y-%m-%d %H:%M"
@@ -90,7 +95,7 @@ def calcular() -> dict:
     casos = []
     for ahora in AHORAS:
         for frase in FRASES:
-            r = interpretar(frase, ahora)
+            r = interpretar(frase, ahora, {})
             casos.append({"ahora": ahora.strftime(FORMATO), "texto": frase, "titulo": r.titulo,
                           "fecha": r.fecha.strftime(FORMATO) if r.fecha else None, "repeticion": r.repeticion,
                           "tipo": r.tipo, "anticipacion": r.anticipacion, "avisos": r.avisos})
@@ -110,7 +115,10 @@ def calcular() -> dict:
     return {"_comentario": "Generado por tests/generar_casos.py con el intérprete de Python (la referencia). "
                            "La versión JavaScript del celular debe dar exactamente lo mismo.",
             "casos": casos, "comandos": comandos, "avisos_previos": avisos, "faltan": faltan,
-            "textos_avisos": {str(k): v for k, v in textos_avisos.items()}, "repeticiones": repeticiones}
+            "textos_avisos": {str(k): v for k, v in textos_avisos.items()}, "repeticiones": repeticiones,
+            "vocabulario": VOCABULARIO, "reflexiones": REFLEXIONES,
+            "con_vocabulario": [{"texto": t, "tipo": interpretar(t, AHORAS[0], VOCABULARIO).tipo,
+                                 "sin_vocabulario": interpretar(t, AHORAS[0], {}).tipo} for t in CON_VOCABULARIO]}
 
 
 if __name__ == "__main__":

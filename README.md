@@ -1,4 +1,4 @@
-# Lancelot — asistente de escritorio · v3.10
+# Lancelot — asistente de escritorio · v3.11
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
@@ -9,6 +9,24 @@ te muestra una burbuja y Windows lanza una notificación.
   Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
   con botones **✓ Hecho** y **+10 min**.
 - Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
+
+## Novedades v3.11: frases en voz alta y Lancelot aprende
+- 🗣 Las frases ahora también se dicen en voz alta (en la laptop y, al tocar la cara, en el celular).
+- 🧠 Si corriges Tarea/Evento dos veces por lo mismo, Lancelot lo aprende.
+- **Lista ordenada**: arriba **TAREAS VENCIDAS** (siempre a la vista: «Ninguna. Vas al día 👌» cuando no hay),
+  luego **📅 PRÓXIMOS EVENTOS** y al final **PRÓXIMAS TAREAS**. Igual en el celular. Los eventos ya no
+  cuentan como vencidos («pasa las vencidas a mañana» no los mueve).
+- **Frases habladas**: además de la burbuja, la dice con su voz (salvo modo silencio; se apaga con
+  `FRASES_HABLADAS = False` en config.py). En el celular: toca la cara y te dice una (⚙ → Voz para apagarla);
+  también «motívame» o «dime una frase». Tus frases de `frases.txt` viajan al celular.
+- **Hora de los avisos anticipados** configurable: `HORA_AVISO_PREVIO` en config.py (para el celular, ver `movil/LEEME.md`).
+- **Sin avisos repetidos**: si la laptop ya te mostró «📅 falta 1 semana», el celular no te lo vuelve a mandar
+  (espera 5 minutos para saberlo); y si te lo mandó el celular mientras la laptop estaba apagada, la laptop no lo repite.
+- **Aprende de tus correcciones**: si cambias «Cita con el banco» de 📅 Evento a Tarea dos veces, deja de tomar
+  «cita» como evento. Funciona al revés («Taller de pintura» → evento) y se desaprende corrigiendo en sentido
+  contrario. Lo aprendido también lo usa el celular.
+- Arreglo: la primera sincronización con muchas tareas viejas ahora va en lotes chicos (antes podía rechazarse).
+- Celular: `npm run configurar` en `movil` (tabla nueva `0004` y servidor nuevo).
 
 ## Novedades v3.10: eventos y frases
 - 📅 Eventos: aniversarios, exámenes o viajes te avisan una semana y un día antes.
@@ -255,7 +273,7 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | `vencidas` · `qué tengo vencido` | Lista tus tareas vencidas |
 | `pasa las vencidas a mañana` | Las mueve todas a mañana, a la misma hora |
 | `busca actualizaciones` · `qué versión tienes` | Revisa si hay una versión nueva en GitHub |
-| `dime una frase` · `motívame` | Una frase (las tuyas incluidas) |
+| `dime una frase` · `motívame` | Una frase, en voz alta (las tuyas incluidas) |
 | `guarda esta frase: …` | La agrega a `frases.txt` para que te la diga de vez en cuando |
 
 Si el texto no es un comando, se guarda como tarea. Mientras escribes, debajo dice cuál de los dos entendió.
@@ -297,6 +315,7 @@ config.py                nombre, colores, tiempos (personaliza aquí)
 nucleo/                  lógica pura, sin interfaz
   almacen.py             SQLite: guardar, completar, posponer
   interprete.py          texto en español -> título + fecha + repetición + ¿tarea o evento?
+  aprendizaje.py         aprende de tus correcciones Tarea/Evento
   planificador.py        repeticiones, avisos anticipados de eventos y "ánimo" de la cara
   pomodoro.py            máquina de estados del pomodoro (sin reloj propio: fácil de probar)
   comandos.py            "modo estudio 50" -> Comando("estudio", 50)

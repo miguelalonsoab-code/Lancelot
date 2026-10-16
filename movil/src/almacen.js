@@ -93,7 +93,7 @@ export class Almacen {
    * Eventos a los que les toca un aviso ANTICIPADO ahora: [{ tarea, dias }]. Igual que por_avisar_antes de la laptop.
    * 'zona': para pasar 'actualizada' (milisegundos) a hora de pared.
    */
-  async porAvisarAntes(ahora, zona, limite = 50) {
+  async porAvisarAntes(ahora, zona, hora = undefined, limite = 50) {
     const { results } = await this.db.prepare(
       "SELECT * FROM tareas WHERE estado = 'pendiente' AND borrada = 0 AND anticipacion IS NOT NULL " +
       "AND anticipacion <> '' AND fecha > ? ORDER BY fecha LIMIT ?").bind(aTexto(ahora), limite).all();
@@ -102,15 +102,26 @@ export class Almacen {
       let desde = f.actualizada ? ahoraEn(zona, new Date(f.actualizada)) : new Date(0);
       const previo = desdeTexto(f.aviso_previo);
       if (previo && previo > desde) desde = previo;
-      const dias = avisoPrevioPendiente(desdeTexto(f.fecha), f.anticipacion, desde, ahora);
+      const dias = avisoPrevioPendiente(desdeTexto(f.fecha), f.anticipacion, desde, ahora, hora);
       if (dias !== null) tocan.push({ tarea: aTarea(f), dias });
     }
     return tocan;
   }
 
-  /** Ya se avisó con anticipación. No cuenta como cambio: no se sincroniza. */
+  /**
+   * Ya se avisó con anticipación. No es una edición (no cambia 'actualizada', así no pisa cambios tuyos),
+   * pero sí cambia 'recibida': así la laptop se entera y no vuelve a mostrar el mismo aviso.
+   */
   marcarAvisoPrevio(id, ahora) {
-    return this.db.prepare("UPDATE tareas SET aviso_previo = ? WHERE id = ?").bind(aTexto(ahora), id).run();
+    return this.db.prepare("UPDATE tareas SET aviso_previo = ?, recibida = ? WHERE id = ?")
+      .bind(aTexto(ahora), Date.now(), id).run();
+  }
+
+  /** "Ya avisé hasta…" que viene de la laptop: gana el más reciente, sin mirar quién editó último. */
+  async unirAvisoPrevio(id, avisoPrevio) {
+    if (!avisoPrevio) return;
+    await this.db.prepare("UPDATE tareas SET aviso_previo = ? WHERE id = ? AND (aviso_previo IS NULL OR aviso_previo < ?)")
+      .bind(avisoPrevio, id, avisoPrevio).run();
   }
 
   /** Eventos cuyo día ya pasó: si se repiten, al próximo; si no, quedan hechos (no se acumulan en vencidas). */
@@ -186,6 +197,7 @@ export class Almacen {
       "WHERE excluded.actualizada > tareas.actualizada")
       .bind(c.id, c.titulo, c.fecha, c.repeticion, c.estado, avisada, c.creada, c.completada, c.actualizada,
             c.borrada, Date.now(), c.tipo ?? "tarea", c.anticipacion ?? null, conTipo, conAnticipacion).run();
+    await this.unirAvisoPrevio(c.id, c.aviso_previo);
     return r.meta.changes > 0;
   }
 
@@ -193,9 +205,24 @@ export class Almacen {
   async cambiosDesde(desde, limite = 1000) {
     const { results } = await this.db.prepare(
       "SELECT id, titulo, fecha, repeticion, estado, creada, completada, actualizada, borrada, tipo, anticipacion, " +
-      "recibida " +
+      "aviso_previo, recibida " +
       "FROM tareas WHERE recibida >= ? ORDER BY recibida LIMIT ?").bind(desde, limite).all();
     return results;
+  }
+
+  // -------------------------------------------------------------- preferencias
+  /** { frases: [...], vocabulario: {...} } que subió la laptop (vacío si nunca subió nada). */
+  async preferencias() {
+    const { results } = await this.db.prepare("SELECT clave, valor FROM ajustes WHERE clave IN ('frases', 'vocabulario')").all();
+    const p = { frases: [], vocabulario: null };
+    for (const f of results) { try { p[f.clave] = JSON.parse(f.valor); } catch { /* se ignora */ } }
+    return p;
+  }
+
+  guardarPreferencia(clave, valor) {
+    return this.db.prepare("INSERT INTO ajustes (clave, valor, actualizada) VALUES (?, ?, ?) " +
+      "ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor, actualizada = excluded.actualizada")
+      .bind(clave, JSON.stringify(valor), Date.now()).run();
   }
 
   // -------------------------------------------------------------- suscripciones

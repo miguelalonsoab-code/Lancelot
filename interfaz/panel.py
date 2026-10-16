@@ -9,7 +9,8 @@ Primero se revisa si es comando; si no, se interpreta como tarea (o evento: el s
 muestra lo que entendió y se puede cambiar).
 
 Pestañas:
-  - Tareas:  arriba las VENCIDAS (con ↻ para reprogramar), luego las próximas.
+  - Tareas:  arriba TAREAS VENCIDAS (siempre a la vista, con ↻ para reprogramar), luego 📅 PRÓXIMOS EVENTOS
+             y al final las PRÓXIMAS TAREAS.
   - Estudio: gráfico de los últimos 7 días, con ◀ ▶ para ver semanas anteriores.
 """
 from __future__ import annotations
@@ -95,6 +96,7 @@ QListWidget::item:selected {{ background: transparent; }}
 #pie {{ color: #5d6573; font-size: 11px; }}
 #seccion {{ color: #8b93a1; font-size: 11px; font-weight: 700; letter-spacing: 1px; background: transparent; }}
 #seccion[vencidas="true"] {{ color: {COLORES['alerta']}; }}
+#seccion[evento="true"] {{ color: {COLORES['evento']}; }}
 #enlace {{ background: transparent; color: {COLORES['alerta']}; padding: 2px 6px; font-size: 12px; }}
 #enlace:hover {{ background: #2a1d1d; }}
 QTabWidget::pane {{ border: none; }}
@@ -121,6 +123,7 @@ class Panel(QWidget):
     reprogramar_pedido = Signal(int, datetime)        # id, nueva fecha (atajos de ↻)
     reprogramar_vencidas_pedido = Signal()            # "Todas a mañana"
     semana_pedida = Signal(int)                       # semanas hacia atrás (0 = últimos 7 días)
+    correccion_pedida = Signal(str, str, str)         # título, lo que entendió, lo que elegiste (tarea/evento)
 
     def __init__(self):
         super().__init__()
@@ -264,6 +267,7 @@ class Panel(QWidget):
         capa.addWidget(self.hoy)
         capa.addWidget(self.pestanas, 1)
 
+        self.hora_aviso_previo = (9, 0)       # la pone el asistente (config.HORA_AVISO_PREVIO)
         self._editando: int | None = None    # id de la tarea que se está editando
         self._tarea_editada: Tarea | None = None
         self._menu_reprogramar: QMenu | None = None
@@ -388,6 +392,8 @@ class Panel(QWidget):
             self._mostrar_vista("Esa fecha ya pasó. Elige una hora futura.", error=True)
             return
         anticipacion = self._anticipacion(r.anticipacion, tipo, repeticion)
+        if tipo != r.tipo:                    # lo corregiste a mano: que Lancelot aprenda
+            self.correccion_pedida.emit(titulo, r.tipo, tipo)
         if self._editando is not None:
             self.editar_pedido.emit(self._editando, titulo, fecha, repeticion, tipo, anticipacion)
         else:
@@ -444,19 +450,30 @@ class Panel(QWidget):
 
     # ------------------------------------------------------------------ lista
     def mostrar_tareas(self, tareas: list[Tarea]):
+        """
+        Tres secciones: TAREAS VENCIDAS (siempre, aunque no haya), 📅 PRÓXIMOS EVENTOS y PRÓXIMAS TAREAS.
+        Un evento nunca es "vencido": el de hoy sigue en eventos hasta que termina el día.
+        """
         self.lista.clear()
         ahora = datetime.now()
-        vencidas = [t for t in tareas if t.fecha <= ahora]
-        proximas = [t for t in tareas if t.fecha > ahora]
-        if vencidas:
-            self._agregar_fila(self._crear_seccion(f"⚠ VENCIDAS · {len(vencidas)}", vencidas=True))
-            for t in vencidas:
-                self._agregar_fila(self._crear_fila(t, ahora, vencida=True))
-            if proximas:
-                self._agregar_fila(self._crear_seccion("PRÓXIMAS"))
+        vencidas = [t for t in tareas if not t.es_evento and t.fecha <= ahora]
+        eventos = [t for t in tareas if t.es_evento]
+        proximas = [t for t in tareas if not t.es_evento and t.fecha > ahora]
+        self._agregar_fila(self._crear_seccion(f"⚠ TAREAS VENCIDAS · {len(vencidas)}", vencidas=bool(vencidas)))
+        for t in vencidas:
+            self._agregar_fila(self._crear_fila(t, ahora, vencida=True))
+        if not vencidas:
+            self._agregar_fila(self._crear_vacio("Ninguna. Vas al día 👌"))
+        if eventos:
+            self._agregar_fila(self._crear_seccion(f"📅 PRÓXIMOS EVENTOS · {len(eventos)}", evento=True))
+            for t in eventos:
+                self._agregar_fila(self._crear_fila(t, ahora))
+        self._agregar_fila(self._crear_seccion(f"PRÓXIMAS TAREAS · {len(proximas)}"))
         for t in proximas:
             self._agregar_fila(self._crear_fila(t, ahora))
-        hoy = sum(1 for t in proximas if t.fecha.date() == ahora.date())
+        if not proximas:
+            self._agregar_fila(self._crear_vacio("Escribe arriba para agregar una tarea."))
+        hoy = sum(1 for t in proximas + eventos if t.fecha > ahora and t.fecha.date() == ahora.date())
         partes = [f"{len(tareas)} pendiente(s)", f"{hoy} más para hoy"]
         if vencidas:
             partes.append(f"{len(vencidas)} vencida(s)")
@@ -468,10 +485,11 @@ class Panel(QWidget):
         item.setSizeHint(QSize(0, fila.sizeHint().height()))   # ancho 0: que tome el de la lista
         self.lista.setItemWidget(item, fila)
 
-    def _crear_seccion(self, texto: str, vencidas: bool = False) -> QWidget:
+    def _crear_seccion(self, texto: str, vencidas: bool = False, evento: bool = False) -> QWidget:
         fila = QWidget()
         etiqueta = QLabel(texto, objectName="seccion")
         etiqueta.setProperty("vencidas", vencidas)
+        etiqueta.setProperty("evento", evento)
         capa = QHBoxLayout(fila)
         capa.setContentsMargins(4, 10, 4, 2)
         capa.addWidget(etiqueta, 1)
@@ -482,17 +500,30 @@ class Panel(QWidget):
             capa.addWidget(b_todas)
         return fila
 
+    def _crear_vacio(self, texto: str) -> QWidget:
+        fila = QWidget()
+        capa = QHBoxLayout(fila)
+        capa.setContentsMargins(4, 4, 4, 8)
+        capa.addWidget(QLabel(texto, objectName="fila_fecha"))
+        return fila
+
     def _crear_fila(self, t: Tarea, ahora: datetime, vencida: bool = False) -> QWidget:
         fila = QWidget()
         nombre = QLabel(("📅 " if t.es_evento else "") + t.titulo, objectName="fila_titulo", wordWrap=True)
-        detalle = describir_atraso(t.fecha, ahora) if vencida else describir_fecha(t.fecha, ahora)
+        if vencida:
+            detalle = describir_atraso(t.fecha, ahora)
+        elif t.es_evento and t.fecha <= ahora:
+            detalle = f"hoy {t.fecha:%H:%M} · es hoy"              # ya fue su hora, pero el día sigue
+        else:
+            detalle = describir_fecha(t.fecha, ahora)
         if t.es_evento and not vencida and t.fecha.date() > ahora.date():
             detalle += f" · {describir_faltan(t.fecha, ahora)}"
         if t.repeticion:
             detalle += "  🔁 " + REPETICIONES[t.repeticion].lower()
         fecha = QLabel(detalle, objectName="fila_fecha")
         if t.anticipacion:
-            fecha.setToolTip(describir_avisos(t.anticipacion).capitalize() + " (a las 9:00) y a su hora.")
+            h, m = self.hora_aviso_previo
+            fecha.setToolTip(describir_avisos(t.anticipacion).capitalize() + f" (a las {h}:{m:02d}) y a su hora.")
         fecha.setProperty("atrasada", vencida)
         fecha.setProperty("hoy", t.fecha.date() == ahora.date() and not vencida)
         fecha.setProperty("evento", t.es_evento and not vencida and t.fecha.date() != ahora.date())

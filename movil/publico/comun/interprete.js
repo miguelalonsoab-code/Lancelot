@@ -102,7 +102,10 @@ export function normalizar(texto) {
 /**
  * ahora: fecha de pared (ver fechas.js). Devuelve { titulo, fecha (Date o null), repeticion (texto o null) }.
  */
-export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO) {
+/**
+ * vocabulario: lo aprendido de tus correcciones en la laptop ({ evento, no_evento, verbos }), o null.
+ */
+export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO, vocabulario = null) {
   ahora = crear(ahora.getUTCFullYear(), ahora.getUTCMonth() + 1, ahora.getUTCDate(),
     ahora.getUTCHours(), ahora.getUTCMinutes());
   const t = normalizar(texto);
@@ -180,7 +183,7 @@ export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO) {
   const titulo = limpiarTitulo(texto, tramos);
 
   // 6) ¿Tarea o evento?
-  tipo = tipo || (esEvento(titulo) ? "evento" : "tarea");
+  tipo = tipo || (esEvento(titulo, vocabulario) ? "evento" : "tarea");
   if (tipo === "evento" && repeticion === null && PALABRA_ANUAL.test(normalizar(titulo))) repeticion = "anual";
   return { titulo, fecha, repeticion, tipo, anticipacion, avisos: avisosPrevios(tipo, repeticion, anticipacion) };
 }
@@ -198,11 +201,21 @@ function aAnticipacion(cantidad, unidad) {
   return dias >= 1 && dias <= 365 ? String(dias) : null;
 }
 
-/** Menciona un aniversario, examen, cita… y NO empieza con un verbo ("estudiar para el examen"). */
-function esEvento(titulo) {
+/** Las palabras del título que lo hacen evento: las de fábrica (menos las "desaprendidas") y las aprendidas. */
+export function palabrasDeEvento(titulo, vocabulario = null) {
+  const v = vocabulario || {};
   const t = normalizar(titulo);
-  if (!PALABRA_EVENTO.test(t)) return false;
-  const primera = /^[a-z]*/.exec(t)[0];
+  const fabrica = (t.match(new RegExp(PALABRA_EVENTO.source, "g")) || []).filter((w) => !(v.no_evento || []).includes(w));
+  const aprendidas = (v.evento || []).filter((w) => /^[a-z]+$/.test(w) && new RegExp(String.raw`\b${w}\b`).test(t));
+  return [...new Set([...fabrica, ...aprendidas])];
+}
+
+/** Menciona un aniversario, examen, cita… y NO empieza con un verbo ("estudiar para el examen"). */
+export function esEvento(titulo, vocabulario = null) {
+  const claves = palabrasDeEvento(titulo, vocabulario);
+  if (!claves.length) return false;
+  const primera = /^[a-z]*/.exec(normalizar(titulo))[0];
+  if (claves.includes(primera) || (vocabulario?.verbos || []).includes(primera)) return true;
   return !(VERBO.test(primera) && !NO_VERBOS.has(primera));
 }
 

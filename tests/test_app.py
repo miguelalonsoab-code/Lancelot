@@ -130,12 +130,13 @@ class TestAsistente(unittest.TestCase):
         ayer = datetime.now().replace(second=0, microsecond=0) - timedelta(days=1)
         self.a.agregar("Pagar la luz", ayer, None)
         self.a.agregar("Examen", datetime.now() + timedelta(days=3), None)
-        self.assertEqual(self.a.panel.lista.count(), 4)            # VENCIDAS, Pagar la luz, PRÓXIMAS, Examen
+        self.assertEqual(self.a.panel.lista.count(), 4)            # TAREAS VENCIDAS, Pagar la luz, PRÓXIMAS, Examen
         vencida = self.a.almacen.obtener(1)
         self.assertEqual(self.a.panel.opciones_menu_reprogramar(vencida)[-1], ("Elegir fecha y hora…", None))
         self.a.panel.reprogramar_vencidas_pedido.emit()
         self.assertEqual(self.a.almacen.obtener(1).fecha, ayer + timedelta(days=2))   # mañana, misma hora
-        self.assertEqual(self.a.panel.lista.count(), 2)            # ya no hay secciones
+        # TAREAS VENCIDAS · 0 (sigue a la vista), "Ninguna…", PRÓXIMAS TAREAS · 2, Pagar la luz, Examen
+        self.assertEqual(self.a.panel.lista.count(), 5)
 
     def test_voz_vencidas(self):
         self.a.agregar("Pagar la luz", datetime.now() - timedelta(hours=2), None)

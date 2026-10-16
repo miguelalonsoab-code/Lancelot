@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.10"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.11"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
@@ -65,6 +65,13 @@ SEGUNDOS_MOUSE_PARA_FRASE = 1.5   # cuánto tiempo quieto encima antes de hablar
 SEGUNDOS_ENTRE_FRASES = 120       # como mucho una frase cada 2 minutos (para que no canse)
 SEGUNDOS_FRASE = 9                # cuánto queda visible
 NOMBRE_ARCHIVO_FRASES = "frases.txt"
+FRASES_HABLADAS = True            # además de mostrarla, la dice en voz alta (salvo modo silencio)
+
+# --- Eventos (v3.10) ----------------------------------------------------------------
+# Hora de los avisos anticipados ("📅 Aniversario · falta 1 semana"). Si la cambias, cambia también
+# "HORA_AVISO_PREVIO": "HH:MM" dentro de "vars" en movil/wrangler.jsonc y ejecuta npm run configurar,
+# para que el celular coincida (sin esa línea, el celular usa las 9:00).
+HORA_AVISO_PREVIO = (9, 0)
 
 # --- Apariencia de la cara ---------------------------------------------------
 TAMANO_CARA = 150                 # diámetro en píxeles

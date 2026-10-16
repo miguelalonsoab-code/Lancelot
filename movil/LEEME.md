@@ -14,6 +14,11 @@ Un servidor gratis en tu cuenta de Cloudflare y una app web que se instala en tu
 - **Eventos** (desde la v3.10): «el 15 de noviembre aniversario», «examen de cálculo el 20/10». Salen con 📅 y
   «faltan N días», y llega una notificación **una semana antes y un día antes** (a las 9:00), además de la del día.
   Al tocar uno → Editar puedes cambiarlo entre Tarea y 📅 Evento.
+- La lista empieza por **Tareas vencidas** (siempre a la vista), luego **📅 Próximos eventos** y tus tareas por día.
+- **Toca la cara** y te dice una frase, en voz alta (⚙ → Voz para apagarla). Incluye tus frases de la laptop.
+- Si la laptop ya te mostró un aviso anticipado, el celular **no lo repite** (espera 5 minutos para saberlo).
+- Los avisos anticipados salen a las 9:00. Si cambias `HORA_AVISO_PREVIO` en config.py, agrega la misma hora en
+  `wrangler.jsonc`, dentro de `"vars"`: `"HORA_AVISO_PREVIO": "08:30",` y ejecuta `npm run configurar`.
 
 ## Instalación (una sola vez)
 
@@ -85,7 +90,8 @@ su cuenta (la cara en la laptop, la notificación en el celular).
 | `publico/app.js` | La app: lista, escribir, preguntas, opciones, ajustes |
 | `publico/cara.js` | La cara animada (el mismo personaje de la laptop) |
 | `publico/sw.js` | Recibe las notificaciones y hace funcionar sus botones con la app cerrada |
-| `migraciones/` | Las tablas de la base de datos (se aplican en orden, una sola vez; `0003` = eventos) |
+| `migraciones/` | Las tablas de la base de datos (se aplican en orden, una sola vez; `0003` = eventos, `0004` = frases y aprendizaje) |
+| `publico/comun/frases.js` | Las frases de la cara (las mismas de la laptop; una prueba lo revisa) |
 | `configurar.mjs` | La instalación de arriba |
 
 **El intérprete existe dos veces** (Python en la laptop, JavaScript aquí). Las dos versiones se prueban contra los

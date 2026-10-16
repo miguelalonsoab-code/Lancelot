@@ -78,7 +78,7 @@ const ahora = () => ahoraEn("America/Lima");
 test("sin clave no se puede leer nada", async () => {
   assert.equal((await api("/api/tareas", { clave: "otra" })).estado, 401);
   const estado = await api("/api/estado", { clave: "" });
-  assert.deepEqual(estado.datos, { ok: true, version: "1.1", configurado: true });
+  assert.deepEqual(estado.datos, { ok: true, version: "1.2", configurado: true });
 });
 
 test("agregar con texto libre, preguntar lo que falta y listar", async () => {
@@ -281,9 +281,11 @@ test("eventos: texto libre, aviso anticipado una sola vez, sincronización y cie
   await reloj();
   assert.equal(recibidas.filter((n) => n.datos.tipo === "previo").length, 1, "no se repite");
 
-  // Avisar no es un cambio: la laptop no recibe nada nuevo por eso
+  // Avisar no es una edición (no cambia 'actualizada'), pero la laptop se entera (v3.11: no lo repite)
   const r2 = await sync({ desde: r1.datos.cursor + 1, cambios: [] });
-  assert.ok(!r2.datos.cambios.some((t) => t.id === id));
+  const avisado = r2.datos.cambios.find((t) => t.id === id);
+  assert.ok(avisado?.aviso_previo);
+  assert.equal(avisado.actualizada, evento.actualizada);
 
   // Una laptop vieja (sin tipo ni anticipación) edita el título: el evento sigue siendo evento
   const { tipo: _t, anticipacion: _a, ...viejo } = evento;
@@ -305,4 +307,53 @@ test("eventos: texto libre, aviso anticipado una sola vez, sincronización y cie
   await sync({ desde: 0, cambios: [ayer] });
   await reloj();
   assert.ok(!(await api("/api/tareas")).datos.tareas.some((t) => t.id === ayer.id));
+});
+
+test("v3.11: 'ya avisé' compartido, espera antes de avisar, preferencias y sincronización grande", async () => {
+  const sync = (cuerpo) => api("/api/sync", { metodo: "POST", cuerpo });
+  await suscribir();
+  const enDosDias = aTexto(sumarMinutos(ahora(), 2 * 1440));
+  const base = { titulo: "Concierto", fecha: enDosDias, repeticion: null, estado: "pendiente", creada: aTexto(ahora()),
+    completada: null, borrada: false, tipo: "evento", anticipacion: "3", actualizada: Date.now() - 10 * 86400000 };
+
+  // La laptop ya mostró el aviso anticipado: el celular no lo repite
+  const visto = { ...base, id: "visto-" + Date.now(), aviso_previo: aTexto(ahora()) };
+  // Este no lo vio nadie: el celular sí avisa (su hora ya pasó hace más de 5 minutos)
+  const nuevo = { ...base, id: "nuevo-" + Date.now(), titulo: "Graduación" };
+  const r1 = await sync({ desde: 0, cambios: [visto, nuevo] });
+  assert.equal(r1.datos.aceptados, 2);
+  recibidas = [];
+  await reloj();
+  const previos = recibidas.filter((n) => n.datos.tipo === "previo").map((n) => n.datos.titulo);
+  assert.ok(previos.includes("📅 Graduación"));
+  assert.ok(!previos.includes("📅 Concierto"), "lo que la laptop ya mostró no se repite");
+
+  // …y la laptop se entera de que el celular avisó la Graduación (sin que cuente como edición)
+  const r2 = await sync({ desde: r1.datos.cursor + 1, cambios: [] });
+  const vuelta = r2.datos.cambios.find((t) => t.id === nuevo.id);
+  assert.ok(vuelta?.aviso_previo, "viaja 'ya avisé'");
+  assert.equal(vuelta.actualizada, nuevo.actualizada);
+
+  // Preferencias: frases y vocabulario de la laptop (limpios) para el celular y el texto libre
+  await sync({ desde: 0, cambios: [], preferencias: { frases: ["Hoy toca brillar", 5, ""],
+    vocabulario: { evento: ["taller"], no_evento: ["cita", "<script>"], verbos: [] } } });
+  const prefs = (await api("/api/preferencias")).datos;
+  assert.deepEqual(prefs, { frases: ["Hoy toca brillar"], vocabulario: { evento: ["taller"], no_evento: ["cita"], verbos: [] } });
+  const cita = (await api("/api/tareas", { metodo: "POST", cuerpo: { texto: "cita con el banco mañana a las 10am" } })).datos.tarea;
+  assert.equal(cita.tipo, "tarea", "usa lo aprendido en la laptop");
+
+  // Una primera sincronización grande (muchas tareas viejas) ya no se rechaza por tamaño
+  const muchas = Array.from({ length: 300 }, (_, i) => ({ ...base, id: `vieja-${Date.now()}-${i}`, tipo: "tarea",
+    anticipacion: null, titulo: `Tarea vieja número ${i} con un título bastante largo para pesar`, estado: "hecha" }));
+  const grande = await sync({ desde: 0, cambios: muchas });
+  assert.equal(grande.estado, 200);
+  assert.equal(grande.datos.aceptados, 300);
+
+  // "Pasar las vencidas a mañana" no mueve eventos
+  const hoyTemprano = { ...base, id: "ev-hoy-" + Date.now(), titulo: "Examen", fecha: aTexto(sumarMinutos(ahora(), -5)),
+    actualizada: Date.now() };
+  await sync({ desde: 0, cambios: [hoyTemprano] });
+  await api("/api/vencidas/manana", { metodo: "POST" });
+  const examen = (await api("/api/tareas")).datos.tareas.find((t) => t.id === hoyTemprano.id);
+  assert.equal(examen.fecha, hoyTemprano.fecha);
 });

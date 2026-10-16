@@ -46,7 +46,7 @@ def debe_saludar(ahora: datetime, ultimo_saludo: str | None, desde_hora: int) ->
 def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: str,
                  max_lista: int = 4) -> Saludo:
     saludo, emoji = momento_del_dia(ahora.hour)
-    vencidas = [t for t in pendientes if t.fecha <= ahora]
+    vencidas = [t for t in pendientes if t.fecha <= ahora and not t.es_evento]
     hoy = [t for t in pendientes if t.fecha > ahora and t.fecha.date() == ahora.date()]
 
     lineas, frases = [], [f"{saludo}, {nombre}."]

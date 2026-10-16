@@ -13,7 +13,8 @@ Sincronización con el celular (etapa 3): cada tarea tiene además
 Eventos (v3.10): además de tareas hay EVENTOS (aniversario, examen, viaje…)
   tipo          'tarea' | 'evento'
   anticipacion  con cuántos días antes avisar: '7,1' = una semana y un día antes (NULL = solo a su hora)
-  aviso_previo  cuándo se mandó el último aviso anticipado (NO se sincroniza, como 'avisada')
+  aviso_previo  cuándo se mandó el último aviso anticipado. Desde la v3.11 SÍ viaja al celular, pero
+                aparte de las ediciones: gana el más reciente, sin tocar 'actualizada' (así no pisa tus cambios).
 """
 from __future__ import annotations
 
@@ -25,12 +26,23 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from nucleo.planificador import aviso_previo_pendiente, siguiente_ocurrencia
+from nucleo.planificador import HORA_AVISO_PREVIO, aviso_previo_pendiente, siguiente_ocurrencia
 
 FORMATO = "%Y-%m-%d %H:%M"
+# Cambios por pedido a /api/sync. El plan gratuito de Cloudflare limita las consultas a la base por pedido
+# (unas 50): con lotes chicos, la primera sincronización (todo tu historial) va en varios pedidos seguidos.
+LOTE_SINCRONIZACION = 40
 TIPOS_VALIDOS = ("tarea", "evento")
 _ANTICIPACION = re.compile(r"^\d{1,3}(?:,\d{1,3})*$")
 SIN_CAMBIO = object()          # para editar(): "deja el valor que tenía"
+
+
+def _fecha_valida(texto) -> bool:
+    try:
+        datetime.strptime(str(texto), FORMATO)
+        return True
+    except ValueError:
+        return False
 
 
 def limpiar_anticipacion(valor) -> str | None:
@@ -163,13 +175,14 @@ class Almacen:
         return [self._a_tarea(f) for f in filas]
 
     def vencidas(self, ahora: datetime) -> list[Tarea]:
-        """Pendientes cuya hora ya pasó (se hayan avisado o no)."""
+        """Tareas pendientes cuya hora ya pasó (se hayan avisado o no). Los eventos no "vencen": se cierran solos."""
         filas = self.con.execute(
-            "SELECT * FROM tareas WHERE estado = 'pendiente' AND borrada = 0 AND fecha <= ? ORDER BY fecha",
+            "SELECT * FROM tareas WHERE estado = 'pendiente' AND borrada = 0 AND tipo <> 'evento' AND fecha <= ? "
+            "ORDER BY fecha",
             (ahora.strftime(FORMATO),)).fetchall()
         return [self._a_tarea(f) for f in filas]
 
-    def por_avisar_antes(self, ahora: datetime) -> list[tuple[Tarea, int]]:
+    def por_avisar_antes(self, ahora: datetime, hora: tuple[int, int] = HORA_AVISO_PREVIO) -> list[tuple[Tarea, int]]:
         """
         Eventos (o tareas con "avísame N días antes") a los que les toca un aviso ANTICIPADO ahora.
         Devuelve [(tarea, días que faltan según el aviso)]. Ver planificador.aviso_previo_pendiente.
@@ -183,13 +196,17 @@ class Almacen:
             if f["aviso_previo"]:
                 desde = max(desde, datetime.strptime(f["aviso_previo"], FORMATO))
             tarea = self._a_tarea(f)
-            if (n := aviso_previo_pendiente(tarea.fecha, tarea.anticipacion, desde, ahora)) is not None:
+            if (n := aviso_previo_pendiente(tarea.fecha, tarea.anticipacion, desde, ahora, hora)) is not None:
                 tocan.append((tarea, n))
         return tocan
 
     def marcar_aviso_previo(self, id_: int, ahora: datetime):
-        """Anota que ya se avisó con anticipación. No cuenta como cambio (no se sincroniza)."""
-        self.con.execute("UPDATE tareas SET aviso_previo = ? WHERE id = ?", (ahora.strftime(FORMATO), id_))
+        """
+        Anota que ya se avisó con anticipación. No es una edición (no cambia 'actualizada'), pero queda
+        para subir: así el celular sabe que ya lo viste aquí y no te lo repite.
+        """
+        self.con.execute("UPDATE tareas SET aviso_previo = ?, sincronizada = 0 WHERE id = ?",
+                         (ahora.strftime(FORMATO), id_))
         self.con.commit()
 
     def cerrar_eventos_pasados(self, ahora: datetime) -> list[int]:
@@ -265,14 +282,14 @@ class Almacen:
         self.con.commit()
 
     # ------------------------------------------------------------ sincronización
-    def cambios_por_subir(self, limite: int = 500) -> list[dict]:
+    def cambios_por_subir(self, limite: int = LOTE_SINCRONIZACION) -> list[dict]:
         """Tareas que cambiaron aquí y el servidor todavía no conoce (en el formato de /api/sync)."""
         filas = self.con.execute("SELECT * FROM tareas WHERE sincronizada = 0 ORDER BY actualizada LIMIT ?",
                                  (limite,)).fetchall()
         return [{"id": f["uuid"], "titulo": f["titulo"], "fecha": f["fecha"], "repeticion": f["repeticion"],
                  "estado": f["estado"], "creada": f["creada"], "completada": f["completada"],
                  "actualizada": f["actualizada"], "borrada": bool(f["borrada"]), "tipo": f["tipo"],
-                 "anticipacion": f["anticipacion"]} for f in filas]
+                 "anticipacion": f["anticipacion"], "aviso_previo": f["aviso_previo"]} for f in filas]
 
     def confirmar_subidas(self, subidas: list[tuple[str, int]]):
         """
@@ -298,6 +315,10 @@ class Almacen:
             estado = "hecha" if c.get("estado") == "hecha" else "pendiente"
             borrada = 1 if c.get("borrada") else 0
             fila = self.con.execute("SELECT * FROM tareas WHERE uuid = ?", (c["id"],)).fetchone()
+            previo = c.get("aviso_previo") if _fecha_valida(c.get("aviso_previo")) else None
+            if fila and previo and (fila["aviso_previo"] or "") < previo:
+                # "ya avisé" del celular: se une siempre (gana el más reciente), aunque la edición de aquí sea más nueva
+                self.con.execute("UPDATE tareas SET aviso_previo = ? WHERE id = ?", (previo, fila["id"]))
             if fila and fila["actualizada"] >= actualizada:
                 continue
             # Un servidor viejo (sin eventos) no manda tipo ni anticipación: entonces se deja lo que había
@@ -316,10 +337,10 @@ class Almacen:
             elif not borrada:                                 # una borrada que nunca estuvo aquí: nada que hacer
                 cur = self.con.execute(
                     "INSERT INTO tareas (uuid, titulo, fecha, repeticion, estado, avisada, creada, completada, "
-                    "actualizada, borrada, sincronizada, tipo, anticipacion) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?)",
+                    "actualizada, borrada, sincronizada, tipo, anticipacion, aviso_previo) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)",
                     (c["id"], c["titulo"], c["fecha"], c.get("repeticion"), estado, int(estado == "hecha"),
-                     c.get("creada") or c["fecha"], c.get("completada"), actualizada, tipo, anticipacion))
+                     c.get("creada") or c["fecha"], c.get("completada"), actualizada, tipo, anticipacion, previo))
                 tocadas.append(cur.lastrowid)
         self.con.commit()
         return tocadas

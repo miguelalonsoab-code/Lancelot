@@ -7,7 +7,7 @@
  */
 import { normalizar } from "./interprete.js";
 
-export const ACCIONES_CELULAR = new Set(["agenda", "vencidas", "vencidas_manana", "hora", "saludo"]);
+export const ACCIONES_CELULAR = new Set(["agenda", "vencidas", "vencidas_manana", "hora", "saludo", "frase"]);
 
 const PREFIJO = "(?:ponte en |pon(?:er)? |activa(?:r)? (?:el )?|entra(?:r)? (?:en|al) |modo )?";
 

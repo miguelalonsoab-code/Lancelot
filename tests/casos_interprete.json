@@ -1708,5 +1708,97 @@
    "ahora": "2026-11-01 06:30",
    "siguiente": "2026-11-30 09:00"
   }
+ ],
+ "vocabulario": {
+  "evento": [
+   "taller"
+  ],
+  "no_evento": [
+   "cita"
+  ],
+  "verbos": [
+   "ir"
+  ]
+ },
+ "reflexiones": [
+  "No dejes para mañana lo que puedes hacer hoy.",
+  "El día depende de ti, puedes hacerlo grandioso.",
+  "No dejes que tus malos pensamientos te controlen, tú puedes controlarlos.",
+  "Un paso pequeño hoy vale más que un plan perfecto mañana.",
+  "No tienes que hacerlo todo hoy. Solo lo siguiente.",
+  "Respira. Una cosa a la vez.",
+  "Lo que hoy te cuesta, mañana te sale solo.",
+  "Empezar es la mitad del camino.",
+  "Hecho es mejor que perfecto.",
+  "Tu yo del futuro te va a agradecer lo que hagas ahora.",
+  "Equivocarse también es avanzar: es aprender qué no funciona.",
+  "La disciplina es elegir entre lo que quieres ahora y lo que más quieres.",
+  "Descansar también es parte del trabajo.",
+  "No te compares con otros; compárate con quien eras ayer.",
+  "Los días difíciles también terminan. Este también.",
+  "Si no sabes por dónde empezar, empieza por lo más pequeño.",
+  "Cada tarea terminada es una preocupación menos.",
+  "Hoy es un buen día para tachar algo de la lista.",
+  "Tu mente es un jardín: cuida lo que siembras en ella.",
+  "No esperes a tener ganas. Las ganas llegan cuando ya empezaste.",
+  "Poco a poco se llega lejos.",
+  "Lo importante no es ir rápido, es no detenerse.",
+  "Agradece algo de hoy, por pequeño que sea.",
+  "Eres más capaz de lo que crees.",
+  "Un error no te define; lo que haces después, sí.",
+  "Ordena tu espacio y tu mente se ordena con él.",
+  "Toma agua, endereza la espalda y sigue.",
+  "La motivación te hace empezar; el hábito te hace seguir.",
+  "Pregúntate: ¿qué es lo más importante ahora mismo?",
+  "Celebra tus avances, aunque sean pequeños.",
+  "Lo que hoy siembras, mañana lo cosechas.",
+  "Si te caes siete veces, levántate ocho.",
+  "Hoy no tiene que ser perfecto para ser un buen día.",
+  "Descansa si lo necesitas, pero no te rindas.",
+  "La paciencia también es avanzar.",
+  "Háblate con el cariño con que le hablarías a un amigo.",
+  "Haz hoy algo que te acerque a quien quieres ser.",
+  "Cinco minutos de enfoque valen más que una hora de distracción.",
+  "Confía en el proceso: los resultados llegan.",
+  "Un buen día empieza con una buena decisión.",
+  "Si algo te preocupa, anótalo: tu mente descansa cuando no tiene que recordarlo todo.",
+  "La constancia le gana a la prisa."
+ ],
+ "con_vocabulario": [
+  {
+   "texto": "cita con el banco mañana",
+   "tipo": "tarea",
+   "sin_vocabulario": "evento"
+  },
+  {
+   "texto": "taller de cerámica el sábado",
+   "tipo": "evento",
+   "sin_vocabulario": "tarea"
+  },
+  {
+   "texto": "ir al concierto el viernes",
+   "tipo": "evento",
+   "sin_vocabulario": "tarea"
+  },
+  {
+   "texto": "ir a comprar pan mañana",
+   "tipo": "tarea",
+   "sin_vocabulario": "tarea"
+  },
+  {
+   "texto": "examen el lunes",
+   "tipo": "evento",
+   "sin_vocabulario": "evento"
+  },
+  {
+   "texto": "taller",
+   "tipo": "evento",
+   "sin_vocabulario": "tarea"
+  },
+  {
+   "texto": "mañana llevar el carro al taller",
+   "tipo": "tarea",
+   "sin_vocabulario": "tarea"
+  }
  ]
 }

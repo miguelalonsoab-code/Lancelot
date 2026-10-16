@@ -36,6 +36,7 @@ class Resultado:
     completo: bool = True
     rechazados: list[dict] = field(default_factory=list)
     error: str = ""
+    preferencias: dict | None = None                      # frases/vocabulario que se subieron en este pedido
 
 
 def leer_configuracion(ruta: Path) -> tuple[str, str] | None:
@@ -58,19 +59,27 @@ class Sincronizador(QObject):
         self.url, self.clave, self.version = url, clave, version
         self.ocupado = False
 
-    def sincronizar(self, desde: int, cambios: list[dict]) -> bool:
-        """Empieza en segundo plano. Devuelve False si ya había una sincronización en curso."""
+    def sincronizar(self, desde: int, cambios: list[dict], preferencias: dict | None = None) -> bool:
+        """
+        Empieza en segundo plano. Devuelve False si ya había una sincronización en curso.
+        preferencias: tus frases y lo aprendido de tus correcciones, solo cuando cambiaron (para el celular).
+        """
         if self.ocupado:
             return False
         self.ocupado = True
-        threading.Thread(target=self._trabajar, args=(desde, cambios), daemon=True, name="sincronizar").start()
+        threading.Thread(target=self._trabajar, args=(desde, cambios, preferencias), daemon=True,
+                         name="sincronizar").start()
         return True
 
-    def _trabajar(self, desde: int, cambios: list[dict]):
+    def _trabajar(self, desde: int, cambios: list[dict], preferencias: dict | None = None):
         try:
-            datos = self.pedir({"desde": desde, "cambios": cambios})
+            cuerpo = {"desde": desde, "cambios": cambios}
+            if preferencias:
+                cuerpo["preferencias"] = preferencias
+            datos = self.pedir(cuerpo)
             resultado = Resultado(True, cambios, datos.get("cambios", []), int(datos.get("cursor", desde)),
-                                  bool(datos.get("completo", True)), datos.get("rechazados", []))
+                                  bool(datos.get("completo", True)), datos.get("rechazados", []),
+                                  preferencias=preferencias)
         except urllib.error.HTTPError as e:
             texto = ("La clave no coincide con la del servidor. Vuelve a ejecutar «npm run configurar»."
                      if e.code == 401 else f"El servidor respondió con un error ({e.code}).")

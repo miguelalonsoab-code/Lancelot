@@ -5,6 +5,8 @@
  *   - La lista se agrupa en: vencidas, hoy, mañana y los días siguientes.
  *   - Tocar el círculo = hecho. Tocar la tarea = más opciones (posponer, reprogramar, editar, borrar).
  *   - Los EVENTOS (aniversario, examen, viaje…) llevan 📅 y "faltan N días"; avisan con anticipación.
+ *   - Orden de la lista: Tareas vencidas (siempre a la vista) · 📅 Próximos eventos · tareas por día.
+ *   - Tocar la cara: una frase (las de fábrica y las tuyas de la laptop), en voz alta si la voz está activada.
  *   - Las notificaciones las manda el servidor cada minuto, aunque la app esté cerrada (ver sw.js).
  *
  * Todo lo que el usuario escribe se muestra con textContent (nunca como HTML).
@@ -15,12 +17,13 @@ import {
   aTexto, ahoraEn, conHora, DIAS, describirAtraso, describirFaltan, describirFecha, desdeTexto, diasEntre, diaSemana,
   hhmm, MESES, soloFecha, sumarDias, sumarMinutos,
 } from "./comun/fechas.js";
-import { avisosPrevios, describirAvisos, interpretar, REPETICIONES, TIPOS } from "./comun/interprete.js";
+import { avisosPrevios, describirAvisos, interpretar as interpretarBase, REPETICIONES, TIPOS } from "./comun/interprete.js";
+import { BolsaFrases, REFLEXIONES } from "./comun/frases.js";
 import { opcionesReprogramar } from "./comun/planificador.js";
 
 const ZONA = "America/Lima";
 const NOMBRE = "Miguel";
-const VERSION_APP = "1.1";
+const VERSION_APP = "1.2";
 
 const $ = (id) => document.getElementById(id);
 const ahora = () => ahoraEn(ZONA);
@@ -32,7 +35,12 @@ const estado = {
   espera: null,          // { falta: "titulo" | "fecha", titulo, fecha, repeticion, tipo, anticipacion } mientras pregunta
   saludado: false,
   instalar: null,        // aviso de "instalar app" que ofrece Chrome
+  vocabulario: null,     // lo que la laptop aprendió de tus correcciones Tarea/Evento
 };
+const frases = new BolsaFrases(REFLEXIONES);
+
+/** Igual que el intérprete común, pero con lo aprendido en la laptop. */
+const interpretar = (texto, ahora) => interpretarBase(texto, ahora, undefined, estado.vocabulario);
 
 // ------------------------------------------------------------ utilidades
 function leer(clave) { try { return localStorage.getItem(clave); } catch { return null; } }
@@ -62,6 +70,42 @@ const deInput = (valor) => (valor ? valor.replace("T", " ").slice(0, 16) : "");
 
 function decir(texto) {
   $("dice").textContent = texto;
+}
+
+// ------------------------------------------------------------ voz (frases)
+const vozActiva = () => leer("voz") !== "0";
+
+/** Lee en voz alta con la voz del celular (Chrome), si hay una en español. */
+function hablar(texto) {
+  if (!vozActiva() || !("speechSynthesis" in window)) return;
+  const v = speechSynthesis.getVoices();
+  const voz = v.find((x) => /^es[-_](PE|419|US|MX)/i.test(x.lang)) || v.find((x) => /^es/i.test(x.lang));
+  try {                                              // la voz es un extra: si falla, la frase igual se ve
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = voz?.lang || "es-419";
+    if (voz) u.voice = voz;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch { /* sin voz */ }
+}
+
+function decirFrase() {
+  const frase = frases.sacar();
+  if (!frase) return;
+  decir(`💬 ${frase}`);
+  hablar(frase);
+  cara.celebrar(1.5);
+}
+
+$("cara").addEventListener("click", () => { if (estado.clave) decirFrase(); });
+$("cara").addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && estado.clave) decirFrase(); });
+
+/** Tus frases y lo aprendido, que sube la laptop. Si falla, quedan las de fábrica. */
+async function cargarPreferencias() {
+  const r = await api("/api/preferencias").catch(() => null);
+  if (!r) return;
+  frases.cambiar([...REFLEXIONES, ...(r.frases || [])]);
+  estado.vocabulario = r.vocabulario || null;
 }
 
 // ------------------------------------------------------------ servidor
@@ -141,6 +185,7 @@ async function conectar(clave) {
     estado.tareas = r.tareas;
     mostrarPrincipal();
     pintar();
+    cargarPreferencias();
     decir(`¡Listo, ${NOMBRE}! Ya estamos conectados. Activa las notificaciones en ⚙.`);
     cara.celebrar();
   } catch (e) {
@@ -149,10 +194,16 @@ async function conectar(clave) {
 }
 
 // ------------------------------------------------------------ lista
+/**
+ * Tareas vencidas (siempre, aunque no haya) · 📅 Próximos eventos · las tareas agrupadas por día.
+ * Un evento nunca "vence": el de hoy sigue entre los eventos hasta que termina el día.
+ */
 function agrupar(tareas, now) {
   const limite = aTexto(now);
-  const grupos = new Map();
-  for (const t of tareas) {
+  const grupos = new Map([["vencidas", { tipo: "vencidas", titulo: "", tareas: [] }]]);
+  const eventos = tareas.filter(esEvento);
+  if (eventos.length) grupos.set("eventos", { tipo: "eventos", titulo: `📅 Próximos eventos · ${eventos.length}`, tareas: eventos });
+  for (const t of tareas.filter((x) => !esEvento(x))) {
     const f = desdeTexto(t.fecha);
     let clave, titulo, tipo;
     if (t.fecha <= limite) {
@@ -168,8 +219,8 @@ function agrupar(tareas, now) {
     grupos.get(clave).tareas.push(t);
   }
   const vencidas = grupos.get("vencidas");
-  if (vencidas) vencidas.titulo = plural(vencidas.tareas.length, "vencida", "vencidas");
-  return [...grupos.values()].sort((a, b) => (a.tipo === "vencidas" ? -1 : b.tipo === "vencidas" ? 1 : 0));
+  vencidas.titulo = `Tareas vencidas · ${vencidas.tareas.length}`;
+  return [...grupos.values()];                       // el Map conserva el orden: vencidas, eventos, días
 }
 
 function pintar() {
@@ -177,21 +228,24 @@ function pintar() {
   const lista = $("lista");
   lista.replaceChildren();
   const grupos = agrupar(estado.tareas, now);
-  if (!grupos.length) {
-    lista.append(el("p", { class: "vacio" }, "No tienes nada pendiente. Escribe abajo, por ejemplo: «el viernes a las 3 llamar al banco»."));
-  }
   for (const g of grupos) {
+    const vacia = g.tipo === "vencidas" && !g.tareas.length;
     const cabeza = el("div", { class: "grupo-cabeza" }, el("h3", {}, g.titulo),
-      g.tipo === "vencidas" && el("button", { class: "enlace", onclick: todasAManana }, "Pasar todas a mañana"));
-    lista.append(el("section", { class: "grupo", "data-tipo": g.tipo }, cabeza, g.tareas.map((t) => fila(t, g.tipo, now))));
+      g.tipo === "vencidas" && !vacia && el("button", { class: "enlace", onclick: todasAManana }, "Pasar todas a mañana"));
+    lista.append(el("section", { class: "grupo", "data-tipo": g.tipo, "data-vacio": vacia }, cabeza,
+      vacia ? el("p", { class: "nada" }, "Ninguna. Vas al día 👌") : g.tareas.map((t) => fila(t, g.tipo, now))));
+  }
+  if (estado.tareas.length === 0) {
+    lista.append(el("p", { class: "vacio" }, "No tienes nada pendiente. Escribe abajo, por ejemplo: «el viernes a las 3 llamar al banco»."));
   }
   actualizarCara(now);
 }
 
 function fila(t, tipo, now) {
   const f = desdeTexto(t.fecha);
-  const faltan = esEvento(t) && tipo === "futuro" ? describirFaltan(f, now) : null;
-  const detalle = [tipo === "vencidas" ? describirAtraso(f, now) : null,
+  const faltan = esEvento(t) ? describirFaltan(f, now) : null;
+  const dia = tipo === "eventos" ? `${capital(DIAS[diaSemana(f)])} ${f.getUTCDate()} de ${MESES[f.getUTCMonth()]}` : null;
+  const detalle = [dia, tipo === "vencidas" ? describirAtraso(f, now) : null,
     faltan && capital(faltan),
     t.repeticion ? `Se repite: ${REPETICIONES[t.repeticion].toLowerCase()}` : null].filter(Boolean).join(". ");
   const nodo = el("div", { class: "tarea", "data-id": t.id, "data-evento": esEvento(t) },
@@ -204,7 +258,7 @@ function fila(t, tipo, now) {
 
 function actualizarCara(now) {
   const limite = aTexto(now);
-  const vencidas = estado.tareas.filter((t) => t.fecha <= limite);
+  const vencidas = estado.tareas.filter((t) => t.fecha <= limite && !esEvento(t));
   const hoy = estado.tareas.filter((t) => t.fecha > limite && diasEntre(now, desdeTexto(t.fecha)) === 0);
   const h = now.getUTCHours();
   const animo = vencidas.length ? "alerta" : hoy.length ? "pendiente" : (h >= 23 || h < 6) ? "dormido" : "tranquilo";
@@ -219,7 +273,7 @@ function actualizarCara(now) {
 /** Lo que Lancelot te dice al abrir la app (o si preguntas "¿qué tengo para hoy?"). */
 function resumen(now, conSaludo = false) {
   const limite = aTexto(now);
-  const vencidas = estado.tareas.filter((t) => t.fecha <= limite);
+  const vencidas = estado.tareas.filter((t) => t.fecha <= limite && !esEvento(t));
   const hoy = estado.tareas.filter((t) => t.fecha > limite && diasEntre(now, desdeTexto(t.fecha)) === 0);
   const h = now.getUTCHours();
   const saludo = h >= 5 && h < 12 ? "Buenos días" : h < 19 && h >= 12 ? "Buenas tardes" : "Buenas noches";
@@ -396,13 +450,14 @@ async function comando(c) {
     const hoy = estado.tareas.filter((t) => t.fecha > limite && diasEntre(now, desdeTexto(t.fecha)) === 0);
     return decir(hoy.length ? `Hoy:\n${hoy.map((t) => `${hhmm(desdeTexto(t.fecha))}  ${conIcono(t)}`).join("\n")}` : resumen(now));
   }
+  if (c.accion === "frase") return decirFrase();
   if (c.accion === "vencidas") {
-    const v = estado.tareas.filter((t) => t.fecha <= limite);
+    const v = estado.tareas.filter((t) => t.fecha <= limite && !esEvento(t));
     return decir(v.length ? `${capital(plural(v.length, "vencida", "vencidas"))}:\n${v.map((t) => t.titulo).join("\n")}`
       : "No tienes tareas vencidas.");
   }
   if (c.accion === "vencidas_manana") return todasAManana();
-  decir("Eso lo hago en la laptop. Aquí anoto tareas y te digo tu agenda, tus vencidas o la hora.");
+  decir("Eso lo hago en la laptop. Aquí anoto tareas y te digo tu agenda, tus vencidas, la hora o una frase.");
 }
 
 // ------------------------------------------------------------ hoja inferior
@@ -563,6 +618,10 @@ async function ajustes() {
 
   abrirHoja("Ajustes",
     el("div", { class: "ajuste" }, el("h3", {}, "Notificaciones"), notificaciones),
+    el("div", { class: "ajuste" }, el("h3", {}, "Voz"),
+      el("p", {}, vozActiva() ? "Al tocar mi cara te digo la frase en voz alta." : "Las frases solo se muestran, sin voz."),
+      el("button", { class: "b-secundario", onclick: () => { guardar("voz", vozActiva() ? "0" : "1"); ajustes(); } },
+        vozActiva() ? "Desactivar la voz" : "Activar la voz")),
     el("div", { class: "ajuste" }, el("h3", {}, "Si los avisos llegan tarde"),
       el("p", {}, "Los Vivo ahorran batería cerrando apps. En Ajustes → Batería, busca la gestión del consumo " +
         "en segundo plano y permite que Chrome funcione en segundo plano.")),
@@ -677,6 +736,7 @@ async function iniciar() {
   if (!estado.clave) return mostrarConectar();
   mostrarPrincipal();
   await recargar();
+  cargarPreferencias();
   if (new URLSearchParams(location.search).has("nueva")) entrada.focus();   // atajo "Nueva tarea" del ícono
   revisarSuscripcion().catch(() => { /* se intenta la próxima vez */ });
 }

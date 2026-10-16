@@ -97,6 +97,10 @@ input:focus, select:focus { border-color: var(--acento); }
 .grupo-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 4px 6px; }
 .grupo h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--tenue); }
 .grupo[data-tipo="vencidas"] h3 { color: var(--alerta); }
+.grupo[data-tipo="vencidas"][data-vacio] h3 { color: var(--tenue); }
+.grupo[data-tipo="eventos"] h3 { color: #c9b8ff; }
+.grupo .nada { margin: 2px 4px 0; color: var(--tenue); font-size: 14px; }
+#cara { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .grupo[data-tipo="hoy"] h3 { color: var(--pendiente); }
 .enlace { background: none; border: 0; padding: 6px 4px; color: var(--alerta); font-weight: 700; font-size: 14px; }
 

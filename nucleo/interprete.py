@@ -75,6 +75,18 @@ _NO_VERBOS = {"primer", "tercer", "mujer", "ayer", "taller", "lugar", "hogar", "
               "militar", "collar", "altar", "mar", "super", "seminar"}
 AVISOS_PREVIOS_POR_DEFECTO = "7,1"        # una semana antes y un día antes (y el mismo día, a su hora)
 
+# Lo aprendido de tus correcciones Tarea/Evento (ver nucleo/aprendizaje.py). La app lo carga al iniciar
+# con usar_vocabulario(); las pruebas pueden pasar otro a interpretar(..., vocabulario=...).
+#   evento     palabras que también hacen evento ("taller")
+#   no_evento  palabras de la lista de arriba que para ti NO son evento ("cita")
+#   verbos     primeras palabras que no impiden que sea evento ("ir" en "ir al concierto")
+_VOCABULARIO: dict = {}
+
+
+def usar_vocabulario(vocabulario: dict | None):
+    global _VOCABULARIO
+    _VOCABULARIO = dict(vocabulario or {})
+
 # Palabras de "relleno" que se quitan del inicio del título
 _RELLENO_INICIAL = re.compile(
     r"^(?:recuerdame|recordarme|recordar|avisame|avisarme|anota|anotame|apunta|agrega|"
@@ -170,7 +182,7 @@ def normalizar(texto: str) -> str:
     return texto.lower().translate(_SIN_TILDES)
 
 
-def interpretar(texto: str, ahora: datetime | None = None) -> Interpretacion:
+def interpretar(texto: str, ahora: datetime | None = None, vocabulario: dict | None = None) -> Interpretacion:
     ahora = (ahora or datetime.now()).replace(second=0, microsecond=0)
     t = normalizar(texto)
     tramos: list[tuple[int, int]] = []     # partes del texto ya reconocidas
@@ -269,7 +281,7 @@ def interpretar(texto: str, ahora: datetime | None = None) -> Interpretacion:
     titulo = _limpiar_titulo(texto, tramos)
 
     # 6) ¿Tarea o evento? -------------------------------------------------------
-    tipo = tipo or ("evento" if _es_evento(titulo) else "tarea")
+    tipo = tipo or ("evento" if es_evento(titulo, _VOCABULARIO if vocabulario is None else vocabulario) else "tarea")
     if tipo == "evento" and repeticion is None and _PALABRA_ANUAL.search(normalizar(titulo)):
         repeticion = "anual"                        # un cumpleaños vuelve cada año
     return Interpretacion(titulo=titulo, fecha=fecha, repeticion=repeticion, tipo=tipo, anticipacion=anticipacion)
@@ -346,13 +358,32 @@ def _anticipacion(cantidad: str, unidad: str) -> str | None:
     return str(dias) if 1 <= dias <= 365 else None
 
 
-def _es_evento(titulo: str) -> bool:
-    """Menciona un aniversario, examen, cita… y NO empieza con un verbo ("estudiar para el examen")."""
+def palabras_de_evento(titulo: str, vocabulario: dict | None = None) -> list[str]:
+    """Las palabras del título que lo hacen evento, según la lista de fábrica y lo aprendido."""
+    v = vocabulario or {}
     t = normalizar(titulo)
-    if not _PALABRA_EVENTO.search(t):
+    fabrica = [w for w in _PALABRA_EVENTO.findall(t) if w not in v.get("no_evento", ())]
+    aprendidas = [w for w in v.get("evento", ()) if re.search(rf"\b{re.escape(w)}\b", t)]
+    return list(dict.fromkeys(fabrica + aprendidas))
+
+
+def primera_palabra(titulo: str) -> str:
+    return re.match(r"[a-z]*", normalizar(titulo)).group(0)
+
+
+def parece_verbo(palabra: str) -> bool:
+    return bool(_VERBO.match(palabra)) and palabra not in _NO_VERBOS
+
+
+def es_evento(titulo: str, vocabulario: dict | None = None) -> bool:
+    """Menciona un aniversario, examen, cita… y NO empieza con un verbo ("estudiar para el examen")."""
+    claves = palabras_de_evento(titulo, vocabulario)
+    if not claves:
         return False
-    primera = re.match(r"[a-z]*", t).group(0)
-    return not (_VERBO.match(primera) and primera not in _NO_VERBOS)
+    primera = primera_palabra(titulo)
+    if primera in claves or primera in (vocabulario or {}).get("verbos", ()):
+        return True
+    return not parece_verbo(primera)
 
 
 def _a_timedelta(cantidad: str, unidad: str) -> timedelta:

@@ -19,7 +19,7 @@ import { Almacen, REPETICIONES_VALIDAS, TIPOS_VALIDOS, limpiarAnticipacion } fro
 import { enviar } from "./push.js";
 import { accionValida, autorizado, firmarAccion } from "./seguridad.js";
 
-const VERSION_SERVIDOR = "1.1";   // (el archivo principal de un Worker solo puede exportar "default")
+const VERSION_SERVIDOR = "1.2";   // (el archivo principal de un Worker solo puede exportar "default")
 
 export default {
   async fetch(request, env) {
@@ -48,6 +48,14 @@ const json = (datos, estado = 200) => new Response(JSON.stringify(datos), {
 
 const zonaDe = (env) => env.ZONA_HORARIA || "America/Lima";
 const ahoraDe = (env) => ahoraEn(zonaDe(env));
+/** "09:00" -> [9, 0]: la hora de los avisos anticipados. Opcional en "vars" de wrangler.jsonc; si no está, 9:00. */
+const horaAvisoDe = (env) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(env.HORA_AVISO_PREVIO || "");
+  return m && +m[1] < 24 && +m[2] < 60 ? [+m[1], +m[2]] : [9, 0];
+};
+// El celular espera unos minutos antes de mandar un aviso anticipado: si la laptop estaba prendida y ya lo
+// mostró (y lo sincronizó), no se repite en el celular.
+const MINUTOS_GRACIA_PREVIO = 5;
 
 /** Servicios de notificaciones de los navegadores: solo a ellos se les envía (nada de direcciones inventadas). */
 const SERVICIOS_PUSH = [/^fcm\.googleapis\.com$/, /\.push\.services\.mozilla\.com$/, /\.notify\.windows\.com$/,
@@ -55,8 +63,8 @@ const SERVICIOS_PUSH = [/^fcm\.googleapis\.com$/, /\.push\.services\.mozilla\.co
 const MAX_SUSCRIPCIONES = 10;
 const MAX_ENVIOS_POR_MINUTO = 8;
 
-async function leerJson(request) {
-  if (Number(request.headers.get("Content-Length") || 0) > 20000) throw new ErrorPedido("Pedido demasiado grande", 413);
+async function leerJson(request, limite = 20000) {
+  if (Number(request.headers.get("Content-Length") || 0) > limite) throw new ErrorPedido("Pedido demasiado grande", 413);
   try {
     return await request.json();
   } catch {
@@ -86,13 +94,16 @@ async function atender(request, env) {
   }
   if (ruta === "/api/tareas" && metodo === "POST") {
     const datos = await leerJson(request);
-    const t = datos.texto !== undefined ? desdeTextoLibre(datos.texto, ahora) : validar(datos, ahora);
+    const t = datos.texto !== undefined
+      ? desdeTextoLibre(datos.texto, ahora, (await almacen.preferencias()).vocabulario) : validar(datos, ahora);
     if (t.falta) return json(t, 422);                  // la app pregunta lo que falta y vuelve a enviar
     return json({ tarea: await almacen.agregar(t.titulo, t.fecha, t.repeticion, ahora, t.tipo, t.anticipacion) }, 201);
   }
-  if (ruta === "/api/sync" && metodo === "POST") return sincronizar(await leerJson(request), almacen, ahora);
+  // La primera sincronización sube TODAS las tareas (también el historial de hechas): puede pesar bastante
+  if (ruta === "/api/sync" && metodo === "POST") return sincronizar(await leerJson(request, 1_000_000), almacen, ahora);
+  if (ruta === "/api/preferencias" && metodo === "GET") return json(await almacen.preferencias());
   if (ruta === "/api/vencidas/manana" && metodo === "POST") {
-    const vencidas = (await almacen.pendientes()).filter((t) => t.fecha <= aTexto(ahora));
+    const vencidas = (await almacen.pendientes()).filter((t) => t.fecha <= aTexto(ahora) && t.tipo !== "evento");
     for (const t of vencidas) await almacen.reprogramar(t.id, aTexto(aManana(desdeTexto(t.fecha), ahora)));
     return json({ movidas: vencidas.length });
   }
@@ -181,8 +192,8 @@ function validar(datos, ahora, editando = false) {
 }
 
 /** "mañana 8pm pagar la luz" -> tarea, o { falta: "fecha" | "titulo" } para que la app pregunte. */
-function desdeTextoLibre(texto, ahora) {
-  const r = interpretar(String(texto).slice(0, 300), ahora);
+function desdeTextoLibre(texto, ahora, vocabulario = null) {
+  const r = interpretar(String(texto).slice(0, 300), ahora, undefined, vocabulario);
   const extra = { repeticion: r.repeticion, tipo: r.tipo, anticipacion: r.avisos };
   if (!r.titulo) return { falta: "titulo", fecha: r.fecha && aTexto(r.fecha), ...extra };
   if (!r.fecha) return { falta: "fecha", titulo: r.titulo, ...extra };
@@ -210,10 +221,24 @@ async function sincronizar(datos, almacen, ahora) {
       rechazados.push({ id: String(bruto?.id ?? ""), error: e.message });
     }
   }
+  if (datos.preferencias && typeof datos.preferencias === "object") await guardarPreferencias(datos.preferencias, almacen);
   const filas = await almacen.cambiosDesde(desde);
   const cursor = filas.length ? filas[filas.length - 1].recibida : desde;
   return json({ aceptados, rechazados, cursor, completo: filas.length < 1000,
                 cambios: filas.map(({ recibida, ...t }) => ({ ...t, borrada: Boolean(t.borrada) })) });
+}
+
+/** Frases y vocabulario que comparte la laptop. Se limpian: solo textos, con tope de cantidad y largo. */
+async function guardarPreferencias(p, almacen) {
+  if (Array.isArray(p.frases)) {
+    const frases = p.frases.filter((f) => typeof f === "string" && f.trim()).map((f) => f.trim().slice(0, 300)).slice(0, 300);
+    await almacen.guardarPreferencia("frases", frases);
+  }
+  if (p.vocabulario && typeof p.vocabulario === "object") {
+    const lista = (x) => (Array.isArray(x) ? x.filter((w) => typeof w === "string" && /^[a-z]{2,30}$/.test(w)).slice(0, 200) : []);
+    await almacen.guardarPreferencia("vocabulario", {
+      evento: lista(p.vocabulario.evento), no_evento: lista(p.vocabulario.no_evento), verbos: lista(p.vocabulario.verbos) });
+  }
 }
 
 function validarCambio(c) {
@@ -228,7 +253,8 @@ function validarCambio(c) {
   const estado = c.estado === "hecha" ? "hecha" : "pendiente";
   const creada = desdeTexto(String(c.creada || "")) ? String(c.creada) : t.fecha;
   const completada = c.completada && desdeTexto(String(c.completada)) ? String(c.completada) : null;
-  return { id, ...t, estado, creada, completada, actualizada, borrada: c.borrada ? 1 : 0 };
+  const avisoPrevio = c.aviso_previo && desdeTexto(String(c.aviso_previo)) ? String(c.aviso_previo) : null;
+  return { id, ...t, estado, creada, completada, actualizada, borrada: c.borrada ? 1 : 0, aviso_previo: avisoPrevio };
 }
 
 // ------------------------------------------------------------ notificaciones
@@ -304,7 +330,8 @@ async function avisarVencidas(env) {
   }
   // Avisos anticipados de eventos ("📅 Aniversario · falta 1 semana"). Un solo intento: si no llegó,
   // el próximo aviso (o el del mismo día) lo cubre.
-  for (const { tarea: t } of await almacen.porAvisarAntes(ahora, zonaDe(env))) {
+  const conGracia = sumarMinutos(ahora, -MINUTOS_GRACIA_PREVIO);
+  for (const { tarea: t } of await almacen.porAvisarAntes(conGracia, zonaDe(env), horaAvisoDe(env))) {
     if (puedeAvisar) {
       if (intentos >= MAX_ENVIOS_POR_MINUTO) break;
       const r = await enviarATodos(env, almacen, {
