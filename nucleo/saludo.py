@@ -8,6 +8,7 @@ Saludo del día: lo primero que te dice Lancelot cada día.
     • 20:00 Pagar la luz
     ⚠ 1 vencida sin resolver
     📅 Se acerca: Aniversario (faltan 3 días)
+    🕒 Libre hoy: 18:00–19:00 (1 h) · 22:00–23:00 (1 h)
     🔥 Racha de estudio: 4 días. ¡Que no se corte!
 
 Lógica pura: no sabe de SQLite ni de ventanas, solo arma los textos.
@@ -19,6 +20,7 @@ from datetime import datetime
 
 from nucleo.almacen import Tarea
 from nucleo.hablado import hora_hablada
+from nucleo.horario import describir_libre, hablar_duracion, minutos
 from nucleo.interprete import describir_faltan
 
 
@@ -44,7 +46,8 @@ def debe_saludar(ahora: datetime, ultimo_saludo: str | None, desde_hora: int) ->
 
 
 def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: str,
-                 max_lista: int = 4) -> Saludo:
+                 max_lista: int = 4, libres: list | None = None) -> Saludo:
+    """libres: tus horas libres de hoy [(inicio, fin)] si anotaste tu horario (None = no se menciona)."""
     saludo, emoji = momento_del_dia(ahora.hour)
     vencidas = [t for t in pendientes if t.fecha <= ahora and not t.es_evento]
     hoy = [t for t in pendientes if t.fecha > ahora and t.fecha.date() == ahora.date()]
@@ -73,6 +76,10 @@ def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: s
                                                   for t in pronto[:3]))
         frases.append("Se acerca " + " y ".join(f"{t.titulo}, {describir_faltan(t.fecha, ahora)}"
                                                 for t in pronto[:2]) + ".")
+    if libres is not None:
+        lineas.append(f"🕒 Libre hoy: {describir_libre(libres)}")
+        frases.append(f"Hoy tienes {hablar_duracion(minutos(libres))} libre." if libres
+                      else "Hoy no te queda tiempo libre en tu horario.")
     if racha >= 2:
         lineas.append(f"🔥 Racha de estudio: {racha} días. ¡Que no se corte!")
         frases.append(f"Llevas {racha} días seguidos estudiando. ¡Que no se corte!")

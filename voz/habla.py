@@ -4,8 +4,11 @@ La voz del asistente.
 Dos motores:
 - Piper: voces neuronales, suenan bastante naturales. Gratis y sin internet.
   Basta con poner un archivo .onnx y su .onnx.json en datos/voces/.
-- Windows: las voces que ya trae el sistema (p. ej. Sabina o Helena).
-  Se usan si no hay ninguna voz Piper.
+- Windows: las voces que ya trae el sistema (p. ej. Sabina o Helena), usadas DIRECTAMENTE a través de
+  SAPI (la interfaz de voz de Windows). Se usan si no hay ninguna voz Piper.
+  Antes de la v3.12.1 se usaban a través de la librería pyttsx3, pero esta tiene un fallo conocido:
+  en un hilo que vive mucho tiempo dice la PRIMERA frase y después se queda muda, sin dar error.
+  pyttsx3 queda solo como último recurso si SAPI no se puede abrir.
 
 Todo se ejecuta en un hilo aparte con una cola: así hablar nunca congela la cara.
 Mientras habla emite 'empezo' / 'termino' para que el oído no se escuche a sí mismo.
@@ -115,18 +118,51 @@ class Voz(QObject):
         if sys.platform == "win32":
             import pythoncom               # el motor de Windows (COM) necesita esto en hilos nuevos
             pythoncom.CoInitialize()
+            try:
+                return self._preparar_sapi()
+            except Exception as e:         # SAPI no disponible (muy raro): se intenta con pyttsx3
+                self.estado.emit(f"No pude abrir la voz de Windows directamente ({e}); pruebo con pyttsx3")
+        return self._preparar_pyttsx3()
+
+    def _preparar_sapi(self):
+        """
+        SAPI.SpVoice: el mismo motor que usa el Narrador de Windows. Speak(texto, 0) habla y ESPERA a que
+        termine, así que funciona igual en la primera frase que en la número cien.
+        """
+        import win32com.client
+
+        sapi = win32com.client.Dispatch("SAPI.SpVoice")
+        tokens = [sapi.GetVoices().Item(i) for i in range(sapi.GetVoices().Count)]
+        if tokens:
+            elegida = max(tokens, key=lambda t: self._puntaje(t.GetDescription(), _idioma_sapi(t)))
+            sapi.Voice = elegida
+            self.estado.emit(f"Voz de Windows: {elegida.GetDescription()}")
+        sapi.Rate = velocidad_sapi(self.velocidad)
+
+        def hablar(texto: str):
+            sapi.Speak(texto, 0)            # 0 = síncrono: vuelve cuando terminó de hablar
+
+        return hablar
+
+    def _puntaje(self, nombre: str, idiomas: str) -> int:
+        """Prefiere la voz que pediste en config; si no, una en español."""
+        nombre = (nombre or "").lower()
+        if self.preferida and self.preferida in nombre:
+            return 3
+        idiomas = (idiomas or "").lower()
+        es = ("spanish" in nombre or "español" in nombre or "es-" in idiomas or "es_" in idiomas
+              or idiomas.endswith("0a") or idiomas == "a"
+              or any(n in nombre for n in ("sabina", "helena", "laura", "pablo", "raul", "dalia", "jorge")))
+        return 2 if es else 0
+
+    def _preparar_pyttsx3(self):
         import pyttsx3
 
         motor = pyttsx3.init()
         voces = motor.getProperty("voices")
 
         def puntaje(v):
-            nombre = (v.name or "").lower()
-            if self.preferida and self.preferida in nombre:
-                return 3
-            idiomas = " ".join(str(x) for x in (getattr(v, "languages", []) or [])).lower()
-            return 2 if ("spanish" in nombre or "español" in nombre or "es-" in idiomas or "es_" in idiomas
-                         or "sabina" in nombre or "helena" in nombre or "laura" in nombre or "pablo" in nombre) else 0
+            return self._puntaje(v.name, " ".join(str(x) for x in (getattr(v, "languages", []) or [])))
 
         if voces:
             elegida = max(voces, key=puntaje)
@@ -139,3 +175,23 @@ class Voz(QObject):
             motor.runAndWait()
 
         return hablar
+
+
+def velocidad_sapi(velocidad: float) -> int:
+    """VOZ_VELOCIDAD (1.0 normal, 1.2 más rápido) -> la escala de SAPI (-10 a 10, 0 = normal)."""
+    return max(-10, min(10, round((velocidad - 1.0) * 10)))
+
+
+def _idioma_sapi(token) -> str:
+    """Código de idioma de la voz en SAPI, en hexadecimal ('80a' = español de México). Vacío si no se puede."""
+    try:
+        return str(token.GetAttribute("Language") or "")
+    except Exception:
+        return ""
+
+
+def voces_windows() -> list[str]:
+    """Nombres de las voces de Windows instaladas (para probar_voz.py)."""
+    import win32com.client
+    voces = win32com.client.Dispatch("SAPI.SpVoice").GetVoices()
+    return [voces.Item(i).GetDescription() for i in range(voces.Count)]

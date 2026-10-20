@@ -1,4 +1,4 @@
-# Lancelot — asistente de escritorio · v3.11
+# Lancelot — asistente de escritorio · v3.12.1
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
@@ -9,6 +9,24 @@ te muestra una burbuja y Windows lanza una notificación.
   Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
   con botones **✓ Hecho** y **+10 min**.
 - Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
+
+## Novedades v3.12.1: la voz ya no se queda muda
+- 🔊 Arreglado: Lancelot decía la primera frase y después se quedaba callado. Ahora habla todos los avisos.
+- La voz de Windows (Sabina) se usa directamente por SAPI; la librería pyttsx3, que tenía ese fallo, queda solo de respaldo.
+- `python probar_voz.py` ahora dice tres frases seguidas: si escuchas las tres, la voz funciona bien.
+
+## Novedades v3.12: tu horario y tus horas libres
+- 🗓 Anota tu horario fijo y Lancelot calcula tus horas libres de cada día.
+- 🕒 Pregúntale «¿cuándo estoy libre?» o «tiempo libre mañana».
+- **Horario fijo**: lo que te ocupa cada semana. Escríbelo en el panel (pestaña **🗓 Horario**) o dilo:
+  «horario: de lunes a viernes de 9am a 6pm trabajo», «estoy ocupado martes y jueves de 7 a 10 de la noche
+  clase de redes», «sábados de 8 a 12 inglés». Entiende «de lunes a viernes», «martes y jueves», «fines de semana»,
+  «todos los días», horas con am/pm, «de la noche» y «8:30-17:30». Para borrar: ✕ en la lista o «borra el horario de trabajo».
+- **Horas libres**: entre `HORA_DESPERTAR` y `HORA_DORMIR` (config.py), menos tu horario; huecos de 30 min o más.
+  Se ven en la pestaña Horario (hoy y mañana) y en el saludo de la mañana («🕒 Libre hoy: …»).
+- Un turno que pasa la medianoche se anota en dos partes («lunes de 10pm a 12am» y «martes de 12am a 6am»).
+- Es la base de la próxima versión: que Lancelot te **recomiende** qué hacer en esos huecos.
+- Solo en la laptop por ahora (el celular todavía no ve el horario).
 
 ## Novedades v3.11: frases en voz alta y Lancelot aprende
 - 🗣 Las frases ahora también se dicen en voz alta (en la laptop y, al tocar la cara, en el celular).
@@ -275,6 +293,8 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | `busca actualizaciones` · `qué versión tienes` | Revisa si hay una versión nueva en GitHub |
 | `dime una frase` · `motívame` | Una frase, en voz alta (las tuyas incluidas) |
 | `guarda esta frase: …` | La agrega a `frases.txt` para que te la diga de vez en cuando |
+| `horario: de lunes a viernes de 9am a 6pm trabajo` | Anota un bloque fijo en tu horario |
+| `mi horario` · `¿cuándo estoy libre?` · `tiempo libre mañana` | Tu horario y tus horas libres |
 
 Si el texto no es un comando, se guarda como tarea. Mientras escribes, debajo dice cuál de los dos entendió.
 
@@ -316,6 +336,7 @@ nucleo/                  lógica pura, sin interfaz
   almacen.py             SQLite: guardar, completar, posponer
   interprete.py          texto en español -> título + fecha + repetición + ¿tarea o evento?
   aprendizaje.py         aprende de tus correcciones Tarea/Evento
+  horario.py             tu horario fijo ("de lunes a viernes de 9 a 6 trabajo") y tus horas libres
   planificador.py        repeticiones, avisos anticipados de eventos y "ánimo" de la cara
   pomodoro.py            máquina de estados del pomodoro (sin reloj propio: fácil de probar)
   comandos.py            "modo estudio 50" -> Comando("estudio", 50)

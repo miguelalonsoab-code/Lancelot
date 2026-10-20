@@ -12,6 +12,7 @@ Pestañas:
   - Tareas:  arriba TAREAS VENCIDAS (siempre a la vista, con ↻ para reprogramar), luego 📅 PRÓXIMOS EVENTOS
              y al final las PRÓXIMAS TAREAS.
   - Estudio: gráfico de los últimos 7 días, con ◀ ▶ para ver semanas anteriores.
+  - Horario: tus bloques fijos de la semana (trabajo, clases…) y tus horas libres de hoy y mañana.
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ from interfaz.grafico import GraficoSemana
 from nucleo.almacen import Tarea
 from nucleo.comandos import Comando, interpretar_comando
 from nucleo.estadisticas import ResumenSemana, describir_semana, rango
+from nucleo.horario import Bloque
 from nucleo.interprete import (REPETICIONES, TIPOS, avisos_previos, describir_atraso, describir_avisos,
                                describir_faltan, describir_fecha, interpretar)
 from nucleo.planificador import opciones_reprogramar
@@ -57,6 +59,10 @@ DESCRIPCION_COMANDO = {
     "actualizacion": "buscar una versión nueva de Lancelot",
     "frase": "decirte una frase",
     "guardar_frase": "guardar la frase «{texto}»",
+    "horario_ver": "mostrar tu horario",
+    "horario_agregar": "anotar en tu horario: «{texto}»",
+    "horario_borrar": "borrar del horario: «{texto}»",
+    "libre": "decirte tus horas libres",
 }
 
 ESTILO = f"""
@@ -107,6 +113,7 @@ QTabBar::tab:hover {{ color: #e8ebef; }}
 #rango {{ font-size: 14px; font-weight: 600; }}
 #semana_texto {{ color: #c3c8d1; font-size: 12px; }}
 #nota {{ color: #5d6573; font-size: 11px; }}
+#libre {{ color: {COLORES['tranquilo']}; font-size: 13px; }}
 QMenu {{ background: #1a1d24; border: 1px solid #2a2f3a; padding: 4px; }}
 QMenu::item {{ padding: 6px 18px; border-radius: 6px; }}
 QMenu::item:selected {{ background: #2e3340; }}
@@ -124,6 +131,8 @@ class Panel(QWidget):
     reprogramar_vencidas_pedido = Signal()            # "Todas a mañana"
     semana_pedida = Signal(int)                       # semanas hacia atrás (0 = últimos 7 días)
     correccion_pedida = Signal(str, str, str)         # título, lo que entendió, lo que elegiste (tarea/evento)
+    bloque_agregar_pedido = Signal(str)               # "de lunes a viernes de 9am a 6pm trabajo"
+    bloque_borrar_pedido = Signal(int)                # id del bloque
 
     def __init__(self):
         super().__init__()
@@ -251,9 +260,37 @@ class Panel(QWidget):
         capa_estudio.addStretch()
         capa_estudio.addWidget(nota)
 
+        # --- Pestaña "Horario": bloques fijos y horas libres
+        self.libre_hoy = QLabel(objectName="libre", wordWrap=True)
+        self.libre_manana = QLabel(objectName="semana_texto", wordWrap=True)
+        self.entrada_bloque = QLineEdit(placeholderText="de lunes a viernes de 9am a 6pm trabajo")
+        self.entrada_bloque.returnPressed.connect(self._al_agregar_bloque)
+        b_bloque = QPushButton("Anotar", objectName="agregar", cursor=Qt.PointingHandCursor)
+        b_bloque.clicked.connect(self._al_agregar_bloque)
+        fila_bloque = QHBoxLayout()
+        fila_bloque.addWidget(self.entrada_bloque, 1)
+        fila_bloque.addWidget(b_bloque)
+        self.lista_horario = QListWidget()
+        self.lista_horario.setSelectionMode(QListWidget.NoSelection)
+        self.lista_horario.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        nota_horario = QLabel("Lo que te ocupa cada semana (trabajo, clases, gimnasio…). Con esto Lancelot sabe "
+                              "cuándo estás libre. También puedes decir «horario: martes y jueves de 7 a 10 de la "
+                              "noche clase de redes» o preguntar «¿cuándo estoy libre?».", objectName="nota",
+                              wordWrap=True)
+        pestana_horario = QWidget()
+        capa_horario = QVBoxLayout(pestana_horario)
+        capa_horario.setContentsMargins(0, 10, 0, 0)
+        capa_horario.setSpacing(8)
+        capa_horario.addWidget(self.libre_hoy)
+        capa_horario.addWidget(self.libre_manana)
+        capa_horario.addLayout(fila_bloque)
+        capa_horario.addWidget(self.lista_horario, 1)
+        capa_horario.addWidget(nota_horario)
+
         self.pestanas = QTabWidget()
         self.pestanas.addTab(pestana_tareas, "Tareas")
         self.pestanas.addTab(pestana_estudio, "📊 Estudio")
+        self.pestanas.addTab(pestana_horario, "🗓 Horario")
         self.pestanas.currentChanged.connect(self._al_cambiar_pestana)
 
         capa = QVBoxLayout(self)
@@ -422,6 +459,46 @@ class Panel(QWidget):
             widget.setProperty(nombre, valor)
         widget.style().unpolish(widget)
         widget.style().polish(widget)
+
+    # ---------------------------------------------------------------- horario
+    def ver_horario(self):
+        self.pestanas.setCurrentIndex(2)
+        self.abrir()
+
+    def _al_agregar_bloque(self):
+        texto = self.entrada_bloque.text().strip()
+        if texto:
+            self.bloque_agregar_pedido.emit(texto)
+
+    def bloque_anotado(self, ok: bool):
+        """El asistente avisa si se pudo: así el texto no se borra cuando hay que corregirlo."""
+        if ok:
+            self.entrada_bloque.clear()
+
+    def mostrar_horario(self, bloques: list[Bloque], libre_hoy: str, libre_manana: str):
+        self.libre_hoy.setText(f"🕒 Libre hoy: {libre_hoy}")
+        self.libre_manana.setText(f"Mañana: {libre_manana}")
+        self.lista_horario.clear()
+        for b in bloques:
+            fila = QWidget()
+            nombre = QLabel(b.titulo, objectName="fila_titulo", wordWrap=True)
+            detalle = QLabel(f"{b.describir().rsplit(' · ', 1)[0]}", objectName="fila_fecha")
+            b_borrar = QPushButton("✕", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Quitar del horario")
+            b_borrar.clicked.connect(lambda _=False, i=b.id: self.bloque_borrar_pedido.emit(i))
+            textos = QVBoxLayout()
+            textos.setSpacing(1)
+            textos.addWidget(nombre)
+            textos.addWidget(detalle)
+            capa = QHBoxLayout(fila)
+            capa.setContentsMargins(4, 8, 4, 8)
+            capa.addLayout(textos, 1)
+            capa.addWidget(b_borrar)
+            item = QListWidgetItem(self.lista_horario)
+            item.setSizeHint(QSize(0, fila.sizeHint().height()))
+            self.lista_horario.setItemWidget(item, fila)
+        if not bloques:
+            vacio = QListWidgetItem("Todavía no anotaste tu horario. Escríbelo arriba.", self.lista_horario)
+            vacio.setFlags(Qt.NoItemFlags)
 
     # ---------------------------------------------------------------- estudio
     @property

@@ -1564,6 +1564,76 @@
     "destino": null,
     "navegador": null
    }
+  },
+  {
+   "texto": "mi horario",
+   "comando": {
+    "accion": "horario_ver",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Cuándo estoy libre?",
+   "comando": {
+    "accion": "libre",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "tiempo libre mañana",
+   "comando": {
+    "accion": "libre",
+    "minutos": null,
+    "texto": "manana",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Horario: de lunes a viernes de 9am a 6pm Trabajo",
+   "comando": {
+    "accion": "horario_agregar",
+    "minutos": null,
+    "texto": "de lunes a viernes de 9am a 6pm Trabajo",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "estoy ocupado martes y jueves de 7 a 10 de la noche clase de Redes",
+   "comando": {
+    "accion": "horario_agregar",
+    "minutos": null,
+    "texto": "martes y jueves de 7 a 10 de la noche clase de Redes",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "borra el horario de trabajo",
+   "comando": {
+    "accion": "horario_borrar",
+    "minutos": null,
+    "texto": "trabajo",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "horario de clases de la universidad",
+   "comando": {
+    "accion": "horario_agregar",
+    "minutos": null,
+    "texto": "de clases de la universidad",
+    "destino": null,
+    "navegador": null
+   }
   }
  ],
  "avisos_previos": [

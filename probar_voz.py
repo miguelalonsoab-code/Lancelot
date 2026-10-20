@@ -8,7 +8,7 @@ Diagnóstico de voz, paso a paso. Ejecuta (con el entorno activado):
 3. Te escucha 20 segundos y escribe TODO lo que entiende.
    -> Di "Lancelot" y "Lance" varias veces: si aparece escrito distinto,
       agrega esa forma a PALABRAS_ACTIVACION en config.py.
-4. Lista las voces disponibles y dice una frase de prueba.
+4. Lista las voces disponibles y dice TRES frases de prueba (si solo dice la primera, algo anda mal).
 """
 import json
 import queue
@@ -61,19 +61,26 @@ def main():
     onnx = sorted(CARPETA_VOCES.glob("*.onnx")) if CARPETA_VOCES.is_dir() else []
     print(f"Voces Piper en {CARPETA_VOCES}: {[p.name for p in onnx] or 'ninguna'}")
     if sys.platform == "win32":
-        import pyttsx3
-        motor = pyttsx3.init()
+        from voz.habla import voces_windows
         print("Voces de Windows:")
-        for v in motor.getProperty("voices"):
-            print(f"  - {v.name}")
+        for nombre in voces_windows():
+            print(f"  - {nombre}")
     from voz.habla import Voz
     from PySide6.QtCore import QCoreApplication
     app = QCoreApplication(sys.argv)                           # Voz usa señales de Qt
     voz = Voz(VOZ_MOTOR, CARPETA_VOCES, VOZ_WINDOWS_PREFERIDA, VOZ_VELOCIDAD)
     voz.estado.connect(lambda t: print(f"  {t}"))
-    voz.termino.connect(app.quit)
+    pendientes = [3]                                           # tres frases: la voz debe decir TODAS
+
+    def al_terminar():
+        pendientes[0] -= 1
+        if not pendientes[0]:
+            app.quit()
+    voz.termino.connect(al_terminar)
     voz.iniciar()
     voz.decir(f"Hola, soy {NOMBRE_ASISTENTE}. Así sueno.")
+    voz.decir("Esta es la segunda frase.")
+    voz.decir("Y esta, la tercera. Si escuchaste las tres, la voz funciona bien.")
     app.exec()
     print("\nListo. Si todo salió bien, la voz ya funciona en el asistente.")
 

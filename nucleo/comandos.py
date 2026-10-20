@@ -22,7 +22,7 @@ class Comando:
     #                           abrir | hora | agenda | escucha_on | escucha_off
     #                           apodo | olvidar_apodo | apodos | abrir_web | buscar
     #                           saludo | semana | vencidas | vencidas_manana | actualizacion
-    #                           frase | guardar_frase
+    #                           frase | guardar_frase | horario_ver | horario_agregar | horario_borrar | libre
     minutos: int | None = None
     texto: str | None = None  # p. ej. el nombre de la app en "abre spotify", o el apodo
     destino: str | None = None  # a qué app apunta un apodo nuevo, o dónde buscar (youtube, google)
@@ -74,6 +74,13 @@ REGLAS = [
      r"pendientes(?: de hoy)?|agenda(?: de hoy)?)$", "agenda", None),
     (r"^(?:escuchame|escucha|activa(?:r)? la escucha|empieza a escuchar)$", "escucha_on", None),
     (r"^(?:deja de escuchar|no escuches|desactiva(?:r)? la escucha)$", "escucha_off", None),
+    # Horario fijo y horas libres (v3.12)
+    (r"^(?:mi horario|horario|ver (?:mi )?horario|muestrame mi horario|cual es mi horario)$", "horario_ver", None),
+    (r"^(?:cuando estoy libre|que tiempo libre tengo|cuanto tiempo libre tengo|tiempo libre|mis horas libres|"
+     r"horas libres|estoy libre)(?: (hoy|manana))?$", "libre", "texto"),
+    (r"^(?:horario|ocupado|estoy ocupado|mi horario(?: es)?|agrega(?:r)? (?:a mi |al |en mi )?horario|"
+     r"anota en (?:mi|el) horario)\s*:?\s+(.+)$", "horario_agregar", "original"),
+    (r"^(?:borra|borrar|elimina|quita) (?:el |del )?(?:bloque|horario) (?:de |del )?(.+)$", "horario_borrar", "texto"),
     # Frases (v3.10). "guarda esta frase: …" conserva tus mayúsculas y tildes (ver "original")
     (r"^(?:guarda|guardar|guardame|anota|agrega|aprende|aprendete|recuerda) (?:esta|la|una|mi|esta otra|otra) "
      r"frase:? (.+)$", "guardar_frase", "original"),

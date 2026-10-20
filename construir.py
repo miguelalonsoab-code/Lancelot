@@ -185,6 +185,8 @@ def argumentos_pyinstaller(icono: Path) -> list[str]:
         args += ["--collect-data", "_sounddevice_data"]       # PortAudio (micrófono)
     if hay("pyttsx3"):
         args += ["--hidden-import", "pyttsx3.drivers", "--hidden-import", "pyttsx3.drivers.sapi5"]
+    if hay("win32com"):
+        args += ["--hidden-import", "win32com.client"]        # la voz de Windows (SAPI) directa
     if hay("comtypes"):
         args += ["--collect-submodules", "comtypes"]          # incluye la interfaz de voz de Windows ya generada
     faltan = [m for m in ("vosk", "sounddevice", "pyttsx3") if not hay(m)]

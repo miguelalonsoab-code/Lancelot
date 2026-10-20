@@ -23,9 +23,10 @@ import sqlite3
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time as hora, timedelta
 from pathlib import Path
 
+from nucleo.horario import Bloque
 from nucleo.planificador import HORA_AVISO_PREVIO, aviso_previo_pendiente, siguiente_ocurrencia
 
 FORMATO = "%Y-%m-%d %H:%M"
@@ -114,6 +115,15 @@ class Almacen:
             CREATE TABLE IF NOT EXISTS apodos (
                 apodo   TEXT PRIMARY KEY,
                 destino TEXT NOT NULL
+            );
+
+            -- Horario fijo de la semana (v3.12): "lun a vie 09:00-18:00 Trabajo"
+            CREATE TABLE IF NOT EXISTS horario (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                dias    TEXT NOT NULL,                 -- '0,1,2,3,4' (0 = lunes)
+                inicio  TEXT NOT NULL,                 -- 'HH:MM'
+                fin     TEXT NOT NULL,
+                titulo  TEXT NOT NULL
             );
 
             -- Ajustes sueltos (posición de la cara, etc.)
@@ -392,6 +402,25 @@ class Almacen:
             cuenta += 1
             dia -= timedelta(days=1)
         return cuenta
+
+    # --------------------------------------------------------------- horario
+    def agregar_bloque(self, b: "Bloque") -> "Bloque":
+        cur = self.con.execute("INSERT INTO horario (dias, inicio, fin, titulo) VALUES (?, ?, ?, ?)",
+                               (",".join(map(str, b.dias)), f"{b.inicio:%H:%M}", f"{b.fin:%H:%M}", b.titulo))
+        self.con.commit()
+        return Bloque(b.dias, b.inicio, b.fin, b.titulo, cur.lastrowid)
+
+    def horario(self) -> list["Bloque"]:
+        """Tus bloques fijos, ordenados por primer día y hora."""
+        bloques = [Bloque(tuple(int(d) for d in f["dias"].split(",")), hora.fromisoformat(f["inicio"]),
+                          hora.fromisoformat(f["fin"]), f["titulo"], f["id"])
+                   for f in self.con.execute("SELECT * FROM horario").fetchall()]
+        return sorted(bloques, key=lambda b: (min(b.dias), b.inicio))
+
+    def borrar_bloque(self, id_: int) -> bool:
+        cur = self.con.execute("DELETE FROM horario WHERE id = ?", (id_,))
+        self.con.commit()
+        return cur.rowcount > 0
 
     # ---------------------------------------------------------------- apodos
     def guardar_apodo(self, apodo: str, destino: str):

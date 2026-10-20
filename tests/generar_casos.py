@@ -88,6 +88,9 @@ COMANDOS = [
     "mañana 8pm pagar la luz", "estudiar para el examen mañana", "pagar vencidas mañana 8pm",
     "Guarda esta frase: El que persevera, alcanza.", "guarda esta frase la constancia gana",
     "Motívame", "¿Me dices una frase?", "dime una frase", "anota esta frase:   Sonríe, que hoy sale bien",
+    "mi horario", "¿Cuándo estoy libre?", "tiempo libre mañana", "Horario: de lunes a viernes de 9am a 6pm Trabajo",
+    "estoy ocupado martes y jueves de 7 a 10 de la noche clase de Redes", "borra el horario de trabajo",
+    "horario de clases de la universidad",
 ]
 
 

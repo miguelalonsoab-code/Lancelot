@@ -226,3 +226,81 @@ class TestDialogo(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestVozWindowsDirecta(unittest.TestCase):
+    """v3.12.1: la voz de Windows va directo por SAPI (pyttsx3 se quedaba muda después de la primera frase)."""
+
+    def setUp(self):
+        import types
+        self.dichas = []
+        dichas = self.dichas
+
+        class Token:
+            def __init__(self, nombre, idioma):
+                self.nombre, self.idioma = nombre, idioma
+
+            def GetDescription(self):
+                return self.nombre
+
+            def GetAttribute(self, _):
+                return self.idioma
+
+        class Voces:
+            def __init__(self):
+                self.lista = [Token("Microsoft Zira Desktop - English (United States)", "409"),
+                              Token("Microsoft Sabina Desktop - Spanish (Mexico)", "80a")]
+                self.Count = len(self.lista)
+
+            def Item(self, i):
+                return self.lista[i]
+
+        class SpVoice:
+            Voice = None
+            Rate = 0
+
+            def GetVoices(self):
+                return Voces()
+
+            def Speak(self, texto, _flags):
+                dichas.append((texto, self.Voice.GetDescription(), self.Rate))
+
+        win32com = types.ModuleType("win32com")
+        win32com.client = types.ModuleType("win32com.client")
+        win32com.client.Dispatch = lambda nombre: SpVoice()
+        pythoncom = types.ModuleType("pythoncom")
+        pythoncom.CoInitialize = lambda: None
+        self.modulos = {"win32com": win32com, "win32com.client": win32com.client, "pythoncom": pythoncom}
+        self.guardados = {k: sys.modules.get(k) for k in self.modulos}
+        sys.modules.update(self.modulos)
+
+    def tearDown(self):
+        for k, v in self.guardados.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+
+    def test_dice_todas_las_frases_con_la_voz_en_espanol(self):
+        from unittest import mock
+        from voz.habla import Voz, velocidad_sapi
+        voz = Voz("windows", None, "", 1.2)
+        estados = []
+        voz.estado.connect(estados.append)
+        with mock.patch("voz.habla.sys.platform", "win32"):
+            hablar = voz._preparar_windows()
+        for frase in ("Frase número 1", "Frase número 2", "Frase número 3"):
+            hablar(frase)
+        self.assertEqual([d[0] for d in self.dichas], ["Frase número 1", "Frase número 2", "Frase número 3"])
+        self.assertTrue(all("Sabina" in d[1] for d in self.dichas))
+        self.assertEqual(self.dichas[0][2], 2)
+        self.assertEqual(estados, ["Voz de Windows: Microsoft Sabina Desktop - Spanish (Mexico)"])
+        self.assertEqual((velocidad_sapi(1.0), velocidad_sapi(0.9), velocidad_sapi(5)), (0, -1, 10))
+
+    def test_respeta_la_voz_preferida(self):
+        from unittest import mock
+        from voz.habla import Voz
+        voz = Voz("windows", None, "zira", 1.0)
+        with mock.patch("voz.habla.sys.platform", "win32"):
+            voz._preparar_windows()("Hello")
+        self.assertIn("Zira", self.dichas[0][1])

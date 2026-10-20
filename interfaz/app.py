@@ -29,6 +29,9 @@ y cuando su día pasa se cierran solos (o pasan al próximo año, si se repiten)
 Frases (v3.10): si dejas el mouse sobre la cara, te dice una frase (ver decir_frase()); desde la v3.11
 también en voz alta. Tus frases viajan al celular junto con la sincronización (ver _preferencias_para_subir).
 
+Horario (v3.12): tus bloques fijos de la semana y tus horas libres (ver sección "horario" abajo
+y nucleo/horario.py). Base para que, más adelante, Lancelot te recomiende qué hacer en ese tiempo.
+
 Aprendizaje (v3.11): si corriges Tarea/Evento en el panel, lo anota y, si se repite, aprende
 (ver aprender_correccion() y nucleo/aprendizaje.py).
 """
@@ -70,7 +73,10 @@ from nucleo.comandos import Comando
 from nucleo.estadisticas import ResumenSemana, describir_semana, resumen_semana
 from nucleo.frases import (REFLEXIONES, BolsaFrases, crear_archivo_frases, guardar_frase_usuario,
                            leer_frases_usuario)
-from nucleo.interprete import describir_faltan, describir_fecha, usar_vocabulario
+from nucleo.hablado import hora_hablada
+from nucleo.horario import (Bloque, describir_libre, hablar_duracion, huecos, interpretar_bloque, minutos,
+                            total_libre)
+from nucleo.interprete import describir_faltan, describir_fecha, normalizar, usar_vocabulario
 from nucleo.planificador import a_manana, estado_del_dia
 from nucleo.respaldo import hacer_respaldo
 from nucleo.saludo import armar_saludo, debe_saludar
@@ -157,6 +163,8 @@ class Asistente(QObject):
         self.panel.reprogramar_vencidas_pedido.connect(self.reprogramar_vencidas)
         self.panel.semana_pedida.connect(self.mostrar_semana)
         self.panel.correccion_pedida.connect(self.aprender_correccion)
+        self.panel.bloque_agregar_pedido.connect(lambda texto: self.agregar_bloque(texto))
+        self.panel.bloque_borrar_pedido.connect(self.borrar_bloque)
         self.panel.hora_aviso_previo = HORA_AVISO_PREVIO
         if self.nube:
             self.nube.terminado.connect(self._al_sincronizar)
@@ -208,6 +216,8 @@ class Asistente(QObject):
         log.info("Lancelot %s iniciado%s", VERSION, " (.exe)" if EMPAQUETADO else "")
 
     def _al_arrancar(self):
+        if getattr(self, "_cerrado", False):               # se cerró antes de terminar de arrancar
+            return
         self.saludar()                                     # primero el saludo del día (si toca)
         self.revisar()                                     # luego los avisos atrasados
 
@@ -384,7 +394,9 @@ class Asistente(QObject):
             if (self.avisos.cola or self.voz.dialogo or self.voz.escuchando_orden
                     or segundos_inactivo() > SEGUNDOS_PARA_ESTAR_PRESENTE):
                 return False
-        s = armar_saludo(ahora, self.almacen.pendientes(), self.almacen.racha(ahora.date()), NOMBRE_USUARIO)
+        bloques = self.almacen.horario()
+        s = armar_saludo(ahora, self.almacen.pendientes(), self.almacen.racha(ahora.date()), NOMBRE_USUARIO,
+                         libres=self.horas_libres(ahora.date(), ahora) if bloques else None)
         self.almacen.guardar_ajuste("ultimo_saludo", ahora.date().isoformat())
         self._avisos_en_pausa_hasta = ahora + timedelta(seconds=SEGUNDOS_SALUDO)
         self.avisos.mostrar_mensaje(s.titulo, s.texto, [], COLORES["feliz"], SEGUNDOS_SALUDO, False)
@@ -393,6 +405,89 @@ class Asistente(QObject):
         self.cara.celebrar()
         log.info("saludo del día%s", " (pedido)" if forzado else "")
         return True
+
+    # =============================================================== horario
+    def horas_libres(self, dia: date, ahora: datetime | None = None) -> list[tuple[datetime, datetime]]:
+        """Tus horas libres de ese día según tu horario fijo (si es hoy, desde ahora)."""
+        return huecos(dia, self.almacen.horario(), HORA_DESPERTAR, HORA_DORMIR, ahora or datetime.now())
+
+    def _mostrar_horario(self):
+        ahora = datetime.now()
+        self.panel.mostrar_horario(self.almacen.horario(), describir_libre(self.horas_libres(ahora.date(), ahora)),
+                                   describir_libre(self.horas_libres(ahora.date() + timedelta(days=1), ahora)))
+
+    def agregar_bloque(self, texto: str, por_voz: bool = False) -> bool:
+        """"de lunes a viernes de 9am a 6pm trabajo" -> un bloque fijo. Devuelve si se anotó."""
+        b = interpretar_bloque(texto)
+        if not isinstance(b, Bloque):                  # no se entendió: b es la explicación
+            self.avisos.mostrar_mensaje("🗓 Horario", b, [], COLORES["pendiente"], 10, False)
+            if por_voz:
+                self.voz.decir("No entendí los días o las horas. Prueba de nuevo, por ejemplo: "
+                               "de lunes a viernes de 9 a 6 trabajo.")
+            self.panel.bloque_anotado(False)
+            return False
+        self.almacen.agregar_bloque(b)
+        self.avisos.mostrar_mensaje("🗓 Anotado en tu horario", b.describir(), [], COLORES["tranquilo"], 8, False)
+        if por_voz:
+            self.voz.decir(f"Listo, anoté {b.titulo} en tu horario.")
+        self.panel.bloque_anotado(True)
+        self.refrescar()
+        return True
+
+    def borrar_bloque(self, id_: int):
+        self.almacen.borrar_bloque(id_)
+        self.refrescar()
+
+    def borrar_bloques_por_nombre(self, nombre: str, por_voz: bool = False):
+        buscado = normalizar(nombre).strip()
+        borrados = [b for b in self.almacen.horario() if buscado and buscado in normalizar(b.titulo)]
+        for b in borrados:
+            self.almacen.borrar_bloque(b.id)
+        texto = ("Quité de tu horario: " + ", ".join(b.titulo for b in borrados) + "." if borrados
+                 else f"No encontré «{nombre}» en tu horario. Míralo en el panel, pestaña 🗓 Horario.")
+        self.avisos.mostrar_mensaje("🗓 Horario", texto, [], COLORES["tranquilo"], 8, False)
+        if por_voz:
+            self.voz.decir(texto.replace("🗓 ", ""))
+        self.refrescar()
+
+    def decir_horario(self, por_voz: bool = False):
+        bloques = self.almacen.horario()
+        if not bloques:
+            texto = ("Todavía no anotaste tu horario. Escribe, por ejemplo: «horario: de lunes a viernes "
+                     "de 9am a 6pm trabajo».")
+            hablado = "Todavía no anotaste tu horario."
+        else:
+            texto = "\n".join(f"• {b.describir()}" for b in bloques)
+            hablado = "Tu horario: " + "; ".join(b.titulo for b in bloques[:5]) + "."
+        self.avisos.mostrar_mensaje("🗓 Tu horario", texto, [], COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
+        if por_voz:
+            self.voz.decir(hablado)
+        else:
+            self.panel.ver_horario()
+
+    def decir_libre(self, manana: bool = False, por_voz: bool = False):
+        ahora = datetime.now()
+        dia = ahora.date() + timedelta(days=1 if manana else 0)
+        cuando = "mañana" if manana else "hoy"
+        if not self.almacen.horario():
+            texto = ("Para saber cuándo estás libre, primero anota tu horario: «horario: de lunes a viernes "
+                     "de 9am a 6pm trabajo».")
+            self.avisos.mostrar_mensaje("🕒 Tiempo libre", texto, [], COLORES["tranquilo"], 10, False)
+            if por_voz:
+                self.voz.decir("Primero anota tu horario, así sé cuándo estás ocupado.")
+            return
+        libres = self.horas_libres(dia, ahora)
+        if libres:
+            texto = "\n".join(f"• {x}" for x in describir_libre(libres).split(" · ")) + f"\nEn total: {total_libre(libres)}."
+            a, b = libres[0]
+            hablado = (f"{cuando.capitalize()} tienes {hablar_duracion(minutos(libres))} libre. "
+                       f"{'El próximo hueco' if not manana else 'El primero'} empieza {hora_hablada(a)} "
+                       f"y dura {hablar_duracion(minutos([(a, b)]))}.")
+        else:
+            texto = hablado = f"{cuando.capitalize()} no te queda tiempo libre en tu horario."
+        self.avisos.mostrar_mensaje(f"🕒 Libre {cuando}", texto, [], COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
+        if por_voz:
+            self.voz.decir(hablado)
 
     # ================================================================ frases
     def puede_decir_frase(self) -> bool:
@@ -587,6 +682,14 @@ class Asistente(QObject):
             self.buscar_actualizaciones()
         elif accion == "saludo":
             self.saludar(forzado=True)
+        elif accion == "horario_agregar":
+            self.agregar_bloque(c.texto or "", por_voz)
+        elif accion == "horario_borrar":
+            self.borrar_bloques_por_nombre(c.texto or "", por_voz)
+        elif accion == "horario_ver":
+            self.decir_horario(por_voz)
+        elif accion == "libre":
+            self.decir_libre(c.texto == "manana", por_voz)
         elif accion == "frase":
             self.decir_frase(pedida=True, por_voz=por_voz)
         elif accion == "guardar_frase":
@@ -629,6 +732,7 @@ class Asistente(QObject):
         """Actualización completa (incluye la lista de tareas y, si está a la vista, el gráfico)."""
         self.actualizar_estado()
         self.panel.mostrar_tareas(self.almacen.pendientes())
+        self._mostrar_horario()
         if self.panel.viendo_estudio:
             self.mostrar_semana(self.panel.semanas_atras)
 
@@ -760,6 +864,7 @@ class Asistente(QObject):
             log.info("carpeta de datos: %s", carpeta)
 
     def salir(self):
+        self._cerrado = True
         if self.estudio.activo:
             self.estudio.terminar()                  # guarda la sesión antes de cerrar
         self.voz.detener()
