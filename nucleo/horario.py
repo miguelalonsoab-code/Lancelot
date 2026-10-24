@@ -6,6 +6,8 @@ Tu horario son BLOQUES que se repiten cada semana:
     "de lunes a viernes de 9am a 6pm trabajo"        -> lun-vie 09:00-18:00 · Trabajo
     "martes y jueves de 7 a 10 de la noche clase de redes"  -> mar, jue 19:00-22:00 · Clase de redes
     "sábados de 8 a 12 inglés"                       -> sáb 08:00-12:00 · Inglés
+    "de lunes a viernes de 8:30 a 5:30 trabajo, traslado 45 min"
+                                                     -> además resta 45 min antes y 45 min después (el viaje)
 
 Con esos bloques, huecos() calcula tus horas LIBRES de un día (entre que despiertas y te duermes),
 que es la base para que Lancelot te recomiende actividades.
@@ -32,10 +34,65 @@ class Bloque:
     fin: time
     titulo: str
     id: int | None = None
+    traslado: int = 0            # minutos de viaje: se restan ANTES y DESPUÉS del bloque
 
     def describir(self) -> str:
-        """'lun a vie 09:00–18:00 · Trabajo'"""
-        return f"{describir_dias(self.dias)} {self.inicio:%H:%M}–{self.fin:%H:%M} · {self.titulo}"
+        """'lun a vie 09:00–18:00 · Trabajo' (+ ' · 🚌 45 min' si tiene traslado)"""
+        texto = f"{describir_dias(self.dias)} {self.inicio:%H:%M}–{self.fin:%H:%M} · {self.titulo}"
+        return texto + (f" · 🚌 {duracion_minutos(self.traslado)}" if self.traslado else "")
+
+    @property
+    def cuando(self) -> str:
+        """Solo días y horas: 'lun a vie 09:00–18:00'."""
+        return f"{describir_dias(self.dias)} {self.inicio:%H:%M}–{self.fin:%H:%M}"
+
+
+# --------------------------------------------------------------------------- duraciones
+_NUM = r"(\d{1,3}|una?|dos|tres|cuatro|media)"
+_PATRON_DURACION = re.compile(
+    r"\b(?:" + _NUM + r" ?(?:h|hr|hrs|horas?)(?: y (\d{1,2}|media|cuarto)(?: ?(?:min|mins|minutos))?"
+    r"| ?(\d{1,2}) ?(?:min|mins|minutos))?"
+    r"|(\d{1,3}) ?(?:m|min|mins|minutos)"
+    r"|(media hora|hora y media|una hora y media))\b"
+)
+_NUMEROS = {"un": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4}
+
+
+def leer_duracion(texto: str) -> tuple[int, tuple[int, int]] | None:
+    """'45 min' -> 45 · '1 hora y media' -> 90 · 'media hora' -> 30 · '2h 15min' -> 135. Devuelve (minutos, tramo)."""
+    m = _PATRON_DURACION.search(texto)
+    if not m:
+        return None
+    horas, extra, extra_min, solo_min, frase = m.groups()
+    extra = extra or extra_min
+    if frase:
+        minutos = 30 if frase == "media hora" else 90
+    elif solo_min:
+        minutos = int(solo_min)
+    else:
+        h = 0.5 if horas == "media" else int(horas) if horas.isdigit() else _NUMEROS[horas]
+        minutos = int(h * 60) + ({"media": 30, "cuarto": 15}.get(extra) or int(extra or 0))
+    return (minutos, m.span()) if 0 < minutos <= 24 * 60 else None
+
+
+def duracion_minutos(minutos: int) -> str:
+    """90 -> '1 h 30 min'."""
+    h, m = divmod(int(minutos), 60)
+    return f"{h} h {m} min" if h and m else f"{h} h" if h else f"{m} min"
+
+
+_PATRON_TRASLADO = re.compile(
+    r"(?:,\s*|\s)(?:(?:con\s+)?(?:traslado|viaje|transporte)(?: de)?\s+(?P<a>[^,]+?)"
+    r"|con\s+(?P<b>[^,]+?)\s+de\s+(?:traslado|viaje|transporte))(?:\s+de ida y vuelta)?(?=,|$)"
+)
+
+
+def _leer_traslado(texto: str) -> tuple[int, tuple[int, int]] | None:
+    """', traslado 45 min' / 'con 1 hora de viaje' -> (minutos, tramo)."""
+    for m in _PATRON_TRASLADO.finditer(texto):
+        if d := leer_duracion(m.group("a") or m.group("b")):
+            return d[0], m.span()
+    return None
 
 
 # --------------------------------------------------------------------------- días
@@ -127,6 +184,11 @@ def interpretar_bloque(texto: str) -> Bloque | str:
     Si falta algo devuelve un texto que explica qué (para mostrarlo tal cual).
     """
     t = normalizar(texto)
+    traslado = 0
+    if tr := _leer_traslado(t):                      # primero el viaje, para que "45 min" no se lea como hora
+        traslado, (a, b) = tr
+        t = t[:a] + " " * (b - a) + t[b:]
+        texto = texto[:a] + " " * (b - a) + texto[b:]
     rango = _leer_rango(t)
     if rango == "medianoche":
         return ("Ese bloque termina pasada la medianoche. Anótalo en dos partes, por ejemplo: "
@@ -144,29 +206,180 @@ def interpretar_bloque(texto: str) -> Bloque | str:
         titulo = titulo[:ini] + " " + titulo[fin_t:]
     titulo = re.sub(r"\s+", " ", titulo).strip(" ,.;:-")
     titulo = re.sub(r"^(?:(?:tengo|hay|de|el|los|y)\s+)+", "", titulo, flags=re.I).strip(" ,.;:-") or "Ocupado"
-    return Bloque(dias, inicio, fin, titulo[:1].upper() + titulo[1:80])
+    return Bloque(dias, inicio, fin, titulo[:1].upper() + titulo[1:80], traslado=traslado)
+
+
+# --------------------------------------------------------------------------- excepciones (v3.14)
+@dataclass
+class Excepcion:
+    """Días en que tu horario NO se cumple: "el 1 de noviembre no trabajo", "vacaciones del 20 al 30 de diciembre"."""
+    desde: date
+    hasta: date                  # inclusive (un solo día: desde == hasta)
+    filtro: str                  # "traba" = solo los bloques cuyo título tiene una palabra que empieza así; "" = todos
+    titulo: str                  # "No trabajo", "Vacaciones", "Feriado"…
+    id: int | None = None
+
+    def describir(self) -> str:
+        """'sáb 01/11 · No trabajo' o '20/12–30/12 · Vacaciones'."""
+        if self.desde == self.hasta:
+            return f"{DIAS_CORTOS[self.desde.weekday()]} {self.desde:%d/%m} · {self.titulo}"
+        return f"{self.desde:%d/%m}–{self.hasta:%d/%m} · {self.titulo}"
+
+    def libera(self, dia: date, bloque: Bloque) -> bool:
+        """¿Ese día este bloque NO se cumple?"""
+        return self.desde <= dia <= self.hasta and coincide(self.filtro, bloque.titulo)
+
+
+def coincide(filtro: str, titulo: str) -> bool:
+    """"traba" coincide con "Trabajo en Sanna"; "" coincide con todo."""
+    return not filtro or any(p[:5] == filtro[:5] for p in normalizar(titulo).split() if len(p) >= 4)
+
+
+def raiz(palabra: str) -> str:
+    """Lo que se compara de una palabra: 'trabajo' y 'trabajar' -> 'traba'; 'clases' -> 'clase'."""
+    return normalizar(palabra)[:5]
+
+
+_MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre",
+          "octubre", "noviembre", "diciembre"]
+_P_MES = r"(?: de (" + "|".join(_MESES) + r"|setiembre))?"
+_PATRON_DEL_AL = re.compile(r"\b(?:del?|desde el) (\d{1,2})" + _P_MES + r" (?:al|hasta el) (\d{1,2})" + _P_MES + r"\b")
+_PATRON_EL_DIA = re.compile(r"\b(?:el|este|el dia) (\d{1,2})" + _P_MES + r"\b")
+_PATRON_NO = re.compile(r"\bno (?:(?:tengo|hay) |(?:voy|asisto) (?:a |al )?(?:la |el )?)?([a-z]{3,})")
+_PATRON_TIPO = re.compile(r"\b(vacaciones|feriado|libre)\b")
+
+
+def _mes(nombre: str | None) -> int | None:
+    if not nombre:
+        return None
+    return 9 if nombre == "setiembre" else _MESES.index(nombre) + 1
+
+
+def _fecha_proxima(dia: int, mes: int | None, hoy: date) -> date | None:
+    """El próximo 'dia' (de 'mes' si se dijo) que no haya pasado."""
+    for salto in range(0, 14):
+        m = mes or ((hoy.month - 1 + salto) % 12 + 1)
+        anio = hoy.year + (hoy.month - 1 + salto) // 12 if not mes else hoy.year
+        try:
+            f = date(anio, m, dia)
+        except ValueError:
+            if mes:
+                return None
+            continue
+        if f >= hoy:
+            return f
+        if mes:
+            try:
+                return date(hoy.year + 1, m, dia)
+            except ValueError:
+                return None
+    return None
+
+
+def interpretar_excepcion(texto: str, hoy: date) -> Excepcion | str:
+    """
+    "el 1 de noviembre no trabajo"            -> 01/11 · solo bloques con "traba…"
+    "vacaciones del 20 al 30 de diciembre"    -> 20/12–30/12 · todos tus bloques
+    "mañana no tengo clases"                  -> mañana · solo bloques con "clase…"
+    "el viernes es feriado" / "el 15 tengo libre" -> ese día, todos tus bloques
+    Si falta algo devuelve la explicación (str).
+    """
+    from nucleo.interprete import interpretar           # aquí: interprete no depende de horario
+    t = normalizar(texto)
+    desde = hasta = None
+    m = _PATRON_DEL_AL.search(t)
+    if m:
+        mes2 = _mes(m.group(4)) or _mes(m.group(2))
+        mes1 = _mes(m.group(2)) or mes2
+        hasta = _fecha_proxima(int(m.group(3)), mes2, hoy)
+        if hasta and mes1:
+            desde = date(hasta.year - (1 if mes1 > hasta.month else 0), mes1, 1)
+            try:
+                desde = desde.replace(day=int(m.group(1)))
+            except ValueError:
+                desde = None
+        elif hasta:
+            desde = _fecha_proxima(int(m.group(1)), None, hoy)
+        if desde and hasta and desde > hasta:
+            return "La fecha de inicio queda después del final. Revisa el rango (por ejemplo: «del 20 al 30 de diciembre»)."
+        resto = t[:m.start()] + " " + t[m.end():]
+    else:
+        m = _PATRON_EL_DIA.search(t)
+        if m and not re.search(r"\b(?:" + "|".join(DIAS) + r"|sabado|domingo)\b", t[:m.start()]):
+            desde = hasta = _fecha_proxima(int(m.group(1)), _mes(m.group(2)), hoy)
+        else:
+            r = interpretar(texto, datetime.combine(hoy, time(0, 1)))
+            if r.fecha:
+                desde = hasta = r.fecha.date()
+        resto = t
+    if not desde or not hasta:
+        return ("¿Qué día? Escribe la fecha, por ejemplo: «el 1 de noviembre no trabajo» o "
+                "«vacaciones del 20 al 30 de diciembre».")
+    if (hasta - desde).days > 120:
+        return "Es un rango muy largo (más de 4 meses). Revisa las fechas."
+    no = _PATRON_NO.search(resto)
+    if no:
+        original = re.sub(r"\s+", " ", texto.strip())       # normalizar no cambia el largo: se recorta con tildes
+        inicio = normalizar(original).find(no.group(0))
+        titulo = original[inicio:inicio + len(no.group(0))] if inicio >= 0 else no.group(0)
+        return Excepcion(desde, hasta, raiz(no.group(1)), titulo[:1].upper() + titulo[1:60])
+    tipo = _PATRON_TIPO.search(resto)
+    titulo = {"vacaciones": "Vacaciones", "feriado": "Feriado"}.get(tipo.group(1) if tipo else "", "Día libre")
+    return Excepcion(desde, hasta, "", titulo)
 
 
 # --------------------------------------------------------------------------- libre
-def ocupado(dia: date, bloques: list[Bloque]) -> list[tuple[datetime, datetime, str]]:
-    """Los bloques de ese día, ordenados: [(inicio, fin, título)]."""
-    salida = [(datetime.combine(dia, b.inicio), datetime.combine(dia, b.fin), b.titulo)
-              for b in bloques if dia.weekday() in b.dias]
+def del_dia(dia: date, bloques: list[Bloque], excepciones: list[Excepcion] = ()) -> list[Bloque]:
+    """Los bloques que SÍ se cumplen ese día (su día de la semana, menos las excepciones)."""
+    return [b for b in bloques if dia.weekday() in b.dias and not any(e.libera(dia, b) for e in excepciones)]
+
+
+def ocupado(dia: date, bloques: list[Bloque], excepciones: list[Excepcion] = (),
+            extras: list[tuple[datetime, datetime, str]] = ()) -> list[tuple[datetime, datetime, str]]:
+    """
+    Lo ocupado de ese día, ordenado: tus bloques (con traslado, sin los liberados por una excepción)
+    y los 'extras' (tareas y eventos con duración, "examen de 8 a 10"): [(inicio, fin, título)].
+    """
+    salida = [(datetime.combine(dia, b.inicio) - timedelta(minutes=b.traslado),
+               datetime.combine(dia, b.fin) + timedelta(minutes=b.traslado), b.titulo)
+              for b in del_dia(dia, bloques, excepciones)]
+    salida += [x for x in extras if x[0].date() == dia]
     return sorted(salida)
 
 
-def huecos(dia: date, bloques: list[Bloque], despertar: int, dormir: int,
-           ahora: datetime | None = None, minimo: int = 30) -> list[tuple[datetime, datetime]]:
+def choque(inicio: datetime, minutos_: int | None, bloques: list[Bloque],
+           excepciones: list[Excepcion] = ()) -> Bloque | None:
     """
-    Horas libres de un día: desde que despiertas hasta que te duermes, menos tus bloques.
+    El bloque de tu horario que se cruza con algo que empieza en 'inicio' y dura 'minutos_'
+    (sin duración: si cae dentro de un bloque). Sin contar traslados. None si no choca.
+    """
+    fin = inicio + timedelta(minutes=minutos_ or 0)
+    for b in del_dia(inicio.date(), bloques, excepciones):
+        b_ini, b_fin = datetime.combine(inicio.date(), b.inicio), datetime.combine(inicio.date(), b.fin)
+        if (inicio < b_fin and fin > b_ini) if minutos_ else (b_ini <= inicio < b_fin):
+            return b
+    return None
+
+
+def huecos(dia: date, bloques: list[Bloque], despertar: int | time, dormir: int | time,
+           ahora: datetime | None = None, minimo: int = 30, excepciones: list[Excepcion] = (),
+           extras: list[tuple[datetime, datetime, str]] = ()) -> list[tuple[datetime, datetime]]:
+    """
+    Horas libres de un día: desde que despiertas hasta que te duermes, menos tus bloques (y sus traslados),
+    menos los 'extras' (tareas/eventos con duración) y sin los bloques que una excepción libera ese día.
     Si es hoy, empieza desde 'ahora'. Se descartan los huecos de menos de 'minimo' minutos.
+    despertar/dormir: hora entera (6) o time (6:30). Si te duermes pasada la medianoche, cuenta hasta las 23:59.
     """
-    desde = datetime.combine(dia, time(despertar))
-    hasta = datetime.combine(dia, time(dormir)) if dormir < 24 else datetime.combine(dia, time(23, 59))
+    despertar = despertar if isinstance(despertar, time) else time(despertar)
+    dormir = dormir if isinstance(dormir, time) else (time(dormir) if dormir < 24 else time(23, 59))
+    if dormir <= despertar:
+        dormir = time(23, 59)
+    desde = datetime.combine(dia, despertar)
+    hasta = datetime.combine(dia, dormir)
     if ahora and ahora.date() == dia:
         desde = max(desde, ahora.replace(second=0, microsecond=0))
     libres, cursor = [], desde
-    for ini, fin, _ in ocupado(dia, bloques):
+    for ini, fin, _ in ocupado(dia, bloques, excepciones, extras):
         if ini > cursor:
             libres.append((cursor, min(ini, hasta)))
         cursor = max(cursor, fin)

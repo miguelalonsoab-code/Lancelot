@@ -13,6 +13,7 @@ Sincronización con el celular (etapa 3): cada tarea tiene además
 Eventos (v3.10): además de tareas hay EVENTOS (aniversario, examen, viaje…)
   tipo          'tarea' | 'evento'
   anticipacion  con cuántos días antes avisar: '7,1' = una semana y un día antes (NULL = solo a su hora)
+  duracion      minutos que ocupa (v3.14): "de 8 a 10" = 120. NULL = no se dijo (no resta horas libres)
   aviso_previo  cuándo se mandó el último aviso anticipado. Desde la v3.11 SÍ viaja al celular, pero
                 aparte de las ediciones: gana el más reciente, sin tocar 'actualizada' (así no pisa tus cambios).
 """
@@ -26,7 +27,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, time as hora, timedelta
 from pathlib import Path
 
-from nucleo.horario import Bloque
+from nucleo.horario import Bloque, Excepcion
+from nucleo.perfil import Actividad, Perfil
 from nucleo.planificador import HORA_AVISO_PREVIO, aviso_previo_pendiente, siguiente_ocurrencia
 
 FORMATO = "%Y-%m-%d %H:%M"
@@ -44,6 +46,15 @@ def _fecha_valida(texto) -> bool:
         return True
     except ValueError:
         return False
+
+
+def limpiar_duracion(valor) -> int | None:
+    """Minutos entre 1 y 24 h; cualquier otra cosa queda en None (= no se sabe cuánto dura)."""
+    try:
+        minutos = int(valor)
+    except (TypeError, ValueError):
+        return None
+    return minutos if 0 < minutos <= 24 * 60 else None
 
 
 def limpiar_anticipacion(valor) -> str | None:
@@ -67,6 +78,11 @@ class Tarea:
     avisada: bool        # True si ya se mostró el aviso de esta ocurrencia
     tipo: str = "tarea"              # "tarea" | "evento"
     anticipacion: str | None = None  # "7,1": avisar una semana y un día antes
+    duracion: int | None = None      # minutos que ocupa ("de 8 a 10" = 120)
+
+    @property
+    def fin(self) -> datetime | None:
+        return self.fecha + timedelta(minutes=self.duracion) if self.duracion else None
 
     @property
     def es_evento(self) -> bool:
@@ -97,6 +113,7 @@ class Almacen:
                 sincronizada INTEGER NOT NULL DEFAULT 0,
                 tipo        TEXT    NOT NULL DEFAULT 'tarea',
                 anticipacion TEXT,                     -- '7,1' = avisar 7 y 1 días antes
+                duracion    INTEGER,                   -- minutos que ocupa (v3.14)
                 aviso_previo TEXT                      -- último aviso anticipado (no se sincroniza)
             );
             CREATE INDEX IF NOT EXISTS idx_tareas_pend ON tareas(estado, fecha);
@@ -123,7 +140,54 @@ class Almacen:
                 dias    TEXT NOT NULL,                 -- '0,1,2,3,4' (0 = lunes)
                 inicio  TEXT NOT NULL,                 -- 'HH:MM'
                 fin     TEXT NOT NULL,
+                titulo  TEXT NOT NULL,
+                traslado INTEGER NOT NULL DEFAULT 0    -- minutos de viaje antes y después (v3.13)
+            );
+
+            -- Excepciones al horario (v3.14): "el 1 de noviembre no trabajo", "vacaciones del 20 al 30 de diciembre"
+            CREATE TABLE IF NOT EXISTS excepciones (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                desde   TEXT NOT NULL,                 -- 'YYYY-MM-DD'
+                hasta   TEXT NOT NULL,                 -- inclusive
+                filtro  TEXT NOT NULL DEFAULT '',      -- 'traba' = solo esos bloques; '' = todos
                 titulo  TEXT NOT NULL
+            );
+
+            -- Actividades de tu perfil (v3.13): "gimnasio 1 h, 3 veces por semana, en la tarde"
+            CREATE TABLE IF NOT EXISTS actividades (
+                id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre  TEXT NOT NULL,
+                minutos INTEGER NOT NULL DEFAULT 60,
+                veces_semana INTEGER,                  -- NULL = sin meta
+                momento TEXT                           -- manana | tarde | noche | NULL
+            );
+
+            -- Veces que hiciste una actividad (v3.15): una fila por actividad y día
+            CREATE TABLE IF NOT EXISTS actividades_hechas (
+                actividad_id INTEGER NOT NULL,
+                dia          TEXT NOT NULL,            -- 'YYYY-MM-DD'
+                PRIMARY KEY (actividad_id, dia)
+            );
+
+            -- Sugerencias que rechazaste ("Ahora no", v3.16): para aprender en qué momento no te sirven
+            CREATE TABLE IF NOT EXISTS sugerencias_rechazadas (
+                nombre  TEXT NOT NULL,                 -- clave: 'gimnasio', 'estudiar'
+                dia     TEXT NOT NULL,                 -- 'YYYY-MM-DD'
+                momento TEXT NOT NULL                  -- manana | tarde | noche
+            );
+
+            -- Tareas que salieron de una sugerencia («📌 Agendar», v3.17): si no se hacen, se descartan
+            -- solas al día siguiente (no quedan vencidas). Solo en la laptop.
+            CREATE TABLE IF NOT EXISTS tareas_sugeridas (
+                tarea_id     INTEGER PRIMARY KEY,
+                actividad_id INTEGER                   -- NULL = estudiar
+            );
+
+            -- En qué quedó cada tarea agendada desde una sugerencia (v3.18): para el resumen de la semana
+            CREATE TABLE IF NOT EXISTS historial_sugeridas (
+                nombre    TEXT NOT NULL,               -- título de la tarea: 'Gimnasio'
+                dia       TEXT NOT NULL,               -- 'YYYY-MM-DD' (día para el que estaba agendada)
+                resultado TEXT NOT NULL                -- 'hecha' | 'descartada'
             );
 
             -- Ajustes sueltos (posición de la cara, etc.)
@@ -133,6 +197,8 @@ class Almacen:
             );
         """)
         self._migrar_para_sincronizar()
+        if "traslado" not in {f["name"] for f in self.con.execute("PRAGMA table_info(horario)")}:
+            self.con.execute("ALTER TABLE horario ADD COLUMN traslado INTEGER NOT NULL DEFAULT 0")   # v3.13
         self.con.commit()
 
     def _migrar_para_sincronizar(self):
@@ -146,7 +212,8 @@ class Almacen:
                              ("borrada", "INTEGER NOT NULL DEFAULT 0"),
                              ("sincronizada", "INTEGER NOT NULL DEFAULT 0"),
                              ("tipo", "TEXT NOT NULL DEFAULT 'tarea'"),        # v3.10: eventos
-                             ("anticipacion", "TEXT"), ("aviso_previo", "TEXT")):
+                             ("anticipacion", "TEXT"), ("aviso_previo", "TEXT"),
+                             ("duracion", "INTEGER")):
             if nombre not in columnas:
                 self.con.execute(f"ALTER TABLE tareas ADD COLUMN {nombre} {tipo}")
         ahora = _ms()
@@ -158,12 +225,12 @@ class Almacen:
 
     # ---------------------------------------------------------------- tareas
     def agregar(self, titulo: str, fecha: datetime, repeticion: str | None = None,
-                tipo: str = "tarea", anticipacion: str | None = None) -> Tarea:
+                tipo: str = "tarea", anticipacion: str | None = None, duracion: int | None = None) -> Tarea:
         cur = self.con.execute(
-            "INSERT INTO tareas (titulo, fecha, repeticion, creada, uuid, actualizada, tipo, anticipacion) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO tareas (titulo, fecha, repeticion, creada, uuid, actualizada, tipo, anticipacion, duracion) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (titulo, fecha.strftime(FORMATO), repeticion, datetime.now().strftime(FORMATO), str(uuid.uuid4()), _ms(),
-             tipo if tipo in TIPOS_VALIDOS else "tarea", limpiar_anticipacion(anticipacion)),
+             tipo if tipo in TIPOS_VALIDOS else "tarea", limpiar_anticipacion(anticipacion), limpiar_duracion(duracion)),
         )
         self.con.commit()
         return self.obtener(cur.lastrowid)
@@ -188,7 +255,7 @@ class Almacen:
         """Tareas pendientes cuya hora ya pasó (se hayan avisado o no). Los eventos no "vencen": se cierran solos."""
         filas = self.con.execute(
             "SELECT * FROM tareas WHERE estado = 'pendiente' AND borrada = 0 AND tipo <> 'evento' AND fecha <= ? "
-            "ORDER BY fecha",
+            "AND id NOT IN (SELECT tarea_id FROM tareas_sugeridas) ORDER BY fecha",   # las sugeridas no "vencen"
             (ahora.strftime(FORMATO),)).fetchall()
         return [self._a_tarea(f) for f in filas]
 
@@ -266,7 +333,7 @@ class Almacen:
         self._cambiar(id_, "fecha = ?, avisada = 0", fecha.strftime(FORMATO))
 
     def editar(self, id_: int, titulo: str, fecha: datetime, repeticion: str | None,
-               tipo=SIN_CAMBIO, anticipacion=SIN_CAMBIO):
+               tipo=SIN_CAMBIO, anticipacion=SIN_CAMBIO, duracion=SIN_CAMBIO):
         """
         Cambia título, fecha y repetición (y, si se indican, tipo y anticipación).
         Se reinicia 'avisada' para que la nueva hora vuelva a avisar (si ya había sonado y la moviste).
@@ -279,6 +346,9 @@ class Almacen:
         if anticipacion is not SIN_CAMBIO:
             asignaciones += ", anticipacion = ?"
             valores.append(limpiar_anticipacion(anticipacion))
+        if duracion is not SIN_CAMBIO:
+            asignaciones += ", duracion = ?"
+            valores.append(limpiar_duracion(duracion))
         self._cambiar(id_, asignaciones, *valores)
 
     def eliminar(self, id_: int):
@@ -299,7 +369,8 @@ class Almacen:
         return [{"id": f["uuid"], "titulo": f["titulo"], "fecha": f["fecha"], "repeticion": f["repeticion"],
                  "estado": f["estado"], "creada": f["creada"], "completada": f["completada"],
                  "actualizada": f["actualizada"], "borrada": bool(f["borrada"]), "tipo": f["tipo"],
-                 "anticipacion": f["anticipacion"], "aviso_previo": f["aviso_previo"]} for f in filas]
+                 "anticipacion": f["anticipacion"], "aviso_previo": f["aviso_previo"], "duracion": f["duracion"]}
+                for f in filas]
 
     def confirmar_subidas(self, subidas: list[tuple[str, int]]):
         """
@@ -335,22 +406,25 @@ class Almacen:
             tipo = c.get("tipo") if c.get("tipo") in TIPOS_VALIDOS else (fila["tipo"] if fila else "tarea")
             anticipacion = (limpiar_anticipacion(c.get("anticipacion")) if "anticipacion" in c
                             else (fila["anticipacion"] if fila else None))
+            duracion = (limpiar_duracion(c.get("duracion")) if "duracion" in c
+                        else (fila["duracion"] if fila else None))
             if fila:
                 nueva_fecha = fila["fecha"] != c["fecha"]
                 self.con.execute(
                     "UPDATE tareas SET titulo = ?, fecha = ?, repeticion = ?, estado = ?, completada = ?, borrada = ?, "
-                    "tipo = ?, anticipacion = ?, actualizada = ?, sincronizada = 1, "
+                    "tipo = ?, anticipacion = ?, duracion = ?, actualizada = ?, sincronizada = 1, "
                     "avisada = CASE WHEN ? THEN 0 ELSE avisada END WHERE id = ?",
                     (c["titulo"], c["fecha"], c.get("repeticion"), estado, c.get("completada"), borrada,
-                     tipo, anticipacion, actualizada, nueva_fecha, fila["id"]))
+                     tipo, anticipacion, duracion, actualizada, nueva_fecha, fila["id"]))
                 tocadas.append(fila["id"])
             elif not borrada:                                 # una borrada que nunca estuvo aquí: nada que hacer
                 cur = self.con.execute(
                     "INSERT INTO tareas (uuid, titulo, fecha, repeticion, estado, avisada, creada, completada, "
-                    "actualizada, borrada, sincronizada, tipo, anticipacion, aviso_previo) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)",
+                    "actualizada, borrada, sincronizada, tipo, anticipacion, aviso_previo, duracion) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?)",
                     (c["id"], c["titulo"], c["fecha"], c.get("repeticion"), estado, int(estado == "hecha"),
-                     c.get("creada") or c["fecha"], c.get("completada"), actualizada, tipo, anticipacion, previo))
+                     c.get("creada") or c["fecha"], c.get("completada"), actualizada, tipo, anticipacion, previo,
+                     duracion))
                 tocadas.append(cur.lastrowid)
         self.con.commit()
         return tocadas
@@ -405,15 +479,20 @@ class Almacen:
 
     # --------------------------------------------------------------- horario
     def agregar_bloque(self, b: "Bloque") -> "Bloque":
-        cur = self.con.execute("INSERT INTO horario (dias, inicio, fin, titulo) VALUES (?, ?, ?, ?)",
-                               (",".join(map(str, b.dias)), f"{b.inicio:%H:%M}", f"{b.fin:%H:%M}", b.titulo))
+        cur = self.con.execute("INSERT INTO horario (dias, inicio, fin, titulo, traslado) VALUES (?, ?, ?, ?, ?)",
+                               (",".join(map(str, b.dias)), f"{b.inicio:%H:%M}", f"{b.fin:%H:%M}", b.titulo,
+                                b.traslado))
         self.con.commit()
-        return Bloque(b.dias, b.inicio, b.fin, b.titulo, cur.lastrowid)
+        return Bloque(b.dias, b.inicio, b.fin, b.titulo, cur.lastrowid, b.traslado)
+
+    def cambiar_traslado(self, id_: int, minutos: int):
+        self.con.execute("UPDATE horario SET traslado = ? WHERE id = ?", (max(0, int(minutos)), id_))
+        self.con.commit()
 
     def horario(self) -> list["Bloque"]:
         """Tus bloques fijos, ordenados por primer día y hora."""
         bloques = [Bloque(tuple(int(d) for d in f["dias"].split(",")), hora.fromisoformat(f["inicio"]),
-                          hora.fromisoformat(f["fin"]), f["titulo"], f["id"])
+                          hora.fromisoformat(f["fin"]), f["titulo"], f["id"], f["traslado"])
                    for f in self.con.execute("SELECT * FROM horario").fetchall()]
         return sorted(bloques, key=lambda b: (min(b.dias), b.inicio))
 
@@ -421,6 +500,178 @@ class Almacen:
         cur = self.con.execute("DELETE FROM horario WHERE id = ?", (id_,))
         self.con.commit()
         return cur.rowcount > 0
+
+    def agregar_excepcion(self, e: "Excepcion") -> "Excepcion":
+        cur = self.con.execute("INSERT INTO excepciones (desde, hasta, filtro, titulo) VALUES (?, ?, ?, ?)",
+                               (e.desde.isoformat(), e.hasta.isoformat(), e.filtro, e.titulo))
+        self.con.commit()
+        return Excepcion(e.desde, e.hasta, e.filtro, e.titulo, cur.lastrowid)
+
+    def excepciones(self, desde: date | None = None) -> list["Excepcion"]:
+        """Las excepciones que todavía no terminaron (hasta >= 'desde', hoy si no se dice), por fecha."""
+        desde = desde or date.today()
+        filas = self.con.execute("SELECT * FROM excepciones WHERE hasta >= ? ORDER BY desde, id",
+                                 (desde.isoformat(),)).fetchall()
+        return [Excepcion(date.fromisoformat(f["desde"]), date.fromisoformat(f["hasta"]), f["filtro"], f["titulo"],
+                          f["id"]) for f in filas]
+
+    def borrar_excepcion(self, id_: int) -> bool:
+        cur = self.con.execute("DELETE FROM excepciones WHERE id = ?", (id_,))
+        self.con.commit()
+        return cur.rowcount > 0
+
+    def limpiar_excepciones(self, hoy: date) -> int:
+        """Borra las que ya pasaron hace más de 30 días (no sirven y la lista no crece para siempre)."""
+        cur = self.con.execute("DELETE FROM excepciones WHERE hasta < ?", ((hoy - timedelta(days=30)).isoformat(),))
+        self.con.commit()
+        return cur.rowcount
+
+    # ---------------------------------------------------------------- perfil
+    def perfil(self, por_defecto: Perfil | None = None) -> Perfil:
+        """Tu perfil guardado; lo que nunca dijiste toma el valor de 'por_defecto' (config.py)."""
+        base = por_defecto or Perfil()
+        leer = lambda clave, defecto: self.leer_ajuste(clave) or defecto      # noqa: E731
+        try:
+            despertar = hora.fromisoformat(leer("perfil_despertar", f"{base.despertar:%H:%M}"))
+            dormir = hora.fromisoformat(leer("perfil_dormir", f"{base.dormir:%H:%M}"))
+            meta = int(leer("perfil_meta_estudio", str(base.meta_estudio)))
+        except ValueError:
+            despertar, dormir, meta = base.despertar, base.dormir, base.meta_estudio
+        return Perfil(despertar, dormir, meta, self.actividades())
+
+    def guardar_perfil(self, despertar: hora | None = None, dormir: hora | None = None, meta_estudio: int | None = None):
+        if despertar is not None:
+            self.guardar_ajuste("perfil_despertar", f"{despertar:%H:%M}")
+        if dormir is not None:
+            self.guardar_ajuste("perfil_dormir", f"{dormir:%H:%M}")
+        if meta_estudio is not None:
+            self.guardar_ajuste("perfil_meta_estudio", str(max(10, min(int(meta_estudio), 720))))
+
+    def agregar_actividad(self, a: Actividad) -> Actividad:
+        cur = self.con.execute("INSERT INTO actividades (nombre, minutos, veces_semana, momento) VALUES (?, ?, ?, ?)",
+                               (a.nombre, a.minutos, a.veces_semana, a.momento))
+        self.con.commit()
+        return Actividad(a.nombre, a.minutos, a.veces_semana, a.momento, cur.lastrowid)
+
+    def actividades(self) -> list[Actividad]:
+        return [Actividad(f["nombre"], f["minutos"], f["veces_semana"], f["momento"], f["id"])
+                for f in self.con.execute("SELECT * FROM actividades ORDER BY id").fetchall()]
+
+    def borrar_actividad(self, id_: int) -> bool:
+        cur = self.con.execute("DELETE FROM actividades WHERE id = ?", (id_,))
+        self.con.execute("DELETE FROM actividades_hechas WHERE actividad_id = ?", (id_,))
+        self.con.commit()
+        return cur.rowcount > 0
+
+    def marcar_actividad(self, id_: int, dia: date, hecha: bool = True) -> bool:
+        """Anota (o quita) que hiciste esa actividad ese día. Devuelve si cambió algo."""
+        if hecha:
+            cur = self.con.execute("INSERT OR IGNORE INTO actividades_hechas (actividad_id, dia) VALUES (?, ?)",
+                                   (id_, dia.isoformat()))
+        else:
+            cur = self.con.execute("DELETE FROM actividades_hechas WHERE actividad_id = ? AND dia = ?",
+                                   (id_, dia.isoformat()))
+        self.con.commit()
+        return cur.rowcount > 0
+
+    def rechazar_sugerencia(self, nombre: str, dia: date, momento: str):
+        self.con.execute("INSERT INTO sugerencias_rechazadas (nombre, dia, momento) VALUES (?, ?, ?)",
+                         (nombre, dia.isoformat(), momento))
+        self.con.commit()
+
+    def momentos_a_evitar(self, desde: date, veces: int = 2) -> dict[str, set[str]]:
+        """{nombre: {momentos}} que rechazaste al menos 'veces' veces desde esa fecha."""
+        salida: dict[str, set[str]] = {}
+        for f in self.con.execute("SELECT nombre, momento FROM sugerencias_rechazadas WHERE dia >= ? "
+                                  "GROUP BY nombre, momento HAVING COUNT(*) >= ?", (desde.isoformat(), veces)):
+            salida.setdefault(f["nombre"], set()).add(f["momento"])
+        return salida
+
+    def marcar_tarea_sugerida(self, tarea_id: int, actividad_id: int | None):
+        self.con.execute("INSERT OR REPLACE INTO tareas_sugeridas (tarea_id, actividad_id) VALUES (?, ?)",
+                         (tarea_id, actividad_id))
+        self.con.commit()
+
+    def es_sugerida(self, tarea_id: int) -> bool:
+        return self.con.execute("SELECT 1 FROM tareas_sugeridas WHERE tarea_id = ?", (tarea_id,)).fetchone() is not None
+
+    def repasar_sugeridas(self, hoy: date) -> tuple[list[tuple[int, date]], list[int]]:
+        """
+        Revisa las tareas que vinieron de una sugerencia:
+          - completada (aquí o en el celular) -> cuenta su actividad ese día y deja de seguirla;
+          - pendiente de un día anterior      -> se borra (no queda vencida) y se sincroniza el borrado;
+          - borrada o inexistente             -> deja de seguirla.
+        Devuelve ([(actividad_id, día hecha)], [ids descartados]).
+        """
+        hechas, descartadas, olvidar = [], [], []
+        filas = self.con.execute(
+            "SELECT s.tarea_id, s.actividad_id, t.titulo, t.estado, t.fecha, t.completada, t.borrada "
+            "FROM tareas_sugeridas s LEFT JOIN tareas t ON t.id = s.tarea_id").fetchall()
+        for f in filas:
+            if f["estado"] is None or f["borrada"]:
+                olvidar.append(f["tarea_id"])
+            elif f["estado"] == "hecha":
+                self._anotar_historial(f["titulo"], f["fecha"], "hecha")
+                if f["actividad_id"] is not None:
+                    hechas.append((f["actividad_id"], datetime.strptime(f["completada"] or f["fecha"], FORMATO).date()))
+                olvidar.append(f["tarea_id"])
+            elif datetime.strptime(f["fecha"], FORMATO).date() < hoy:
+                self._anotar_historial(f["titulo"], f["fecha"], "descartada")
+                self.eliminar(f["tarea_id"])
+                descartadas.append(f["tarea_id"])
+                olvidar.append(f["tarea_id"])
+        for id_ in olvidar:
+            self.con.execute("DELETE FROM tareas_sugeridas WHERE tarea_id = ?", (id_,))
+        for actividad_id, dia in hechas:
+            self.marcar_actividad(actividad_id, dia)
+        self.con.commit()
+        return hechas, descartadas
+
+    def _anotar_historial(self, titulo: str, fecha: str, resultado: str):
+        self.con.execute("INSERT INTO historial_sugeridas (nombre, dia, resultado) VALUES (?, ?, ?)",
+                         (titulo, fecha[:10], resultado))
+
+    def balance_sugeridas(self, desde: date, hasta: date) -> dict[str, tuple[int, int]]:
+        """{nombre: (hechas, descartadas)} de lo agendado desde sugerencias entre esas fechas."""
+        salida: dict[str, tuple[int, int]] = {}
+        for f in self.con.execute(
+                "SELECT nombre, SUM(resultado = 'hecha') AS h, SUM(resultado = 'descartada') AS d "
+                "FROM historial_sugeridas WHERE dia BETWEEN ? AND ? GROUP BY nombre ORDER BY nombre",
+                (desde.isoformat(), hasta.isoformat())):
+            salida[f["nombre"]] = (f["h"], f["d"])
+        return salida
+
+    def uuids_sugeridas(self) -> list[str]:
+        """Los ids compartidos (uuid) de las tareas sugeridas pendientes: el celular tampoco las da por vencidas."""
+        return [f[0] for f in self.con.execute(
+            "SELECT t.uuid FROM tareas_sugeridas s JOIN tareas t ON t.id = s.tarea_id "
+            "WHERE t.estado = 'pendiente' AND t.borrada = 0 ORDER BY t.uuid")]
+
+    def id_por_uuid(self, uuid_: str) -> int | None:
+        fila = self.con.execute("SELECT id FROM tareas WHERE uuid = ? AND borrada = 0", (uuid_,)).fetchone()
+        return fila[0] if fila else None
+
+    def ids_sugeridas(self) -> set[int]:
+        return {f[0] for f in self.con.execute("SELECT tarea_id FROM tareas_sugeridas")}
+
+    def olvidar_rechazo(self, nombre: str, momento: str) -> int:
+        """Olvida solo eso: «gimnasio en la tarde» (el ✕ de la pestaña Horario)."""
+        cur = self.con.execute("DELETE FROM sugerencias_rechazadas WHERE nombre = ? AND momento = ?", (nombre, momento))
+        self.con.commit()
+        return cur.rowcount
+
+    def olvidar_rechazos(self) -> int:
+        cur = self.con.execute("DELETE FROM sugerencias_rechazadas")
+        self.con.commit()
+        return cur.rowcount
+
+    def actividades_hechas(self, desde: date, hasta: date) -> dict[int, list[date]]:
+        """{id de actividad: [días en que la hiciste]} entre dos fechas (ambas incluidas)."""
+        salida: dict[int, list[date]] = {}
+        for f in self.con.execute("SELECT actividad_id, dia FROM actividades_hechas WHERE dia BETWEEN ? AND ? "
+                                  "ORDER BY dia", (desde.isoformat(), hasta.isoformat())):
+            salida.setdefault(f["actividad_id"], []).append(date.fromisoformat(f["dia"]))
+        return salida
 
     # ---------------------------------------------------------------- apodos
     def guardar_apodo(self, apodo: str, destino: str):
@@ -461,4 +712,5 @@ class Almacen:
             avisada=bool(fila["avisada"]),
             tipo=fila["tipo"] or "tarea",
             anticipacion=fila["anticipacion"],
+            duracion=fila["duracion"],
         )

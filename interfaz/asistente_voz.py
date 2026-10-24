@@ -123,7 +123,7 @@ class ControladorVoz:
         if _PEDIDO_TAREA.match(normalizar(texto)) or (r.tipo == "evento" and r.fecha and r.titulo):
             fecha = r.fecha if r.fecha and (r.fecha > datetime.now() or r.repeticion) else None
             self.dialogo = DialogoTarea(texto, r.titulo, fecha, r.repeticion, tipo=r.tipo,
-                                        anticipacion=r.anticipacion)
+                                        anticipacion=r.anticipacion, duracion=r.duracion)
             self._continuar_dialogo(self.dialogo.siguiente())   # crea ya, o pregunta lo que falta
             return
         self.responder(f"No entendí: «{texto}». Prueba con «abre…», «modo estudio» o «recuérdame…».",
@@ -169,7 +169,7 @@ class ControladorVoz:
         self.a.avisos.ocultar_mensaje()
         if paso.tipo == "crear":
             ahora = datetime.now()
-            self.a.agregar(paso.titulo, paso.fecha, paso.repeticion, paso.clase, paso.avisos)
+            self.a.agregar(paso.titulo, paso.fecha, paso.repeticion, paso.clase, paso.avisos, paso.duracion)
             if paso.clase == "evento":
                 avisos = describir_avisos(paso.avisos).replace("avisa ", "")
                 extra = f" Te aviso {avisos} y ese día." if avisos else ""

@@ -46,8 +46,11 @@ def debe_saludar(ahora: datetime, ultimo_saludo: str | None, desde_hora: int) ->
 
 
 def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: str,
-                 max_lista: int = 4, libres: list | None = None) -> Saludo:
-    """libres: tus horas libres de hoy [(inicio, fin)] si anotaste tu horario (None = no se menciona)."""
+                 max_lista: int = 4, libres: list | None = None, sugerencia=None) -> Saludo:
+    """
+    libres: tus horas libres de hoy [(inicio, fin)] si anotaste tu horario (None = no se menciona).
+    sugerencia: la primera Sugerencia del plan de hoy (nucleo/recomendador.py), o None.
+    """
     saludo, emoji = momento_del_dia(ahora.hour)
     vencidas = [t for t in pendientes if t.fecha <= ahora and not t.es_evento]
     hoy = [t for t in pendientes if t.fecha > ahora and t.fecha.date() == ahora.date()]
@@ -80,6 +83,9 @@ def armar_saludo(ahora: datetime, pendientes: list[Tarea], racha: int, nombre: s
         lineas.append(f"🕒 Libre hoy: {describir_libre(libres)}")
         frases.append(f"Hoy tienes {hablar_duracion(minutos(libres))} libre." if libres
                       else "Hoy no te queda tiempo libre en tu horario.")
+    if sugerencia is not None:
+        lineas.append(f"💡 Te sugiero: {sugerencia.nombre} {sugerencia.inicio:%H:%M}–{sugerencia.fin:%H:%M}")
+        frases.append(f"Te sugiero {sugerencia.nombre.lower()} {hora_hablada(sugerencia.inicio)}.")
     if racha >= 2:
         lineas.append(f"🔥 Racha de estudio: {racha} días. ¡Que no se corte!")
         frases.append(f"Llevas {racha} días seguidos estudiando. ¡Que no se corte!")

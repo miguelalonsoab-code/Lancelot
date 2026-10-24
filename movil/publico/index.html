@@ -34,7 +34,12 @@
   </main>
 
   <main id="principal" class="principal" hidden>
-    <div id="lista" class="lista"></div>
+    <nav class="pestanas" role="tablist" aria-label="Vista">
+      <button id="p-lista" role="tab" aria-selected="true" aria-controls="lista">Tareas</button>
+      <button id="p-calendario" role="tab" aria-selected="false" aria-controls="calendario">Calendario</button>
+    </nav>
+    <div id="lista" class="lista" role="tabpanel" aria-labelledby="p-lista"></div>
+    <div id="calendario" class="calendario" role="tabpanel" aria-labelledby="p-calendario" hidden></div>
   </main>
 
   <footer id="redactar" class="redactar" hidden>

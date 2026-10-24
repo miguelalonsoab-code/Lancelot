@@ -35,18 +35,20 @@ class Paso:
     repeticion: str | None = None
     clase: str = "tarea"              # "tarea" | "evento" (no confundir con 'tipo', que es el paso)
     avisos: str | None = None         # días de anticipación ("7,1") o None
+    duracion: int | None = None       # minutos ("de 8 a 10" = 120)
 
 
 class DialogoTarea:
     def __init__(self, texto_original: str, titulo: str, fecha: datetime | None,
                  repeticion: str | None, intentos_max: int = 2, tipo: str = "tarea",
-                 anticipacion: str | None = None):
+                 anticipacion: str | None = None, duracion: int | None = None):
         self.texto_original = texto_original      # para dejarlo en el panel si no se logra
         self.titulo = titulo
         self.fecha = fecha
         self.repeticion = repeticion
         self.tipo = tipo
         self.anticipacion = anticipacion          # lo que pediste ("avísame 3 días antes"), o None
+        self.duracion = duracion
         self.intentos_max = intentos_max
         self._fallos = 0
 
@@ -66,7 +68,7 @@ class DialogoTarea:
         if falta == "fecha":
             return Paso("preguntar", f"¿Para cuándo te recuerdo «{self.titulo}»?")
         return Paso("crear", titulo=self.titulo, fecha=self.fecha, repeticion=self.repeticion, clase=self.tipo,
-                    avisos=avisos_previos(self.tipo, self.repeticion, self.anticipacion))
+                    avisos=avisos_previos(self.tipo, self.repeticion, self.anticipacion), duracion=self.duracion)
 
     # ------------------------------------------------------------ respuesta
     def responder(self, texto: str, ahora: datetime | None = None) -> Paso:
@@ -86,6 +88,7 @@ class DialogoTarea:
                 self.tipo = "evento"
                 self.repeticion = self.repeticion or r.repeticion
             self.anticipacion = self.anticipacion or r.anticipacion
+            self.duracion = self.duracion or r.duracion
             if self.fecha is None and r.fecha:
                 self.fecha, self.repeticion = r.fecha, r.repeticion or self.repeticion
             return self.siguiente()
@@ -99,6 +102,7 @@ class DialogoTarea:
         self.fecha = r.fecha
         self.repeticion = r.repeticion or self.repeticion
         self.anticipacion = self.anticipacion or r.anticipacion
+        self.duracion = self.duracion or r.duracion
         return self.siguiente()
 
     def _fallo(self, pregunta: str) -> Paso:

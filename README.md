@@ -1,4 +1,4 @@
-# Lancelot — asistente de escritorio · v3.12.1
+# Lancelot — asistente de escritorio · v3.20
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
@@ -9,6 +9,105 @@ te muestra una burbuja y Windows lanza una notificación.
   Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
   con botones **✓ Hecho** y **+10 min**.
 - Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
+
+## Novedades v3.20: calendario en la laptop, semana en el celular y más control desde el celular
+- 📅 **Laptop**: pestaña **Calendario** con el mes (en negrita los días con tareas, lila con eventos, verde
+  los días libres) y la agenda del día elegido: horario, tareas, huecos libres y sugerencias con «📌 Agendar».
+- 🗓 **Celular**: en Calendario, botón **Semana**: 7 columnas con tu día de arriba a abajo (gris = horario,
+  verde = libre, turquesa = tareas, lila = eventos). Toca un día para ver su agenda.
+- 💡 **Aviso de hueco libre en el celular**: cuando sales del trabajo o termina una clase, el servidor te
+  manda una notificación con la sugerencia, aunque la laptop esté apagada. Si estabas frente a la laptop y
+  ella ya te lo dijo, el celular no lo repite. Se apaga con `SUGERENCIAS_EN_CELULAR = False` en config.py.
+- 🏖 **Desde el celular** ahora también puedes quitar días libres y agregar o quitar actividades
+  («actividad: yoga 45 min 2 veces por semana», «borra la actividad yoga», o en Calendario → «Días libres y
+  actividades»). La laptop lo aplica al sincronizar.
+- «en las mañanas» ya no queda pegado al nombre de una actividad («Meditar 10 min cada día en las mañanas»).
+
+## Novedades v3.19: tu horario y tus sugerencias en el celular, y vista Calendario
+- 📱 El celular ya sabe tu horario, días libres, perfil y actividades: la laptop se los pasa en la
+  sincronización de siempre (solo cuando cambian). **Ejecuta `npm run configurar`** (migración nueva).
+- 🗓 Pestaña **Calendario** en el celular: el mes con puntitos (tareas y 📅 eventos; verde = día libre) y la
+  agenda del día que toques: tu horario, tareas, 🕒 huecos libres y 💡 sugerencias con «📌 Agendar».
+- En el celular ahora puedes: «¿qué hago hoy?» / «¿qué hago mañana?» (+ Agendar), «ya fui al gimnasio»
+  (o ✓ en la sugerencia), «el viernes no trabajo» / «vacaciones del 20 al 30 de diciembre», «mis días
+  libres», «¿cuándo estoy libre mañana?» y «mi horario».
+- Lo que haces en el celular se ve al instante allí y la laptop lo guarda en su próxima sincronización
+  («🏖 Desde el celular: vie 23/10 · No trabajo»).
+- Las tareas 💡 agendadas desde una sugerencia tampoco salen como vencidas en el celular.
+- El horario fijo, el perfil y las actividades se siguen editando en la laptop (cambian poco).
+- El celular calcula horas libres y sugerencias con la misma lógica que la laptop (portada a JavaScript y
+  comparada con Python en las pruebas, como el intérprete).
+
+## Novedades v3.18: «más tarde, a las 8» y un resumen más honesto
+- ⏰ Cuando te sugiere algo, puedes escribir o decir **«más tarde, a las 8»** (o «luego a las 8:30 de la
+  noche»): te lo propone a esa hora exacta, aunque antes empiece otro hueco. «8» es la próxima vez que sean
+  las 8 (si ya pasaron las 8 de la mañana, las 8 de la noche).
+- 📌 Si agendas algo desde una sugerencia y casi nunca lo haces, la pestaña 📊 Estudio y el «resumen
+  semanal» te lo dicen: «Agendaste Gimnasio 3 veces y lo hiciste 1. Quizá esa hora no te sirve…».
+- 💡 Lo agendado desde una sugerencia ya no aparece en **vencidas**: pasada su hora sigue en próximas tareas
+  con 💡 («era a las 18:15 · si no la haces, mañana se quita sola»). En el celular todavía se ve como vencida.
+
+## Novedades v3.17: «Más tarde» y control de lo aprendido
+- ⏰ El aviso de hueco libre tiene un tercer botón, **Más tarde**: no cuenta como rechazo y te lo vuelve a
+  proponer en 1 hora (si estás libre) o al empezar tu próximo hueco (`MINUTOS_MAS_TARDE`).
+- 💡 La pestaña 🗓 Horario muestra **NO TE SUGIERO**: lo que aprendió de tus «Ahora no» («Leer · en la
+  noche»). Con ✕ lo olvidas solo a eso.
+- 📌 Lo que agendas desde una sugerencia y no haces se **borra solo al día siguiente** (también del celular),
+  en vez de quedarse en vencidas. Si lo completas, aquí o en el celular, cuenta para tu actividad.
+
+## Novedades v3.16: sugerencias que aprenden y se agendan
+- 📌 «¿Qué hago hoy?» trae el botón **Agendar** (o di «agéndalo»): cada sugerencia pasa a ser una tarea con
+  su hora y duración. Te avisa a esa hora y, al completarla, cuenta para tu meta.
+- Lo que ya agendaste no se vuelve a sugerir (y «Estudiar» agendado cuenta para tu meta del día).
+- El aviso de hueco libre tiene **✓ Lo hago** (estudiar abre el modo estudio; una actividad cuenta como
+  hecha hoy) y **Ahora no**.
+- Si dices «Ahora no» 2 veces a lo mismo en el mismo momento del día (mañana/tarde/noche), durante 3 semanas
+  no te lo sugiere ahí. «Vuelve a sugerirme todo» lo olvida. Se ajusta en config.py
+  (`RECHAZOS_PARA_APRENDER`, `DIAS_QUE_RECUERDA_RECHAZOS`).
+- No sugiere nada en los primeros 30 min después de despertar (`MINUTOS_PARA_ARRANCAR`).
+- La pestaña 📊 Estudio muestra tus actividades de esos 7 días: «💪 Actividades: Gimnasio 2 de 3 · Leer 5 de 7».
+
+## Novedades v3.15: Lancelot te sugiere qué hacer
+- 💡 Pregúntale «¿qué hago hoy?» o «recomiéndame algo para mañana»: arma un plan con tus horas libres.
+- 💪 Di «ya fui al gimnasio» (o marca «○ hoy» en 🙂 Perfil) y cuenta para tu meta de la semana.
+- **Cómo decide**: primero estudiar si no llegaste a tu meta del día (sesiones de hasta 100 min); después
+  tus actividades con meta semanal, primero las más atrasadas («llevas 1 de 3 y quedan 2 días»); al final las
+  que no tienen meta. Cada una va en su momento preferido (mañana/tarde/noche) si hay hueco; si no, en otro,
+  y te lo dice («no hay hueco en la tarde»). Lo que no entra se avisa: «No entra hoy: Gimnasio».
+- **Al quedar libre** (sales del trabajo, termina una clase) te propone lo que toca: «Estás libre hasta las
+  19:00. ¿Qué tal Gimnasio?». Una vez por hueco, solo si estás frente a la laptop.
+  Se apaga con `SUGERENCIAS_AL_QUEDAR_LIBRE = False` en config.py.
+- El saludo del día incluye la primera sugerencia, y la pestaña 🗓 Horario muestra las de hoy.
+- Completar una tarea que se llama como una actividad («Gimnasio», «Leer el libro…») también cuenta.
+- Por ahora solo en la laptop (el celular responde «eso lo hago en la laptop»).
+
+## Novedades v3.14: duración de tus planes y días libres
+- ⏱ Tareas y eventos con duración: «examen el viernes de 8 a 10», «cine el sábado 7pm durante 2 horas».
+- 🏖 Días que tu horario no se cumple: «el 1 de noviembre no trabajo», «vacaciones del 20 al 30 de diciembre».
+- La duración se ve en la lista (laptop y celular: «De 08:00 a 10:00») y **resta de tus horas libres**.
+- **⚠ Choques**: si un evento o algo con duración se cruza con tu horario (por ejemplo, con el trabajo),
+  Lancelot te avisa al anotarlo y en la vista previa del panel. No lo impide: solo te avisa.
+  Una tarea de un momento («llamar al banco a las 10») no avisa: se puede hacer en el trabajo.
+- **Excepciones** (por voz, en la caja de tareas o en el campo de la pestaña 🗓 Horario):
+  «mañana no tengo clases», «el viernes es feriado», «el 15 tengo libre», «no voy al gimnasio el lunes»,
+  «del 28 de diciembre al 3 de enero son mis vacaciones». «No trabajo» o «no tengo clases» liberan solo
+  esos bloques; «feriado», «vacaciones» o «tengo libre», todo el horario. «Mis días libres» las lista; se
+  quitan con ✕ en la pestaña 🗓 Horario. Las que pasaron hace más de 30 días se borran solas.
+- Servidor 1.3: guarda la duración (migración `0005_duracion.sql`). Una laptop o celular viejo que no la
+  conoce no la borra al editar.
+
+## Novedades v3.13: tu perfil y el tiempo de traslado
+- 🙂 Lancelot conoce tu perfil: a qué hora te despiertas y te duermes, tu meta de estudio y tus actividades.
+- 🚌 El viaje al trabajo o a clases también resta de tus horas libres.
+- **Perfil** (pestaña **🙂 Perfil** o por voz): «me despierto a las 6:30», «me duermo a las 11 de la noche»,
+  «meta de estudio 2 horas», «actividad: gimnasio 1 hora 3 veces por semana en la tarde», «me gusta leer
+  30 min todos los días», «mis actividades», «borra la actividad gimnasio».
+- **«¿Qué sabes de mí?»** te muestra todo lo que Lancelot sabe: sueño, meta, horario y actividades.
+- Tus horas de sueño reemplazan a `HORA_DESPERTAR`/`HORA_DORMIR` de config.py (que quedan como valor inicial):
+  las usan las horas libres y la cara de noche. Tu meta de estudio la usa el gráfico de la semana.
+- **Traslado**: al anotar un bloque, «…, traslado 45 min» o «… con 1 hora de viaje»; o después:
+  «al trabajo tardo 45 minutos». Se resta antes y después del bloque.
+- Las actividades todavía no generan recomendaciones: eso es lo próximo (usa justamente estos datos).
 
 ## Novedades v3.12.1: la voz ya no se queda muda
 - 🔊 Arreglado: Lancelot decía la primera frase y después se quedaba callado. Ahora habla todos los avisos.
@@ -295,6 +394,10 @@ La cara aparece abajo a la derecha. La próxima vez basta con doble clic en `ini
 | `guarda esta frase: …` | La agrega a `frases.txt` para que te la diga de vez en cuando |
 | `horario: de lunes a viernes de 9am a 6pm trabajo` | Anota un bloque fijo en tu horario |
 | `mi horario` · `¿cuándo estoy libre?` · `tiempo libre mañana` | Tu horario y tus horas libres |
+| `me despierto a las 6:30` · `me duermo a las 11` · `meta de estudio 2 horas` | Tu perfil |
+| `actividad: gimnasio 1 hora 3 veces por semana en la tarde` · `mis actividades` | Lo que te gusta hacer |
+| `al trabajo tardo 45 minutos` | Tiempo de traslado de un bloque del horario |
+| `¿qué sabes de mí?` | Todo lo que Lancelot sabe de ti |
 
 Si el texto no es un comando, se guarda como tarea. Mientras escribes, debajo dice cuál de los dos entendió.
 
@@ -337,6 +440,7 @@ nucleo/                  lógica pura, sin interfaz
   interprete.py          texto en español -> título + fecha + repetición + ¿tarea o evento?
   aprendizaje.py         aprende de tus correcciones Tarea/Evento
   horario.py             tu horario fijo ("de lunes a viernes de 9 a 6 trabajo") y tus horas libres
+  perfil.py              tu perfil: horas de sueño, meta de estudio y actividades
   planificador.py        repeticiones, avisos anticipados de eventos y "ánimo" de la cara
   pomodoro.py            máquina de estados del pomodoro (sin reloj propio: fácil de probar)
   comandos.py            "modo estudio 50" -> Comando("estudio", 50)

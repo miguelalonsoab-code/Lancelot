@@ -17,13 +17,20 @@ import {
   aTexto, ahoraEn, conHora, DIAS, describirAtraso, describirFaltan, describirFecha, desdeTexto, diasEntre, diaSemana,
   hhmm, MESES, soloFecha, sumarDias, sumarMinutos,
 } from "./comun/fechas.js";
-import { avisosPrevios, describirAvisos, interpretar as interpretarBase, REPETICIONES, TIPOS } from "./comun/interprete.js";
+import { avisosPrevios, describirAvisos, describirRango, interpretar as interpretarBase, REPETICIONES, TIPOS }
+  from "./comun/interprete.js";
 import { BolsaFrases, REFLEXIONES } from "./comun/frases.js";
+import { coincide, describirBloque, describirExcepcion, describirLibre, hablarDuracion, interpretarExcepcion, isoDia,
+  lunesDe, minutos } from "./comun/horario.js";
 import { opcionesReprogramar } from "./comun/planificador.js";
+import { describirActividad, interpretarActividad } from "./comun/perfil.js";
+import { describirPlan } from "./comun/recomendador.js";
+import { pintarCalendario } from "./calendario.js";
+import { actividadesQueNombra, combinar, esSugerida, hechasEntre, horasLibres, planDelDia } from "./contexto.js";
 
 const ZONA = "America/Lima";
 const NOMBRE = "Miguel";
-const VERSION_APP = "1.2";
+const VERSION_APP = "1.5";
 
 const $ = (id) => document.getElementById(id);
 const ahora = () => ahoraEn(ZONA);
@@ -32,11 +39,21 @@ const cara = new Cara($("cara"));
 const estado = {
   clave: leer("clave"),
   tareas: [],
-  espera: null,          // { falta: "titulo" | "fecha", titulo, fecha, repeticion, tipo, anticipacion } mientras pregunta
+  espera: null,          // { falta: "titulo" | "fecha", titulo, fecha, repeticion, tipo, anticipacion, duracion }
   saludado: false,
   instalar: null,        // aviso de "instalar app" que ofrece Chrome
   vocabulario: null,     // lo que la laptop aprendió de tus correcciones Tarea/Evento
+  // v3.19: lo que sabe la laptop (horario, perfil…) y lo hecho aquí que todavía no llegó allá
+  contexto: null,
+  acciones: [],
+  vista: leer("vista") === "calendario" ? "calendario" : "lista",
+  calMes: null,          // primer día del mes que se ve en el calendario
+  calModo: leer("calModo") === "semana" ? "semana" : "mes",
+  calDia: null,          // día elegido
+  ultimoPlan: null,      // { plan, dia } de la última sugerencia mostrada (para «agéndalo»)
 };
+/** El contexto de la laptop + lo pendiente de aquí (ver contexto.js). */
+const ctx = () => combinar(estado.contexto, estado.acciones);
 const frases = new BolsaFrases(REFLEXIONES);
 
 /** Igual que el intérprete común, pero con lo aprendido en la laptop. */
@@ -154,6 +171,23 @@ async function recargar() {
   if (!r || mia !== numeroDeCarga) return;
   estado.tareas = r.tareas;
   pintar();
+  cargarContexto();
+}
+
+/** Horario, perfil y actividades que subió la laptop, y lo hecho aquí que ella todavía no aplicó. */
+async function cargarContexto() {
+  const r = await api("/api/contexto").catch(() => null);
+  if (!r) return;
+  estado.contexto = r.contexto || null;
+  estado.acciones = r.acciones || [];
+  pintar();
+}
+
+/** Pide algo a la laptop (se aplica cuando sincronice) y lo suma al instante aquí. */
+async function accion(tipo, datos) {
+  const r = await intentar(() => api("/api/acciones", { metodo: "POST", cuerpo: { tipo, datos } }));
+  if (r?.accion) estado.acciones.push(r.accion);
+  return r?.accion || null;
 }
 
 // ------------------------------------------------------------ pantallas
@@ -186,6 +220,7 @@ async function conectar(clave) {
     mostrarPrincipal();
     pintar();
     cargarPreferencias();
+    cargarContexto();
     decir(`¡Listo, ${NOMBRE}! Ya estamos conectados. Activa las notificaciones en ⚙.`);
     cara.celebrar();
   } catch (e) {
@@ -200,14 +235,17 @@ async function conectar(clave) {
  */
 function agrupar(tareas, now) {
   const limite = aTexto(now);
+  const c = ctx();
   const grupos = new Map([["vencidas", { tipo: "vencidas", titulo: "", tareas: [] }]]);
   const eventos = tareas.filter(esEvento);
   if (eventos.length) grupos.set("eventos", { tipo: "eventos", titulo: `📅 Próximos eventos · ${eventos.length}`, tareas: eventos });
   for (const t of tareas.filter((x) => !esEvento(x))) {
     const f = desdeTexto(t.fecha);
     let clave, titulo, tipo;
-    if (t.fecha <= limite) {
+    if (t.fecha <= limite && !esSugerida(c, t)) {
       clave = "vencidas"; tipo = "vencidas";
+    } else if (t.fecha <= limite) {                // 💡 agendada desde una sugerencia: no "vence"
+      clave = soloFecha(now).toISOString(); tipo = "hoy"; titulo = "Hoy";
     } else {
       const dias = diasEntre(now, f);
       clave = soloFecha(f).toISOString();
@@ -225,6 +263,11 @@ function agrupar(tareas, now) {
 
 function pintar() {
   const now = ahora();
+  $("lista").hidden = estado.vista !== "lista";
+  $("calendario").hidden = estado.vista !== "calendario";
+  $("p-lista").setAttribute("aria-selected", estado.vista === "lista");
+  $("p-calendario").setAttribute("aria-selected", estado.vista === "calendario");
+  if (estado.vista === "calendario") pintarVistaCalendario(now);
   const lista = $("lista");
   lista.replaceChildren();
   const grupos = agrupar(estado.tareas, now);
@@ -245,20 +288,27 @@ function fila(t, tipo, now) {
   const f = desdeTexto(t.fecha);
   const faltan = esEvento(t) ? describirFaltan(f, now) : null;
   const dia = tipo === "eventos" ? `${capital(DIAS[diaSemana(f)])} ${f.getUTCDate()} de ${MESES[f.getUTCMonth()]}` : null;
+  const sugerida = esSugerida(ctx(), t);
+  const pasada = t.fecha <= aTexto(now);
   const detalle = [dia, tipo === "vencidas" ? describirAtraso(f, now) : null,
+    sugerida && pasada ? `💡 Era a las ${hhmm(f)}: si no la haces, mañana se quita sola` : null,
+    t.duracion && tipo !== "vencidas" ? `De ${describirRango(f, t.duracion).replace("–", " a ")}` : null,
     faltan && capital(faltan),
     t.repeticion ? `Se repite: ${REPETICIONES[t.repeticion].toLowerCase()}` : null].filter(Boolean).join(". ");
   const nodo = el("div", { class: "tarea", "data-id": t.id, "data-evento": esEvento(t) },
     el("span", { class: "hora" }, hhmm(f)),
     el("button", { class: "que", onclick: () => opcionesDeTarea(t) },
-      el("span", { class: "titulo" }, conIcono(t)), detalle && el("span", { class: "detalle" }, detalle)),
+      el("span", { class: "titulo" }, (sugerida ? "💡 " : "") + conIcono(t)), detalle && el("span", { class: "detalle" }, detalle)),
     el("button", { class: "hecho", "aria-label": `Marcar «${t.titulo}» como hecha`, onclick: () => completar(t, nodo) }));
   return nodo;
 }
 
+/** Tareas vencidas de verdad (las 💡 agendadas desde una sugerencia no cuentan). */
+const vencidasDe = (now) => { const c = ctx(); return estado.tareas.filter((t) => t.fecha <= aTexto(now) && !esEvento(t) && !esSugerida(c, t)); };
+
 function actualizarCara(now) {
   const limite = aTexto(now);
-  const vencidas = estado.tareas.filter((t) => t.fecha <= limite && !esEvento(t));
+  const vencidas = vencidasDe(now);
   const hoy = estado.tareas.filter((t) => t.fecha > limite && diasEntre(now, desdeTexto(t.fecha)) === 0);
   const h = now.getUTCHours();
   const animo = vencidas.length ? "alerta" : hoy.length ? "pendiente" : (h >= 23 || h < 6) ? "dormido" : "tranquilo";
@@ -273,7 +323,7 @@ function actualizarCara(now) {
 /** Lo que Lancelot te dice al abrir la app (o si preguntas "¿qué tengo para hoy?"). */
 function resumen(now, conSaludo = false) {
   const limite = aTexto(now);
-  const vencidas = estado.tareas.filter((t) => t.fecha <= limite && !esEvento(t));
+  const vencidas = vencidasDe(now);
   const hoy = estado.tareas.filter((t) => t.fecha > limite && diasEntre(now, desdeTexto(t.fecha)) === 0);
   const h = now.getUTCHours();
   const saludo = h >= 5 && h < 12 ? "Buenos días" : h < 19 && h >= 12 ? "Buenas tardes" : "Buenas noches";
@@ -342,8 +392,9 @@ function terminarEspera() {
   entrada.placeholder = PISTA;
 }
 
-async function crear(titulo, fecha, repeticion, tipo = "tarea", anticipacion = null) {
-  const r = await intentar(() => api("/api/tareas", { metodo: "POST", cuerpo: { titulo, fecha, repeticion, tipo, anticipacion } }));
+async function crear(titulo, fecha, repeticion, tipo = "tarea", anticipacion = null, duracion = null) {
+  const r = await intentar(() => api("/api/tareas", { metodo: "POST",
+    cuerpo: { titulo, fecha, repeticion, tipo, anticipacion, duracion } }));
   if (!r) return false;
   terminarEspera();                                  // antes de cerrar la hoja: así no dice "no la anoté"
   cerrarHoja();
@@ -373,6 +424,11 @@ function vistaPrevia(texto) {
   if (c && !estado.espera) {
     vista.dataset.tipo = "comando";
     vista.textContent = ACCIONES_CELULAR.has(c.accion) ? "Pregunta para Lancelot (Enter)" : "Eso es un comando de la laptop";
+    if (c.accion === "excepcion") {                  // se ve antes de enviar qué día y qué se libera
+      const e = interpretarExcepcion(c.texto || "", soloFecha(ahora()));
+      vista.textContent = typeof e === "string" ? e : `🏖 Día libre: ${describirExcepcion(e)}` +
+        (e.filtro ? " (solo ese bloque)" : " (todo el horario)");
+    }
     return;
   }
   const r = interpretar(texto, ahora());
@@ -383,6 +439,7 @@ function vistaPrevia(texto) {
   const partes = [`${r.tipo === "evento" ? "📅 " : ""}«${r.titulo || "…"}»`,
     r.fecha ? describirFecha(r.fecha, ahora()) : "te preguntaré cuándo"];
   if (r.repeticion) partes.push(REPETICIONES[r.repeticion].toLowerCase());
+  if (r.fecha && r.duracion) partes[1] = `${describirFecha(r.fecha, ahora())}–${describirRango(r.fecha, r.duracion).split("–")[1]}`;
   if (r.avisos) partes.push(describirAvisos(r.avisos));
   vista.textContent = "Entendí: " + partes.join(", ");
 }
@@ -416,14 +473,15 @@ async function procesar(texto) {
     const titulo = r.titulo || capital(texto);
     const tipo = r.tipo === "evento" ? "evento" : espera.tipo;
     const repeticion = espera.repeticion || (r.tipo === "evento" ? r.repeticion : null);
-    return crear(titulo, espera.fecha, repeticion, tipo, espera.anticipacion || avisosPrevios(tipo, repeticion, null));
+    return crear(titulo, espera.fecha, repeticion, tipo, espera.anticipacion || avisosPrevios(tipo, repeticion, null),
+      espera.duracion || r.duracion);
   }
   if (espera?.falta === "fecha") {
     const r = interpretar(texto, now);
     if (!r.fecha) { decir("No entendí la fecha. Prueba con «mañana a las 5» o «en 2 horas»."); return false; }
     const repeticion = r.repeticion || espera.repeticion;
     return crear(espera.titulo, aTexto(r.fecha), repeticion, espera.tipo,
-      espera.anticipacion || avisosPrevios(espera.tipo, repeticion, null));
+      espera.anticipacion || avisosPrevios(espera.tipo, repeticion, null), r.duracion || espera.duracion);
   }
   const c = interpretarComando(texto);
   if (c) { await comando(c); return true; }
@@ -431,14 +489,14 @@ async function procesar(texto) {
   const r = interpretar(texto, now);
   if (!r.titulo && r.fecha) {
     estado.espera = { falta: "titulo", fecha: aTexto(r.fecha), repeticion: r.repeticion, tipo: r.tipo,
-                      anticipacion: r.anticipacion };
+                      anticipacion: r.anticipacion, duracion: r.duracion };
     decir(`¿Qué te recuerdo ${describirFecha(r.fecha, now)}? (Escribe «olvídalo» para cancelar.)`);
     entrada.placeholder = "Por ejemplo: pagar la luz";
     return true;
   }
-  if (!r.fecha) { pedirFecha(r.titulo, r.repeticion, r.tipo, r.anticipacion); return true; }
+  if (!r.fecha) { pedirFecha(r.titulo, r.repeticion, r.tipo, r.anticipacion, r.duracion); return true; }
   if (aTexto(r.fecha) <= aTexto(now) && !r.repeticion) { decir("Esa hora ya pasó. Dime una hora futura."); return false; }
-  return crear(r.titulo, aTexto(r.fecha), r.repeticion, r.tipo, r.avisos);
+  return crear(r.titulo, aTexto(r.fecha), r.repeticion, r.tipo, r.avisos, r.duracion);
 }
 
 async function comando(c) {
@@ -452,12 +510,217 @@ async function comando(c) {
   }
   if (c.accion === "frase") return decirFrase();
   if (c.accion === "vencidas") {
-    const v = estado.tareas.filter((t) => t.fecha <= limite && !esEvento(t));
+    const v = vencidasDe(now);
     return decir(v.length ? `${capital(plural(v.length, "vencida", "vencidas"))}:\n${v.map((t) => t.titulo).join("\n")}`
       : "No tienes tareas vencidas.");
   }
   if (c.accion === "vencidas_manana") return todasAManana();
-  decir("Eso lo hago en la laptop. Aquí anoto tareas y te digo tu agenda, tus vencidas, la hora o una frase.");
+  if (["sugerir", "agendar_plan", "actividad_hecha", "excepcion", "excepciones", "libre", "horario_ver",
+       "actividad", "actividades", "borrar_actividad"].includes(c.accion)) {
+    return comandoDelHorario(c, now);
+  }
+  decir("Eso lo hago en la laptop. Aquí anoto tareas, te digo tu agenda, tus horas libres y qué hacer, " +
+    "y anoto días libres o actividades hechas.");
+}
+
+// ------------------------------------------------------------ horario y sugerencias (v3.19)
+const SIN_CONTEXTO = "Todavía no recibí tu horario ni tu perfil: abre Lancelot en la laptop con internet y se sincroniza solo.";
+
+async function comandoDelHorario(c, now) {
+  const x = ctx();
+  if (!x.conocido) return decir(SIN_CONTEXTO);
+  const hoy = soloFecha(now);
+  if (c.accion === "horario_ver") {
+    return decir(x.horario.length ? `Tu horario:\n${x.horario.map(describirBloque).join("\n")}`
+      : "No tienes horario anotado. Se anota en la laptop: «horario: de lunes a viernes de 9 a 6 trabajo».");
+  }
+  if (c.accion === "libre") {
+    const manana = c.texto === "manana";
+    const libres = horasLibres(x, estado.tareas, manana ? sumarDias(hoy, 1) : hoy, now);
+    const cuando = manana ? "Mañana" : "Hoy";
+    return decir(libres.length ? `${cuando} tienes ${hablarDuracion(minutos(libres))} libre: ${describirLibre(libres)}.`
+      : `${cuando} no te queda tiempo libre en tu horario.`);
+  }
+  if (c.accion === "excepciones" || c.accion === "actividades") return mostrarMisCosas();
+  if (c.accion === "actividad") return agregarActividad(c.texto || "");
+  if (c.accion === "borrar_actividad") {
+    const buscado = normalizarSimple(c.texto || "");
+    const a = x.actividades.find((y) => buscado && normalizarSimple(y.nombre).includes(buscado));
+    return a ? quitarActividad(a) : decir(`No encontré «${c.texto}» en tus actividades.`);
+  }
+  if (c.accion === "excepcion") {
+    const e = interpretarExcepcion(c.texto || "", hoy);
+    if (typeof e === "string") return decir(e);
+    if (e.filtro && x.horario.length && !x.horario.some((b) => coincide(e.filtro, b.titulo))) {
+      return decir(`No encontré nada parecido a «${e.titulo.split(" ").at(-1)}» en tu horario. ` +
+        "Di «el … tengo libre» para liberar todo el día.");
+    }
+    if (!(await accion("excepcion", e))) return null;
+    cara.celebrar();
+    decir(`🏖 Anotado: ${describirExcepcion(e)}. Ya lo cuento en tus horas libres (la laptop lo guarda al sincronizar).`);
+    return pintar();
+  }
+  if (c.accion === "actividad_hecha") {
+    const acts = actividadesQueNombra(x, c.texto || "");
+    if (!acts.length) return decir(`«${c.texto}» no está en tus actividades. Se agregan en la laptop (pestaña 🙂 Perfil).`);
+    for (const a of acts) await marcarHecha(a);
+    return null;
+  }
+  if (c.accion === "sugerir") {
+    const manana = c.texto === "manana";
+    return mostrarPlan(manana ? sumarDias(hoy, 1) : hoy, now);
+  }
+  if (c.accion === "agendar_plan") {
+    const u = estado.ultimoPlan || { plan: planDelDia(x, estado.tareas, hoy, now), dia: hoy };
+    return agendar(u.plan, u.dia);
+  }
+  return null;
+}
+
+async function agregarActividad(texto) {
+  const a = interpretarActividad(texto);
+  if (typeof a === "string") return decir(a);
+  if (ctx().actividades.some((y) => normalizarSimple(y.nombre) === normalizarSimple(a.nombre))) {
+    return decir(`«${a.nombre}» ya está en tus actividades.`);
+  }
+  if (!(await accion("actividad", a))) return null;
+  cara.celebrar();
+  decir(`🙂 Anotado: ${describirActividad(a)}. Ya te lo sugiero (la laptop lo guarda al sincronizar).`);
+  return pintar();
+}
+
+async function quitarActividad(a) {
+  if (a.id === null) return decir("Esa actividad todavía no llegó a la laptop: espera a que sincronice y quítala.");
+  if (!(await accion("quitar_actividad", { id: a.id }))) return null;
+  decir(`Quité ${a.nombre} de tus actividades.`);
+  pintar();
+  if (hojaAbierta) mostrarMisCosas();
+  return null;
+}
+
+async function quitarExcepcion(e) {
+  if (!(await accion("quitar_excepcion", { desde: e.desde, hasta: e.hasta, filtro: e.filtro }))) return;
+  decir(`Quité: ${describirExcepcion(e)}.`);
+  pintar();
+  if (hojaAbierta) mostrarMisCosas();
+}
+
+/** Hoja con tus días libres y tus actividades: ✕ para quitar, y un campo para agregar una actividad. */
+function mostrarMisCosas() {
+  const x = ctx();
+  if (!x.conocido) return decir(SIN_CONTEXTO);
+  const campo = el("input", { type: "text", maxlength: 120, placeholder: "yoga 45 min 2 veces por semana en la tarde",
+    "aria-label": "Nueva actividad", enterkeyhint: "done" });
+  const agregar = async () => { if (campo.value.trim()) { await agregarActividad(campo.value.trim()); mostrarMisCosas(); } };
+  campo.addEventListener("keydown", (e) => { if (e.key === "Enter") agregar(); });
+  const filaQuitar = (texto, extra, alQuitar, aria) => el("div", { class: "mi-fila" },
+    el("span", {}, el("span", { class: "mi-tit" }, texto), extra && el("span", { class: "mi-det" }, extra)),
+    alQuitar && el("button", { class: "b-mini quitar", onclick: alQuitar, "aria-label": aria }, "✕"));
+  const hoy = soloFecha(ahora());
+  const [semana] = hechasEntre(x, lunesDe(hoy), hoy);
+  abrirHoja("Días libres y actividades",
+    el("h3", { class: "mi-sec" }, "🏖 Días libres"),
+    x.excepciones.length ? x.excepciones.map((e) => filaQuitar(describirExcepcion(e),
+      e.pendiente ? "esperando a la laptop" : e.filtro ? "solo ese bloque" : "todo el horario",
+      () => quitarExcepcion(e), `Quitar ${e.titulo}`))
+      : el("p", { class: "sub" }, "Ninguno. Escribe abajo, por ejemplo: «el viernes no trabajo»."),
+    el("h3", { class: "mi-sec" }, "🏃 Actividades"),
+    x.actividades.map((a) => filaQuitar(describirActividad(a),
+      a.pendiente ? "esperando a la laptop" : a.veces_semana ? `esta semana: ${semana[a.id] || 0} de ${a.veces_semana}` : null,
+      a.pendiente ? null : () => quitarActividad(a), `Quitar ${a.nombre}`)),
+    el("div", { class: "fila" }, campo, el("button", { class: "b-principal", onclick: agregar }, "Agregar actividad")),
+    el("p", { class: "sub" }, "Tu horario fijo y tus horas de sueño se cambian en la laptop."));
+}
+
+async function marcarHecha(a) {
+  const hoy = soloFecha(ahora());
+  if (!(await accion("hecha", { actividad_id: a.id, dia: isoDia(hoy) }))) return;
+  const [semana] = hechasEntre(ctx(), lunesDe(hoy), hoy);
+  const n = semana[a.id] || 0;
+  cara.celebrar();
+  decir(a.veces_semana ? `💪 ¡Bien! ${a.nombre}: ${n} de ${a.veces_semana} esta semana${n >= a.veces_semana ? " ✅" : ""}.`
+    : `💪 ¡Bien! Anoté ${a.nombre} hoy.`);
+  pintar();
+}
+
+function mostrarPlan(dia, now) {
+  const x = ctx();
+  const plan = planDelDia(x, estado.tareas, dia, now);
+  const cuando = diasEntre(now, dia) === 0 ? "hoy" : "mañana";
+  estado.ultimoPlan = { plan, dia };
+  const [texto] = describirPlan(plan, cuando);
+  decir(plan.sugerencias.length ? `💡 Para ${cuando}:\n${texto}` : texto);
+  if (!plan.sugerencias.length) return;
+  abrirHoja(`💡 Para ${cuando}`,
+    plan.sugerencias.map((s) => opcion(s.nombre, s.clase === "actividad" && cuando === "hoy"
+      ? () => { cerrarHoja(); marcarHecha(x.actividades.find((a) => a.id === s.actividad_id)); } : () => {},
+    { extra: `${hhmm(s.inicio)}–${hhmm(s.fin)} · ${s.motivo}` })),
+    plan.sin_lugar.length && el("p", { class: "sub" }, `No entra: ${plan.sin_lugar.join(", ")}.`),
+    el("div", { class: "separador" }),
+    el("div", { class: "fila-botones" },
+      el("button", { class: "b-secundario", onclick: cerrarHoja }, "Cerrar"),
+      el("button", { class: "b-principal", onclick: () => agendar(plan, dia) }, "📌 Agendar")));
+}
+
+/** Cada sugerencia pasa a ser una tarea con su hora y duración (y la laptop la marca como 💡). */
+async function agendar(plan, dia) {
+  const now = ahora();
+  let hechas = 0;
+  for (const s of plan.sugerencias) {
+    let inicio = s.inicio;
+    if (inicio <= now) inicio = sumarMinutos(now, 5 - (now.getUTCMinutes() % 5));
+    const ya = estado.tareas.some((t) => t.fecha.slice(0, 10) === isoDia(inicio) && normalizarSimple(t.titulo) === normalizarSimple(s.nombre));
+    if (ya) continue;
+    const minutosS = Math.round((s.fin - s.inicio) / 60000);
+    const r = await intentar(() => api("/api/tareas", { metodo: "POST",
+      cuerpo: { titulo: s.nombre, fecha: aTexto(inicio), repeticion: null, tipo: "tarea", anticipacion: null, duracion: minutosS } }));
+    if (!r) break;
+    await accion("sugerida", { tarea: r.tarea.id, actividad_id: s.actividad_id ?? null });
+    hechas++;
+  }
+  estado.ultimoPlan = null;
+  cerrarHoja();
+  if (hechas) cara.celebrar();
+  decir(hechas ? `📌 Agendé ${plural(hechas, "sugerencia", "sugerencias")}. Te aviso a cada hora; si alguna no la haces, mañana se quita sola.`
+    : "No había nada nuevo que agendar.");
+  await recargar();
+}
+
+// ------------------------------------------------------------ calendario (v3.19)
+function cambiarVista(vista) {
+  estado.vista = vista;
+  guardar("vista", vista);
+  pintar();
+}
+$("p-lista").addEventListener("click", () => cambiarVista("lista"));
+$("p-calendario").addEventListener("click", () => cambiarVista("calendario"));
+
+function pintarVistaCalendario(now) {
+  estado.calDia ||= soloFecha(now);
+  estado.calMes ||= conHora(sumarDias(estado.calDia, 1 - estado.calDia.getUTCDate()), 0, 0);
+  pintarCalendario($("calendario"), {
+    el, ctx: ctx(), tareas: estado.tareas, ahora: now, mes: estado.calMes, dia: estado.calDia, modo: estado.calModo,
+    cambiarModo: (m) => { estado.calModo = m; guardar("calModo", m); pintar(); },
+    cambiarSemana: (paso) => {
+      estado.calDia = sumarDias(estado.calDia, 7 * paso);
+      estado.calMes = sumarDias(estado.calDia, 1 - estado.calDia.getUTCDate());
+      pintar();
+    },
+    elegirDia: (d) => {
+      estado.calDia = d;
+      if (d.getUTCMonth() !== estado.calMes.getUTCMonth()) estado.calMes = sumarDias(d, 1 - d.getUTCDate());
+      pintar();
+    },
+    cambiarMes: (paso) => {
+      const m = estado.calMes;
+      estado.calMes = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + paso, 1));
+      pintar();
+    },
+    tocarTarea: (t) => opcionesDeTarea(t),
+    agendar: (plan, dia) => agendar(plan, dia),
+    hecha: (s) => marcarHecha(ctx().actividades.find((a) => a.id === s.actividad_id)),
+    misCosas: () => mostrarMisCosas(),
+  });
 }
 
 // ------------------------------------------------------------ hoja inferior
@@ -507,9 +770,9 @@ function selectorFecha(inicial, alGuardar, textoBoton = "Guardar") {
     } }, textoBoton));
 }
 
-function pedirFecha(titulo, repeticion, tipo = "tarea", anticipacion = null) {
-  estado.espera = { falta: "fecha", titulo, repeticion, tipo, anticipacion };
-  const anotar = (f) => crear(titulo, f, repeticion, tipo, anticipacion || avisosPrevios(tipo, repeticion, null));
+function pedirFecha(titulo, repeticion, tipo = "tarea", anticipacion = null, duracion = null) {
+  estado.espera = { falta: "fecha", titulo, repeticion, tipo, anticipacion, duracion };
+  const anotar = (f) => crear(titulo, f, repeticion, tipo, anticipacion || avisosPrevios(tipo, repeticion, null), duracion);
   decir(`¿Para cuándo «${titulo}»?`);
   const now = ahora();
   const atajos = [["En 1 hora", sumarMinutos(now, 60)]];
@@ -618,6 +881,13 @@ async function ajustes() {
 
   abrirHoja("Ajustes",
     el("div", { class: "ajuste" }, el("h3", {}, "Notificaciones"), notificaciones),
+    el("div", { class: "ajuste" }, el("h3", {}, "Tu horario (desde la laptop)"),
+      el("p", {}, estado.contexto
+        ? `Recibido ${cuandoFue(ahoraEn(ZONA, new Date(estado.contexto.recibido)), ahora())}. ` +
+          `${plural(estado.contexto.horario.length, "bloque", "bloques")}, ` +
+          `${plural(estado.contexto.actividades.length, "actividad", "actividades")}.` +
+          (estado.acciones.length ? ` ${plural(estado.acciones.length, "cambio", "cambios")} de aquí esperan a la laptop.` : "")
+        : "Todavía no llegó. Abre Lancelot en la laptop con internet: lo sube solo.")),
     el("div", { class: "ajuste" }, el("h3", {}, "Voz"),
       el("p", {}, vozActiva() ? "Al tocar mi cara te digo la frase en voz alta." : "Las frases solo se muestran, sin voz."),
       el("button", { class: "b-secundario", onclick: () => { guardar("voz", vozActiva() ? "0" : "1"); ajustes(); } },
@@ -632,6 +902,12 @@ async function ajustes() {
     el("div", { class: "ajuste" }, el("h3", {}, "Este celular"),
       el("p", {}, `Versión ${VERSION_APP}.`),
       el("button", { class: "b-secundario", onclick: desconectar }, "Desconectar este celular")));
+}
+
+/** 'hoy a las 08:15', 'ayer a las 22:00' o 'el 20/10 a las 09:00' (algo que ya pasó). */
+function cuandoFue(f, now) {
+  const dias = diasEntre(f, now);
+  return `${dias === 0 ? "hoy" : dias === 1 ? "ayer" : `el ${String(f.getUTCDate()).padStart(2, "0")}/${String(f.getUTCMonth() + 1).padStart(2, "0")}`} a las ${hhmm(f)}`;
 }
 
 /** El registro del service worker, o null si no se pudo instalar (sin esperar para siempre). */

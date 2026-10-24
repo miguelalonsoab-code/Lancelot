@@ -78,7 +78,7 @@ const ahora = () => ahoraEn("America/Lima");
 test("sin clave no se puede leer nada", async () => {
   assert.equal((await api("/api/tareas", { clave: "otra" })).estado, 401);
   const estado = await api("/api/estado", { clave: "" });
-  assert.deepEqual(estado.datos, { ok: true, version: "1.2", configurado: true });
+  assert.deepEqual(estado.datos, { ok: true, version: "1.5", configurado: true });
 });
 
 test("agregar con texto libre, preguntar lo que falta y listar", async () => {
@@ -356,4 +356,123 @@ test("v3.11: 'ya avisé' compartido, espera antes de avisar, preferencias y sinc
   await api("/api/vencidas/manana", { metodo: "POST" });
   const examen = (await api("/api/tareas")).datos.tareas.find((t) => t.id === hoyTemprano.id);
   assert.equal(examen.fecha, hoyTemprano.fecha);
+});
+
+test("v3.14: duración por texto libre, POST, PATCH y sincronización (sin la clave no se pierde)", async () => {
+  const sync = (cuerpo) => api("/api/sync", { metodo: "POST", cuerpo });
+  const examen = (await api("/api/tareas", { metodo: "POST", cuerpo: { texto: "examen final pasado mañana de 8 a 10" } }))
+    .datos.tarea;
+  assert.deepEqual([examen.titulo, examen.duracion, examen.fecha.slice(11)], ["Examen final", 120, "08:00"]);
+  const cine = (await api("/api/tareas", { metodo: "POST", cuerpo: { titulo: "Cine", fecha: aTexto(sumarMinutos(ahora(), 1440)),
+    tipo: "evento", duracion: 150 } })).datos.tarea;
+  assert.equal(cine.duracion, 150);
+  const rara = await api("/api/tareas", { metodo: "POST", cuerpo: { titulo: "X", fecha: aTexto(sumarMinutos(ahora(), 60)),
+    duracion: 99999 } });
+  assert.equal(rara.datos.tarea.duracion, null, "fuera de rango: se ignora");
+
+  // PATCH sin 'duracion' la conserva; con null la quita
+  await api(`/api/tareas/${cine.id}`, { metodo: "PATCH", cuerpo: { titulo: "Cine con Dagi", fecha: cine.fecha } });
+  let visto = (await api("/api/tareas")).datos.tareas.find((t) => t.id === cine.id);
+  assert.deepEqual([visto.titulo, visto.duracion], ["Cine con Dagi", 150]);
+
+  // La laptop vieja (sin 'duracion') edita: se conserva. La nueva la cambia.
+  const r = await sync({ desde: 0, cambios: [] });
+  const remoto = r.datos.cambios.find((t) => t.id === examen.id);
+  assert.equal(remoto.duracion, 120);
+  const { duracion: _d, ...viejo } = remoto;
+  await sync({ desde: 0, cambios: [{ ...viejo, titulo: "Examen final de redes", actualizada: Date.now() }] });
+  visto = (await api("/api/tareas")).datos.tareas.find((t) => t.id === examen.id);
+  assert.deepEqual([visto.titulo, visto.duracion], ["Examen final de redes", 120]);
+  await sync({ desde: 0, cambios: [{ ...remoto, duracion: 90, actualizada: Date.now() + 5 }] });
+  visto = (await api("/api/tareas")).datos.tareas.find((t) => t.id === examen.id);
+  assert.equal(visto.duracion, 90);
+
+  await api(`/api/tareas/${cine.id}`, { metodo: "PATCH", cuerpo: { titulo: "Cine con Dagi", fecha: cine.fecha, duracion: null } });
+  visto = (await api("/api/tareas")).datos.tareas.find((t) => t.id === cine.id);
+  assert.equal(visto.duracion, null);
+});
+
+test("v3.19: contexto de la laptop y acciones del celular", async () => {
+  const sync = (cuerpo) => api("/api/sync", { metodo: "POST", cuerpo });
+  let r = await api("/api/contexto");
+  assert.equal(r.datos.contexto, null, "sin laptop todavía no hay contexto");
+
+  // El celular pide cosas (validadas)
+  const hecha = await api("/api/acciones", { metodo: "POST", cuerpo: { tipo: "hecha", datos: { actividad_id: 1, dia: "2026-10-21" } } });
+  assert.equal(hecha.estado, 201);
+  await api("/api/acciones", { metodo: "POST", cuerpo: { tipo: "excepcion",
+    datos: { desde: "2026-11-01", hasta: "2026-11-01", filtro: "traba", titulo: "No trabajo" } } });
+  for (const mala of [{ tipo: "hecha", datos: { actividad_id: "1", dia: "2026-10-21" } },
+    { tipo: "excepcion", datos: { desde: "2026-11-02", hasta: "2026-11-01", filtro: "", titulo: "x" } },
+    { tipo: "excepcion", datos: { desde: "2026-01-01", hasta: "2026-12-31", filtro: "", titulo: "Año libre" } },
+    { tipo: "excepcion", datos: { desde: "2026-11-01", hasta: "2026-11-01", filtro: "<b>", titulo: "x" } },
+    { tipo: "sugerida", datos: { tarea: "../../x", actividad_id: null } },
+    { tipo: "borrar_todo", datos: {} }]) {
+    const e = await api("/api/acciones", { metodo: "POST", cuerpo: mala });
+    assert.equal(e.estado, 400, JSON.stringify(mala));
+  }
+
+  // La laptop sincroniza: recibe las acciones…
+  const r1 = await sync({ desde: 0, cambios: [] });
+  assert.deepEqual(r1.datos.acciones.map((a) => a.tipo), ["hecha", "excepcion"]);
+  // …las aplica y en la siguiente sube su contexto nuevo y avisa cuáles ya aplicó
+  const contexto = { version: 1, perfil: { despertar: "06:00", dormir: "23:00", meta_estudio: 100, minutos_para_arrancar: 30 },
+    horario: [{ dias: [0, 1, 2, 3, 4], inicio: "08:30", fin: "17:30", titulo: "Trabajo", traslado: 45 }],
+    excepciones: [{ desde: "2026-11-01", hasta: "2026-11-01", filtro: "traba", titulo: "No trabajo" }],
+    actividades: [{ id: 1, nombre: "Gimnasio", minutos: 60, veces_semana: 3, momento: "tarde" }],
+    hechas: { 1: ["2026-10-21"] }, estudio: {}, evitar: {}, sugeridas: [] };
+  const r2 = await sync({ desde: r1.datos.cursor, cambios: [], contexto, acciones_ok: r1.datos.acciones.map((a) => a.id) });
+  assert.deepEqual(r2.datos.acciones, []);
+  r = await api("/api/contexto");
+  assert.deepEqual(r.datos.contexto.horario, contexto.horario);
+  assert.deepEqual(r.datos.contexto.hechas, { 1: ["2026-10-21"] });
+  assert.deepEqual(r.datos.acciones, []);
+  const malo = await sync({ desde: 0, cambios: [], contexto: { version: 2 } });
+  assert.equal(malo.estado, 400, "un contexto con otra forma no se guarda");
+});
+
+test("v3.20: aviso de hueco libre en el celular (una vez, y no si la laptop ya lo dio)", async (t) => {
+  const sync = (cuerpo) => api("/api/sync", { metodo: "POST", cuerpo });
+  const now = ahora();
+  if (now.getUTCHours() * 60 + now.getUTCMinutes() < 15) return t.skip("justo después de medianoche no hay bloque posible");
+  const dos = (n) => String(n).padStart(2, "0");
+  const hm = (f) => `${dos(f.getUTCHours())}:${dos(f.getUTCMinutes())}`;
+  const fin = sumarMinutos(now, -10);                       // "saliste del trabajo" hace 10 minutos
+  const base = { version: 1, perfil: { despertar: "00:00", dormir: "23:59", meta_estudio: 0, minutos_para_arrancar: 0,
+    avisar_huecos: true }, horario: [{ dias: [0, 1, 2, 3, 4, 5, 6], inicio: hm(new Date(Math.max(sumarMinutos(fin, -120), Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())))), fin: hm(fin),
+    titulo: "Trabajo", traslado: 0 }], excepciones: [], hechas: {}, estudio: {}, evitar: {}, sugeridas: [],
+    actividades: [{ id: 9, nombre: "Caminar", minutos: 30, veces_semana: 7, momento: null }] };
+  await sync({ desde: 0, cambios: [], contexto: { ...base, hueco_avisado: aTexto(fin) } });
+  await suscribir();
+  recibidas = [];
+  await reloj();
+  assert.equal(recibidas.filter((n) => n.datos.tipo === "hueco").length, 0, "la laptop ya lo avisó: no se repite");
+
+  await sync({ desde: 0, cambios: [], contexto: { ...base, hueco_avisado: null } });
+  await reloj();
+  const huecos = recibidas.filter((n) => n.datos.tipo === "hueco");
+  assert.equal(huecos.length, 1);
+  assert.equal(huecos[0].datos.titulo, "💡 Tienes un hueco libre");
+  assert.match(huecos[0].datos.cuerpo, /^Hasta las 23:59\. ¿Qué tal Caminar\? \(llevas 0 de 7 esta semana\)$/);
+  await reloj();
+  assert.equal(recibidas.filter((n) => n.datos.tipo === "hueco").length, 1, "una sola vez por hueco");
+
+  await sync({ desde: 0, cambios: [], contexto: { ...base, perfil: { ...base.perfil, avisar_huecos: false } } });
+});
+
+test("v3.20: acciones para quitar días libres y editar actividades", async () => {
+  const pedir = (tipo, datos) => api("/api/acciones", { metodo: "POST", cuerpo: { tipo, datos } });
+  assert.equal((await pedir("actividad", { nombre: "Yoga", minutos: 45, veces_semana: 2, momento: "tarde" })).estado, 201);
+  assert.equal((await pedir("quitar_actividad", { id: 3 })).estado, 201);
+  assert.equal((await pedir("quitar_excepcion", { desde: "2026-11-01", hasta: "2026-11-01", filtro: "traba" })).estado, 201);
+  for (const [tipo, datos] of [["actividad", { nombre: "", minutos: 45 }], ["actividad", { nombre: "X", minutos: 0 }],
+    ["actividad", { nombre: "X", minutos: 30, veces_semana: 9 }], ["actividad", { nombre: "X", minutos: 30, momento: "madrugada" }],
+    ["quitar_actividad", { id: "3" }], ["quitar_excepcion", { desde: "ayer", hasta: "2026-11-01", filtro: "" }]]) {
+    assert.equal((await pedir(tipo, datos)).estado, 400, JSON.stringify(datos));
+  }
+  const r = await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [] } });
+  const nuevas = r.datos.acciones.slice(-3);
+  assert.deepEqual(nuevas.map((a) => a.tipo), ["actividad", "quitar_actividad", "quitar_excepcion"]);
+  assert.deepEqual(nuevas[0].datos, { nombre: "Yoga", minutos: 45, veces_semana: 2, momento: "tarde" });
+  await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [], acciones_ok: r.datos.acciones.map((a) => a.id) } });
 });

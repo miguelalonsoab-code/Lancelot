@@ -37,6 +37,8 @@ class Resultado:
     rechazados: list[dict] = field(default_factory=list)
     error: str = ""
     preferencias: dict | None = None                      # frases/vocabulario que se subieron en este pedido
+    extra: dict | None = None                             # contexto / acciones_ok que se subieron (v3.19)
+    acciones: list[dict] = field(default_factory=list)    # lo que pidió el celular: la laptop lo aplica (v3.19)
 
 
 def leer_configuracion(ruta: Path) -> tuple[str, str] | None:
@@ -59,27 +61,30 @@ class Sincronizador(QObject):
         self.url, self.clave, self.version = url, clave, version
         self.ocupado = False
 
-    def sincronizar(self, desde: int, cambios: list[dict], preferencias: dict | None = None) -> bool:
+    def sincronizar(self, desde: int, cambios: list[dict], preferencias: dict | None = None,
+                    extra: dict | None = None) -> bool:
         """
         Empieza en segundo plano. Devuelve False si ya había una sincronización en curso.
         preferencias: tus frases y lo aprendido de tus correcciones, solo cuando cambiaron (para el celular).
+        extra: {"contexto": …, "acciones_ok": […]} (v3.19), solo lo que haga falta subir.
         """
         if self.ocupado:
             return False
         self.ocupado = True
-        threading.Thread(target=self._trabajar, args=(desde, cambios, preferencias), daemon=True,
+        threading.Thread(target=self._trabajar, args=(desde, cambios, preferencias, extra), daemon=True,
                          name="sincronizar").start()
         return True
 
-    def _trabajar(self, desde: int, cambios: list[dict], preferencias: dict | None = None):
+    def _trabajar(self, desde: int, cambios: list[dict], preferencias: dict | None = None,
+                  extra: dict | None = None):
         try:
-            cuerpo = {"desde": desde, "cambios": cambios}
+            cuerpo = {"desde": desde, "cambios": cambios, **(extra or {})}
             if preferencias:
                 cuerpo["preferencias"] = preferencias
             datos = self.pedir(cuerpo)
             resultado = Resultado(True, cambios, datos.get("cambios", []), int(datos.get("cursor", desde)),
                                   bool(datos.get("completo", True)), datos.get("rechazados", []),
-                                  preferencias=preferencias)
+                                  preferencias=preferencias, extra=extra, acciones=datos.get("acciones", []))
         except urllib.error.HTTPError as e:
             texto = ("La clave no coincide con la del servidor. Vuelve a ejecutar «npm run configurar»."
                      if e.code == 401 else f"El servidor respondió con un error ({e.code}).")

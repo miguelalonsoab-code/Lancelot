@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.12.1"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.20"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
@@ -66,6 +66,18 @@ SEGUNDOS_ENTRE_FRASES = 120       # como mucho una frase cada 2 minutos (para qu
 SEGUNDOS_FRASE = 9                # cuánto queda visible
 NOMBRE_ARCHIVO_FRASES = "frases.txt"
 FRASES_HABLADAS = True            # además de mostrarla, la dice en voz alta (salvo modo silencio)
+
+# --- Sugerencias (v3.15) --------------------------------------------------------------
+# Con tus horas libres, tus actividades y tu meta de estudio, Lancelot te sugiere qué hacer.
+# Pregúntale «¿qué hago hoy?» o «recomiéndame algo». Además, al EMPEZAR un hueco libre (sales del trabajo,
+# terminó una clase) te propone lo que toca, una sola vez por hueco y solo si estás frente a la laptop.
+SUGERENCIAS_AL_QUEDAR_LIBRE = True
+MINUTOS_PARA_SUGERIR = 20         # si llegas a la laptop hasta 20 min después de quedar libre, todavía te avisa
+MINUTOS_PARA_ARRANCAR = 30        # no sugiere nada en los primeros 30 min después de despertar (v3.16)
+RECHAZOS_PARA_APRENDER = 2        # si dices "Ahora no" 2 veces a lo mismo en el mismo momento del día…
+DIAS_QUE_RECUERDA_RECHAZOS = 21   # …durante 3 semanas no te lo sugiere en ese momento (mañana/tarde/noche)
+SUGERENCIAS_EN_CELULAR = True     # el servidor también te avisa en el celular al quedar libre (v3.20)
+MINUTOS_MAS_TARDE = 60            # «⏰ Más tarde»: te lo vuelve a proponer en 1 hora o en tu próximo hueco (v3.17)
 
 # --- Eventos (v3.10) ----------------------------------------------------------------
 # Hora de los avisos anticipados ("📅 Aniversario · falta 1 semana"). Si la cambias, cambia también

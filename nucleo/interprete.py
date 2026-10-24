@@ -10,6 +10,8 @@ Ejemplos que entiende:
     "de lunes a viernes a las 7 tomar agua"
     "el 15 de noviembre aniversario"                 -> EVENTO (avisa 1 semana y 1 día antes, y ese día)
     "evento: cena con amigos el sábado, avísame 3 días antes"
+    "examen el viernes de 8 a 10"                    -> a las 08:00, dura 2 horas (resta de tus horas libres)
+    "reunión mañana a las 3 durante 1 hora"
     "tomar pastilla todos los días a las 10 de la noche"
     "esta noche a las 8 llamar a mamá"
 
@@ -101,6 +103,7 @@ class Interpretacion:
     repeticion: str | None          # una de las claves de REPETICIONES
     tipo: str = "tarea"             # "tarea" | "evento"
     anticipacion: str | None = None  # lo que PEDISTE: "avísame 3 días antes" -> "3"
+    duracion: int | None = None     # minutos ("de 8 a 10" -> 120); None = no se dijo
 
     @property
     def avisos(self) -> str | None:
@@ -134,6 +137,18 @@ PATRONES_REPETICION = [
     (re.compile(r"\b(?:cada mes|mensualmente|mensual)\b"), "mensual"),
     (re.compile(r"\b(?:cada ano|todos los anos|anualmente|anual)\b"), "anual"),
 ]
+
+# "de 8 a 10", "desde las 7 hasta las 9 de la noche", "14:00-16:30": hora de inicio + duración
+_H = r"(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|a\.m\.|p\.m\.))?"
+PATRON_RANGO_HORAS = re.compile(
+    r"\b(?:de|desde) (?:las? )?" + _H + r" (?:a|hasta) (?:las? )?" + _H +
+    r"(?: (?:de|en|por) la (manana|tarde|noche))?(?: ?(?:hrs|horas|h)\b)?"
+)
+PATRON_RANGO_GUION = re.compile(r"\b(\d{1,2}):(\d{2}) ?- ?(\d{1,2}):(\d{2})\b")
+# "durante 2 horas", "por 45 minutos", "por una hora y media"
+PATRON_DURACION = re.compile(
+    r"\b(?:durante|por) (\d{1,3}|una?|dos|tres|cuatro|cinco|media) ?(horas?|hrs?|h|minutos?|mins?)( y media)?\b"
+)
 
 # "evento: …" al inicio = es un evento, lo diga o no la palabra clave ("evento de la empresa" se queda en el título)
 PATRON_MARCA_EVENTO = re.compile(r"^\s*(?:(?:anota|agrega|apunta|crea|nuevo|un) )?evento(?:\s*:\s*|\s*,\s*|\s+(?!de\b|del\b))")
@@ -201,6 +216,7 @@ def interpretar(texto: str, ahora: datetime | None = None, vocabulario: dict | N
         tramos.append(m.span())
         return m
 
+    duracion = None            # minutos, si se dijo "de 8 a 10" o "durante 2 horas"
     tipo = None                # "evento" / "tarea" si se dijo explícito
     anticipacion = None
     repeticion = None
@@ -220,6 +236,9 @@ def interpretar(texto: str, ahora: datetime | None = None, vocabulario: dict | N
     if m := buscar(PATRON_ANTICIPACION):
         usar(m)
         anticipacion = _anticipacion(m.group(1), m.group(2))
+    if m := buscar(PATRON_DURACION):
+        usar(m)
+        duracion = _a_minutos_duracion(m.group(1), m.group(2), m.group(3))
 
     # 1) Repetición ----------------------------------------------------------
     for patron, clave in PATRONES_REPETICION:
@@ -259,9 +278,21 @@ def interpretar(texto: str, ahora: datetime | None = None, vocabulario: dict | N
             usar(m)
             dia_semana = _indice_dia(m.group(1))
 
-    # 4) Hora ------------------------------------------------------------------
+    # 4) Hora (un rango "de 8 a 10" trae la hora Y la duración) -------------------
     if relativo is None:
-        if m := buscar(PATRON_MEDIODIA):
+        rango = None
+        if m := buscar(PATRON_RANGO_HORAS):
+            rango = _resolver_rango(*m.groups())
+        elif m := buscar(PATRON_RANGO_GUION):
+            h1, m1, h2, m2 = (int(x) for x in m.groups())
+            rango = (h1, m1, h2, m2) if h1 < 24 and h2 < 24 and m1 < 60 and m2 < 60 else None
+        if rango and (h2m := rango[2] * 60 + rango[3]) > (h1m := rango[0] * 60 + rango[1]):
+            usar(m)
+            hora = (rango[0], rango[1], True)
+            duracion = h2m - h1m
+        if hora is not None:
+            pass                                       # ya la dio el rango
+        elif m := buscar(PATRON_MEDIODIA):
             usar(m)
             hora = (12, 0, True) if m.group(1) == "mediodia" else (0, 0, True)
         else:
@@ -284,7 +315,8 @@ def interpretar(texto: str, ahora: datetime | None = None, vocabulario: dict | N
     tipo = tipo or ("evento" if es_evento(titulo, _VOCABULARIO if vocabulario is None else vocabulario) else "tarea")
     if tipo == "evento" and repeticion is None and _PALABRA_ANUAL.search(normalizar(titulo)):
         repeticion = "anual"                        # un cumpleaños vuelve cada año
-    return Interpretacion(titulo=titulo, fecha=fecha, repeticion=repeticion, tipo=tipo, anticipacion=anticipacion)
+    return Interpretacion(titulo=titulo, fecha=fecha, repeticion=repeticion, tipo=tipo, anticipacion=anticipacion,
+                          duracion=duracion)
 
 
 def describir_fecha(fecha: datetime, ahora: datetime | None = None) -> str:
@@ -347,6 +379,54 @@ def _indice_dia(nombre: str) -> int:
     if nombre in ("sabados", "domingos"):
         nombre = nombre[:-1]
     return DIAS_SEMANA.index(nombre)
+
+
+def _ajustar_ampm(h: int, ampm: str) -> int:
+    if ampm == "pm" and h < 12:
+        return h + 12
+    if ampm == "am" and h == 12:
+        return 0
+    return h
+
+
+def _resolver_rango(h1, m1, ap1, h2, m2, ap2, momento):
+    """
+    "de 7 a 10 de la noche" -> (19, 0, 22, 0). Mismas reglas que el horario (nucleo/horario.py):
+    sin am/pm, de 1 a 7 es de la tarde ("de 2 a 4" = 14 a 16) y el final nunca queda antes del inicio
+    ("de 9 a 6" = 9 a 18). None si no tiene sentido.
+    """
+    h1, h2, m1, m2 = int(h1), int(h2), int(m1 or 0), int(m2 or 0)
+    if h1 > 23 or h2 > 24 or m1 > 59 or m2 > 59:
+        return None
+    ap1, ap2 = (ap1 or "").replace(".", ""), (ap2 or "").replace(".", "")
+    tarde = ap2 == "pm" or momento in ("tarde", "noche")
+    h2 = _ajustar_ampm(h2, ap2 or ("pm" if tarde else ""))
+    if h2 == 0 and m2 == 0:
+        h2 = 24                                       # "hasta las 12am" = medianoche
+    if ap1:
+        h1 = _ajustar_ampm(h1, ap1)
+    elif h1 < 12 and (tarde and h1 + 12 < h2 or (not ap2 and not momento and 1 <= h1 <= 7)):
+        h1 += 12
+    if not ap2 and not momento and h2 < 12 and h2 <= h1:
+        h2 += 12
+    if h2 == 24:
+        h2, m2 = 23, 59
+    return (h1, m1, h2, m2) if h2 < 24 else None
+
+
+def _a_minutos_duracion(cantidad: str, unidad: str, y_media: str | None) -> int | None:
+    n = 0.5 if cantidad == "media" else _numero(cantidad)
+    minutos = int(n * 60) if unidad.startswith("h") else int(n)
+    if y_media and unidad.startswith("h"):
+        minutos += 30
+    return minutos if 0 < minutos <= 24 * 60 else None
+
+
+def describir_rango(fecha: datetime, duracion: int | None) -> str:
+    """'08:00–10:00' si tiene duración; si no, '08:00'."""
+    if not duracion:
+        return f"{fecha:%H:%M}"
+    return f"{fecha:%H:%M}–{fecha + timedelta(minutes=duracion):%H:%M}"
 
 
 def _numero(cantidad: str) -> int:

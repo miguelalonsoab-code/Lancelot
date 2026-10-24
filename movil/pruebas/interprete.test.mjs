@@ -13,9 +13,9 @@ for (const c of datos.casos) {
     const r = interpretar(c.texto, desdeTexto(c.ahora));
     assert.deepEqual(
       { titulo: r.titulo, fecha: r.fecha && aTexto(r.fecha), repeticion: r.repeticion, tipo: r.tipo,
-        anticipacion: r.anticipacion, avisos: r.avisos },
+        anticipacion: r.anticipacion, avisos: r.avisos, duracion: r.duracion },
       { titulo: c.titulo, fecha: c.fecha, repeticion: c.repeticion, tipo: c.tipo, anticipacion: c.anticipacion,
-        avisos: c.avisos });
+        avisos: c.avisos, duracion: c.duracion });
   });
 }
 

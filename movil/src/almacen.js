@@ -12,6 +12,12 @@ import { avisoPrevioPendiente, siguienteOcurrencia } from "../publico/comun/plan
 export const REPETICIONES_VALIDAS = new Set(["diaria", "laborables", "semanal", "mensual", "anual"]);
 export const TIPOS_VALIDOS = new Set(["tarea", "evento"]);
 
+/** Minutos entre 1 y 24 h, o null (igual que limpiar_duracion de la laptop). */
+export function limpiarDuracion(valor) {
+  const n = Number(valor);
+  return valor !== null && valor !== "" && Number.isInteger(n) && n > 0 && n <= 1440 ? n : null;
+}
+
 /** '7,1' se acepta; cualquier otra cosa queda en null = sin avisos previos (igual que limpiar_anticipacion). */
 export function limpiarAnticipacion(valor) {
   const texto = String(valor ?? "").replace(/ /g, "");
@@ -34,13 +40,13 @@ export class Almacen {
     return fila ? aTarea(fila) : null;
   }
 
-  async agregar(titulo, fecha, repeticion, ahora, tipo = "tarea", anticipacion = null) {
+  async agregar(titulo, fecha, repeticion, ahora, tipo = "tarea", anticipacion = null, duracion = null) {
     const id = crypto.randomUUID();
     await this.db.prepare(
-      "INSERT INTO tareas (id, titulo, fecha, repeticion, creada, actualizada, recibida, tipo, anticipacion) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      "INSERT INTO tareas (id, titulo, fecha, repeticion, creada, actualizada, recibida, tipo, anticipacion, duracion) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .bind(id, titulo, fecha, repeticion, aTexto(ahora), Date.now(), Date.now(),
-            TIPOS_VALIDOS.has(tipo) ? tipo : "tarea", limpiarAnticipacion(anticipacion)).run();
+            TIPOS_VALIDOS.has(tipo) ? tipo : "tarea", limpiarAnticipacion(anticipacion), limpiarDuracion(duracion)).run();
     return this.obtener(id);
   }
 
@@ -69,12 +75,13 @@ export class Almacen {
     return this.cambiar(id, "fecha = ?, avisada = 0", fecha);
   }
 
-  /** tipo / anticipacion: undefined = dejar lo que tenía. */
-  editar(id, titulo, fecha, repeticion, tipo, anticipacion) {
+  /** tipo / anticipacion / duracion: undefined = dejar lo que tenía. */
+  editar(id, titulo, fecha, repeticion, tipo, anticipacion, duracion) {
     let asignaciones = "titulo = ?, fecha = ?, repeticion = ?, avisada = 0";
     const valores = [titulo, fecha, repeticion];
     if (TIPOS_VALIDOS.has(tipo)) { asignaciones += ", tipo = ?"; valores.push(tipo); }
     if (anticipacion !== undefined) { asignaciones += ", anticipacion = ?"; valores.push(limpiarAnticipacion(anticipacion)); }
+    if (duracion !== undefined) { asignaciones += ", duracion = ?"; valores.push(limpiarDuracion(duracion)); }
     return this.cambiar(id, asignaciones, ...valores);
   }
 
@@ -185,18 +192,21 @@ export class Almacen {
     const avisada = c.estado !== "pendiente" || c.fecha <= aTexto(sumarMinutos(ahora, -10)) ? 1 : 0;
     // Una laptop vieja (sin eventos) no manda tipo ni anticipación: entonces se deja lo que había aquí
     const conTipo = c.tipo !== undefined ? 1 : 0, conAnticipacion = c.anticipacion !== undefined ? 1 : 0;
+    const conDuracion = c.duracion !== undefined ? 1 : 0;
     const r = await this.db.prepare(
       "INSERT INTO tareas (id, titulo, fecha, repeticion, estado, avisada, creada, completada, actualizada, borrada, " +
-      "recibida, tipo, anticipacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+      "recibida, tipo, anticipacion, duracion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
       "ON CONFLICT(id) DO UPDATE SET titulo = excluded.titulo, fecha = excluded.fecha, " +
       "repeticion = excluded.repeticion, estado = excluded.estado, completada = excluded.completada, " +
       "borrada = excluded.borrada, actualizada = excluded.actualizada, recibida = excluded.recibida, " +
       "tipo = CASE WHEN ? THEN excluded.tipo ELSE tareas.tipo END, " +
       "anticipacion = CASE WHEN ? THEN excluded.anticipacion ELSE tareas.anticipacion END, " +
+      "duracion = CASE WHEN ? THEN excluded.duracion ELSE tareas.duracion END, " +
       "avisada = CASE WHEN excluded.fecha <> tareas.fecha THEN excluded.avisada ELSE tareas.avisada END " +
       "WHERE excluded.actualizada > tareas.actualizada")
       .bind(c.id, c.titulo, c.fecha, c.repeticion, c.estado, avisada, c.creada, c.completada, c.actualizada,
-            c.borrada, Date.now(), c.tipo ?? "tarea", c.anticipacion ?? null, conTipo, conAnticipacion).run();
+            c.borrada, Date.now(), c.tipo ?? "tarea", c.anticipacion ?? null, c.duracion ?? null,
+            conTipo, conAnticipacion, conDuracion).run();
     await this.unirAvisoPrevio(c.id, c.aviso_previo);
     return r.meta.changes > 0;
   }
@@ -205,7 +215,7 @@ export class Almacen {
   async cambiosDesde(desde, limite = 1000) {
     const { results } = await this.db.prepare(
       "SELECT id, titulo, fecha, repeticion, estado, creada, completada, actualizada, borrada, tipo, anticipacion, " +
-      "aviso_previo, recibida " +
+      "aviso_previo, duracion, recibida " +
       "FROM tareas WHERE recibida >= ? ORDER BY recibida LIMIT ?").bind(desde, limite).all();
     return results;
   }
@@ -223,6 +233,47 @@ export class Almacen {
     return this.db.prepare("INSERT INTO ajustes (clave, valor, actualizada) VALUES (?, ?, ?) " +
       "ON CONFLICT(clave) DO UPDATE SET valor = excluded.valor, actualizada = excluded.actualizada")
       .bind(clave, JSON.stringify(valor), Date.now()).run();
+  }
+
+  // -------------------------------------------------------------- contexto y acciones (v3.19)
+  /** Lo que subió la laptop: horario, días libres, perfil, actividades… (null si nunca subió). */
+  async contexto() {
+    const f = await this.db.prepare("SELECT valor, actualizada FROM ajustes WHERE clave = 'contexto'").first();
+    if (!f) return null;
+    try { return { ...JSON.parse(f.valor), recibido: f.actualizada }; } catch { return null; }
+  }
+
+  async leerAjuste(clave) {
+    const f = await this.db.prepare("SELECT valor FROM ajustes WHERE clave = ?").bind(clave).first();
+    try { return f ? JSON.parse(f.valor) : null; } catch { return null; }
+  }
+
+  guardarAjuste(clave, valor) {
+    return this.guardarPreferencia(clave, valor);
+  }
+
+  guardarContexto(contexto) {
+    return this.guardarPreferencia("contexto", contexto);
+  }
+
+  async agregarAccion(tipo, datos) {
+    const r = await this.db.prepare("INSERT INTO acciones (tipo, datos, creada) VALUES (?, ?, ?)")
+      .bind(tipo, JSON.stringify(datos), Date.now()).run();
+    return { id: r.meta.last_row_id, tipo, datos };
+  }
+
+  /** Las acciones del celular que la laptop todavía no aplicó, de la más vieja a la más nueva. */
+  async acciones() {
+    const { results } = await this.db.prepare("SELECT id, tipo, datos FROM acciones ORDER BY id").all();
+    return results.map((f) => ({ id: f.id, tipo: f.tipo, datos: JSON.parse(f.datos) }));
+  }
+
+  async contarAcciones() {
+    return (await this.db.prepare("SELECT COUNT(*) AS n FROM acciones").first()).n;
+  }
+
+  async borrarAcciones(ids) {
+    for (const id of ids) await this.db.prepare("DELETE FROM acciones WHERE id = ?").bind(id).run();
   }
 
   // -------------------------------------------------------------- suscripciones
@@ -248,5 +299,6 @@ export class Almacen {
 
 function aTarea(f) {
   return { id: f.id, titulo: f.titulo, fecha: f.fecha, repeticion: f.repeticion, estado: f.estado,
-           avisada: Boolean(f.avisada), tipo: f.tipo || "tarea", anticipacion: f.anticipacion ?? null };
+           avisada: Boolean(f.avisada), tipo: f.tipo || "tarea", anticipacion: f.anticipacion ?? null,
+           duracion: f.duracion ?? null };
 }

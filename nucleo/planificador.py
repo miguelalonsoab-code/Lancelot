@@ -60,7 +60,11 @@ def estado_del_dia(fechas_pendientes: list[datetime], hay_alertas: bool, ahora: 
         return "alerta"
     if any(f.date() == ahora.date() for f in fechas_pendientes):
         return "pendiente"
-    if ahora.hour >= hora_dormir or ahora.hour < hora_despertar:
+    if hora_dormir > hora_despertar:
+        de_noche = ahora.hour >= hora_dormir or ahora.hour < hora_despertar
+    else:                                    # te duermes pasada la medianoche (p. ej. a la 1)
+        de_noche = hora_dormir <= ahora.hour < hora_despertar
+    if de_noche:
         return "dormido"
     return "tranquilo"
 

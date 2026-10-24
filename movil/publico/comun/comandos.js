@@ -7,7 +7,11 @@
  */
 import { normalizar } from "./interprete.js";
 
-export const ACCIONES_CELULAR = new Set(["agenda", "vencidas", "vencidas_manana", "hora", "saludo", "frase"]);
+export const ACCIONES_CELULAR = new Set(["agenda", "vencidas", "vencidas_manana", "hora", "saludo", "frase",
+  // v3.19: con el contexto que sube la laptop
+  "sugerir", "agendar_plan", "actividad_hecha", "excepcion", "excepciones", "libre", "horario_ver",
+  // v3.20
+  "actividad", "actividades", "borrar_actividad"]);
 
 const PREFIJO = "(?:ponte en |pon(?:er)? |activa(?:r)? (?:el )?|entra(?:r)? (?:en|al) |modo )?";
 
@@ -36,12 +40,34 @@ const REGLAS = [
   ["^(?:que tengo(?: para)? hoy|que tengo pendiente|mis tareas|mis pendientes|pendientes(?: de hoy)?|agenda(?: de hoy)?)$", "agenda", null],
   ["^(?:escuchame|escucha|activa(?:r)? la escucha|empieza a escuchar)$", "escucha_on", null],
   ["^(?:deja de escuchar|no escuches|desactiva(?:r)? la escucha)$", "escucha_off", null],
+  ["^(?:que sabes de mi|que sabes sobre mi|mi perfil|perfil|quien soy)$", "perfil", null],
+  ["^(?:me despierto|me levanto|despierto|me paro)(?: a eso de las?| a las?)? (.+)$", "despertar", "texto"],
+  ["^(?:me duermo|me acuesto|duermo|me voy a dormir)(?: a eso de las?| a las?)? (.+)$", "dormir", "texto"],
+  ["^(?:mi )?meta (?:de estudio|diaria)(?: diaria)?(?: es| de)?:? (.+)$", "meta_estudio", "texto"],
+  ["^(?:mis actividades|que actividades tengo)$", "actividades", null],
+  [String.raw`^(?:actividad|nueva actividad|agrega(?:r)? (?:la )?actividad|me gusta(?: hacer)?)\s*:?\s+(.+)$`, "actividad", "original"],
+  ["^(?:borra|borrar|elimina|quita) (?:la )?actividad (?:de )?(.+)$", "borrar_actividad", "texto"],
+  ["^(?:al|a la|hasta el|hasta la) (.+?) (?:tardo|me demoro|demoro|me toma|son) (.+)$", "traslado", "dos_textos"],
   ["^(?:mi horario|horario|ver (?:mi )?horario|muestrame mi horario|cual es mi horario)$", "horario_ver", null],
   ["^(?:cuando estoy libre|que tiempo libre tengo|cuanto tiempo libre tengo|tiempo libre|mis horas libres|horas libres|estoy libre)(?: (hoy|manana))?$",
     "libre", "texto"],
   [String.raw`^(?:horario|ocupado|estoy ocupado|mi horario(?: es)?|agrega(?:r)? (?:a mi |al |en mi )?horario|anota en (?:mi|el) horario)\s*:?\s+(.+)$`,
     "horario_agregar", "original"],
   ["^(?:borra|borrar|elimina|quita) (?:el |del )?(?:bloque|horario) (?:de |del )?(.+)$", "horario_borrar", "texto"],
+  // Excepciones al horario (v3.14)
+  ["^(?:mis dias libres|dias libres|mis excepciones|excepciones|mis vacaciones|mis feriados)$", "excepciones", null],
+  ["^(?!(?:que|cuanto|cuando|cual|cuales) )((?:vacaciones|feriado|dia libre) .+|" +
+    "(?:.+ )?(?:no trabajo|no (?:tengo|hay) (?:clases?|trabajo|universidad|turno)|" +
+    "no (?:voy|asisto) (?:a|al) (?:la |el )?[a-z]+|es feriado|(?:tengo|es) (?:mi |el )?(?:dia )?libre|" +
+    "(?:estoy|me voy) de vacaciones|son mis vacaciones)(?: .+)?)$", "excepcion", "original"],
+  // Sugerencias (v3.15)
+  ["^(?:que (?:hago|puedo hacer|me recomiendas|me sugieres)|recomiendame algo|recomiendame que hacer|sugiereme algo|dame (?:una |unas )?sugerencias?|sugerencias|que hago con mi tiempo libre|plan del dia)(?: (?:para )?(hoy|manana|ahora))?$",
+    "sugerir", "texto"],
+  ["^(?:agendalo|agendala|agendalas|agendalos|agenda(?:r)? (?:las sugerencias|el plan|eso|todo)|si,? agendalo)$", "agendar_plan", null],
+  ["^(?:vuelve a sugerirme todo|olvida (?:mis rechazos|lo que rechace)|reinicia (?:las )?sugerencias)$", "olvidar_rechazos", null],
+  [String.raw`^(?:mas tarde|despues|luego|mejor|proponmelo|recuerdamelo)(?: mas tarde)?,? (?:a las?|a eso de las?) (\d{1,2}(?::\d{2})?(?: ?(?:am|pm))?(?: de la (?:manana|tarde|noche))?)$`,
+    "posponer_hasta", "texto"],
+  ["^(?:ya )?(?:hice|fui (?:a la|al|a)|termine de|complete) (.+)$", "actividad_hecha", "texto"],
   ["^(?:guarda|guardar|guardame|anota|agrega|aprende|aprendete|recuerda) (?:esta|la|una|mi|esta otra|otra) frase:? (.+)$",
     "guardar_frase", "original"],
   ["^(?:dime una frase|una frase|frase del dia|dame una frase|me (?:dices|das) una frase|motivame|dame animos|necesito animos|dime algo bonito|inspirame)$",

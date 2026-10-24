@@ -134,6 +134,10 @@ class GestorAvisos:
             "cancelar_dialogo": self.a.voz.cancelar_dialogo,
             "actualizar": self.a.actualizar_ahora,
             "omitir_version": self.a.omitir_actualizacion,
+            "agendar_plan": self.a.agendar_plan,          # v3.16: sugerencias
+            "sugerencia_si": self.a.aceptar_sugerencia,
+            "sugerencia_no": self.a.rechazar_sugerencia,
+            "sugerencia_luego": self.a.posponer_sugerencia,
         }
         if clave in acciones:
             acciones[clave]()

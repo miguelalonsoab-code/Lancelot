@@ -22,6 +22,7 @@ from nucleo.comandos import interpretar_comando   # noqa: E402
 from nucleo.frases import REFLEXIONES             # noqa: E402
 from nucleo.interprete import describir_avisos, describir_faltan, interpretar   # noqa: E402
 from nucleo.planificador import aviso_previo_pendiente, siguiente_ocurrencia       # noqa: E402
+from tests.casos_horario import calcular_horario                                   # noqa: E402
 
 RUTA = RAIZ / "tests" / "casos_interprete.json"
 AHORAS = [datetime(2026, 10, 7, 6, 30),      # miércoles temprano
@@ -50,6 +51,11 @@ FRASES = [
     "nuevo evento concierto el 5/12 a las 9 de la noche", "pagar el seguro cada año el 10 de enero",
     "cita con el dentista el jueves a las 4, avísame un día antes", "ir al concierto el sábado",
     "cada día a las 8 reunión diaria",
+    # Duraciones (v3.14)
+    "examen el viernes de 8 a 10", "mañana de 7 a 10 de la noche clase de redes", "reunión mañana a las 3 durante 1 hora",
+    "el sábado de 9am a 12pm taller de pintura", "gimnasio mañana 18:00-19:30", "mañana de 2 a 4 estudiar",
+    "llamar a mamá por 15 minutos a las 8 de la noche", "cita el lunes desde las 10 hasta las 11:30",
+    "de lunes a viernes de 9 a 6 trabajar", "mañana de 10 a 9 algo raro", "cada sábado de 8 a 10 inglés",
 ]
 
 # Avisos previos: (fecha del evento, avisos, desde, ahora) -> qué aviso toca (días antes) o None
@@ -91,6 +97,16 @@ COMANDOS = [
     "mi horario", "¿Cuándo estoy libre?", "tiempo libre mañana", "Horario: de lunes a viernes de 9am a 6pm Trabajo",
     "estoy ocupado martes y jueves de 7 a 10 de la noche clase de Redes", "borra el horario de trabajo",
     "horario de clases de la universidad",
+    "El 1 de noviembre no trabajo", "Vacaciones del 20 al 30 de diciembre", "mañana no tengo clases",
+    "el viernes es feriado", "el 15 tengo libre", "no voy al gimnasio el lunes", "mis días libres",
+    "¿qué tiempo tengo libre mañana?", "comprar maleta para las vacaciones el viernes",
+    "del 28 de diciembre al 3 de enero son mis vacaciones",
+    "¿Qué hago hoy?", "recomiéndame algo para mañana", "¿qué puedo hacer?", "sugerencias",
+    "Más tarde, a las 8", "luego a las 8:30 de la noche", "más tarde a las 8 llamar a mamá",
+    "Agéndalo", "agenda las sugerencias", "vuelve a sugerirme todo", "Ya fui al gimnasio", "hice yoga", "terminé de leer", "fui a la piscina", "ya terminé",
+    "¿Qué sabes de mí?", "me despierto a las 6:30", "Me duermo a las 11 de la noche", "meta de estudio 120 minutos",
+    "Actividad: Gimnasio 1 hora 3 veces por semana en la tarde", "me gusta leer 30 min todos los días",
+    "mis actividades", "borra la actividad gimnasio", "al trabajo tardo 45 minutos", "quiero hacer ejercicio mañana",
 ]
 
 
@@ -101,7 +117,7 @@ def calcular() -> dict:
             r = interpretar(frase, ahora, {})
             casos.append({"ahora": ahora.strftime(FORMATO), "texto": frase, "titulo": r.titulo,
                           "fecha": r.fecha.strftime(FORMATO) if r.fecha else None, "repeticion": r.repeticion,
-                          "tipo": r.tipo, "anticipacion": r.anticipacion, "avisos": r.avisos})
+                          "tipo": r.tipo, "anticipacion": r.anticipacion, "avisos": r.avisos, "duracion": r.duracion})
     comandos = []
     for frase in COMANDOS:
         c = interpretar_comando(frase)
@@ -119,7 +135,7 @@ def calcular() -> dict:
                            "La versión JavaScript del celular debe dar exactamente lo mismo.",
             "casos": casos, "comandos": comandos, "avisos_previos": avisos, "faltan": faltan,
             "textos_avisos": {str(k): v for k, v in textos_avisos.items()}, "repeticiones": repeticiones,
-            "vocabulario": VOCABULARIO, "reflexiones": REFLEXIONES,
+            "vocabulario": VOCABULARIO, "reflexiones": REFLEXIONES, "horario": calcular_horario(),
             "con_vocabulario": [{"texto": t, "tipo": interpretar(t, AHORAS[0], VOCABULARIO).tipo,
                                  "sin_vocabulario": interpretar(t, AHORAS[0], {}).tipo} for t in CON_VOCABULARIO]}
 

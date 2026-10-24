@@ -11,15 +11,17 @@
  *                         │
  *                    cada minuto ──► notificación push ──► celular
  */
-import { DIAS_CORTOS, aTexto, ahoraEn, ddmm, desdeTexto, describirFaltan, diaSemana, hhmm, sumarMinutos }
+import { DIAS_CORTOS, aTexto, ahoraEn, conHora, ddmm, desdeTexto, describirFaltan, diaSemana, hhmm, sumarMinutos }
   from "../publico/comun/fechas.js";
 import { interpretar } from "../publico/comun/interprete.js";
 import { aManana } from "../publico/comun/planificador.js";
-import { Almacen, REPETICIONES_VALIDAS, TIPOS_VALIDOS, limpiarAnticipacion } from "./almacen.js";
+import { Almacen, REPETICIONES_VALIDAS, TIPOS_VALIDOS, limpiarAnticipacion, limpiarDuracion } from "./almacen.js";
 import { enviar } from "./push.js";
+import { huecos, isoDia } from "../publico/comun/horario.js";
+import { combinar, horasLibres, planDelDia } from "../publico/contexto.js";
 import { accionValida, autorizado, firmarAccion } from "./seguridad.js";
 
-const VERSION_SERVIDOR = "1.2";   // (el archivo principal de un Worker solo puede exportar "default")
+const VERSION_SERVIDOR = "1.5";   // (el archivo principal de un Worker solo puede exportar "default")
 
 export default {
   async fetch(request, env) {
@@ -62,6 +64,7 @@ const SERVICIOS_PUSH = [/^fcm\.googleapis\.com$/, /\.push\.services\.mozilla\.co
   /\.push\.apple\.com$/, /^updates\.push\.services\.mozilla\.com$/];
 const MAX_SUSCRIPCIONES = 10;
 const MAX_ENVIOS_POR_MINUTO = 8;
+const MAX_ACCIONES = 300;
 
 async function leerJson(request, limite = 20000) {
   if (Number(request.headers.get("Content-Length") || 0) > limite) throw new ErrorPedido("Pedido demasiado grande", 413);
@@ -97,11 +100,22 @@ async function atender(request, env) {
     const t = datos.texto !== undefined
       ? desdeTextoLibre(datos.texto, ahora, (await almacen.preferencias()).vocabulario) : validar(datos, ahora);
     if (t.falta) return json(t, 422);                  // la app pregunta lo que falta y vuelve a enviar
-    return json({ tarea: await almacen.agregar(t.titulo, t.fecha, t.repeticion, ahora, t.tipo, t.anticipacion) }, 201);
+    return json({ tarea: await almacen.agregar(t.titulo, t.fecha, t.repeticion, ahora, t.tipo, t.anticipacion, t.duracion) }, 201);
   }
   // La primera sincronización sube TODAS las tareas (también el historial de hechas): puede pesar bastante
   if (ruta === "/api/sync" && metodo === "POST") return sincronizar(await leerJson(request, 1_000_000), almacen, ahora);
   if (ruta === "/api/preferencias" && metodo === "GET") return json(await almacen.preferencias());
+  // v3.19: lo que sabe la laptop (para que el celular calcule horas libres y sugerencias) y lo hecho aquí
+  if (ruta === "/api/contexto" && metodo === "GET") {
+    return json({ ahora: aTexto(ahora), contexto: await almacen.contexto(), acciones: await almacen.acciones() });
+  }
+  if (ruta === "/api/acciones" && metodo === "POST") {
+    const { tipo, datos } = validarAccion(await leerJson(request));
+    if ((await almacen.contarAcciones()) >= MAX_ACCIONES) {
+      throw new ErrorPedido("Hay demasiadas acciones esperando a la laptop. Ábrela para que se sincronice.", 429);
+    }
+    return json({ accion: await almacen.agregarAccion(tipo, datos) }, 201);
+  }
   if (ruta === "/api/vencidas/manana" && metodo === "POST") {
     const vencidas = (await almacen.pendientes()).filter((t) => t.fecha <= aTexto(ahora) && t.tipo !== "evento");
     for (const t of vencidas) await almacen.reprogramar(t.id, aTexto(aManana(desdeTexto(t.fecha), ahora)));
@@ -114,7 +128,7 @@ async function atender(request, env) {
     let existia;
     if (!accion && metodo === "PATCH") {
       const t = validar(await leerJson(request), ahora, true);
-      existia = await almacen.editar(id, t.titulo, t.fecha, t.repeticion, t.tipo, t.anticipacion);
+      existia = await almacen.editar(id, t.titulo, t.fecha, t.repeticion, t.tipo, t.anticipacion, t.duracion);
     } else if (!accion && metodo === "DELETE") {
       existia = await almacen.eliminar(id);
     } else if (accion === "hecho" && metodo === "POST") {
@@ -188,13 +202,14 @@ function validar(datos, ahora, editando = false) {
   const tipo = datos.tipo ?? (editando ? undefined : "tarea");
   const anticipacion = datos.anticipacion !== undefined ? limpiarAnticipacion(datos.anticipacion)
     : (editando ? undefined : null);
-  return { titulo, fecha, repeticion, tipo, anticipacion };
+  const duracion = datos.duracion !== undefined ? limpiarDuracion(datos.duracion) : (editando ? undefined : null);
+  return { titulo, fecha, repeticion, tipo, anticipacion, duracion };
 }
 
 /** "mañana 8pm pagar la luz" -> tarea, o { falta: "fecha" | "titulo" } para que la app pregunte. */
 function desdeTextoLibre(texto, ahora, vocabulario = null) {
   const r = interpretar(String(texto).slice(0, 300), ahora, undefined, vocabulario);
-  const extra = { repeticion: r.repeticion, tipo: r.tipo, anticipacion: r.avisos };
+  const extra = { repeticion: r.repeticion, tipo: r.tipo, anticipacion: r.avisos, duracion: r.duracion };
   if (!r.titulo) return { falta: "titulo", fecha: r.fecha && aTexto(r.fecha), ...extra };
   if (!r.fecha) return { falta: "fecha", titulo: r.titulo, ...extra };
   return validar({ titulo: r.titulo, fecha: aTexto(r.fecha), ...extra }, ahora);
@@ -222,10 +237,17 @@ async function sincronizar(datos, almacen, ahora) {
     }
   }
   if (datos.preferencias && typeof datos.preferencias === "object") await guardarPreferencias(datos.preferencias, almacen);
+  // v3.19: primero el contexto nuevo y después se borran las acciones ya aplicadas: así el celular nunca
+  // ve un momento en que la acción desapareció pero el contexto todavía no la incluye.
+  if (datos.contexto !== undefined) await almacen.guardarContexto(validarContexto(datos.contexto));
+  if (Array.isArray(datos.acciones_ok)) {
+    await almacen.borrarAcciones(datos.acciones_ok.filter((x) => Number.isInteger(x) && x > 0).slice(0, 500));
+  }
   const filas = await almacen.cambiosDesde(desde);
   const cursor = filas.length ? filas[filas.length - 1].recibida : desde;
   return json({ aceptados, rechazados, cursor, completo: filas.length < 1000,
-                cambios: filas.map(({ recibida, ...t }) => ({ ...t, borrada: Boolean(t.borrada) })) });
+                cambios: filas.map(({ recibida, ...t }) => ({ ...t, borrada: Boolean(t.borrada) })),
+                acciones: await almacen.acciones() });
 }
 
 /** Frases y vocabulario que comparte la laptop. Se limpian: solo textos, con tope de cantidad y largo. */
@@ -241,11 +263,71 @@ async function guardarPreferencias(p, almacen) {
   }
 }
 
+// ------------------------------------------------------------ contexto y acciones (v3.19)
+const DIA = /^\d{4}-\d{2}-\d{2}$/;
+const esDia = (x) => typeof x === "string" && DIA.test(x) && Boolean(desdeTexto(`${x} 00:00`));
+
+/** El contexto de la laptop: se guarda tal cual, pero solo si tiene la forma esperada y un tamaño razonable. */
+function validarContexto(c) {
+  if (!c || typeof c !== "object" || Array.isArray(c) || c.version !== 1) throw new ErrorPedido("Contexto inválido");
+  for (const k of ["horario", "excepciones", "actividades", "sugeridas"]) {
+    if (!Array.isArray(c[k] ?? [])) throw new ErrorPedido(`Contexto inválido (${k})`);
+  }
+  if (JSON.stringify(c).length > 200_000) throw new ErrorPedido("Contexto demasiado grande", 413);
+  return c;
+}
+
+/** Lo que el celular pide hacer a la laptop. Se valida todo: lo que entra aquí, la laptop lo aplica. */
+function validarAccion(a) {
+  const tipo = a?.tipo, d = a?.datos || {};
+  if (tipo === "hecha") {
+    if (!Number.isInteger(d.actividad_id) || d.actividad_id <= 0 || !esDia(d.dia)) throw new ErrorPedido("Acción inválida");
+    return { tipo, datos: { actividad_id: d.actividad_id, dia: d.dia } };
+  }
+  if (tipo === "excepcion") {
+    const titulo = String(d.titulo ?? "").trim().slice(0, 60);
+    const filtro = String(d.filtro ?? "");
+    if (!esDia(d.desde) || !esDia(d.hasta) || d.desde > d.hasta || !titulo || !/^[a-z]{0,5}$/.test(filtro) ||
+        (desdeTexto(`${d.hasta} 00:00`) - desdeTexto(`${d.desde} 00:00`)) / 86400000 > 120) {
+      throw new ErrorPedido("Excepción inválida");
+    }
+    return { tipo, datos: { desde: d.desde, hasta: d.hasta, filtro, titulo } };
+  }
+  if (tipo === "quitar_excepcion") {
+    if (!esDia(d.desde) || !esDia(d.hasta) || !/^[a-z]{0,5}$/.test(String(d.filtro ?? ""))) throw new ErrorPedido("Acción inválida");
+    return { tipo, datos: { desde: d.desde, hasta: d.hasta, filtro: String(d.filtro ?? "") } };
+  }
+  if (tipo === "actividad") {
+    const nombre = String(d.nombre ?? "").trim().slice(0, 60);
+    const veces = d.veces_semana ?? null, momento = d.momento ?? null;
+    if (!nombre || !Number.isInteger(d.minutos) || d.minutos < 1 || d.minutos > 1440 ||
+        (veces !== null && (!Number.isInteger(veces) || veces < 1 || veces > 7)) ||
+        (momento !== null && !["manana", "tarde", "noche"].includes(momento))) {
+      throw new ErrorPedido("Actividad inválida");
+    }
+    return { tipo, datos: { nombre, minutos: d.minutos, veces_semana: veces, momento } };
+  }
+  if (tipo === "quitar_actividad") {
+    if (!Number.isInteger(d.id) || d.id <= 0) throw new ErrorPedido("Acción inválida");
+    return { tipo, datos: { id: d.id } };
+  }
+  if (tipo === "sugerida") {
+    const tarea = String(d.tarea ?? "");
+    const actividad = d.actividad_id ?? null;
+    if (!/^[\w-]{8,64}$/.test(tarea) || (actividad !== null && (!Number.isInteger(actividad) || actividad <= 0))) {
+      throw new ErrorPedido("Acción inválida");
+    }
+    return { tipo, datos: { tarea, actividad_id: actividad } };
+  }
+  throw new ErrorPedido("Tipo de acción desconocido");
+}
+
 function validarCambio(c) {
   const id = String(c?.id ?? "");
   if (!/^[\w-]{8,64}$/.test(id)) throw new ErrorPedido("Cambio con id inválido");
   const t = validar({ titulo: c.titulo, fecha: c.fecha, repeticion: c.repeticion,
-                     tipo: TIPOS_VALIDOS.has(c.tipo) ? c.tipo : undefined, anticipacion: c.anticipacion }, null, true);
+                     tipo: TIPOS_VALIDOS.has(c.tipo) ? c.tipo : undefined, anticipacion: c.anticipacion,
+                     duracion: c.duracion }, null, true);
   const actualizada = Number(c.actualizada);
   if (!Number.isInteger(actualizada) || actualizada <= 0 || actualizada > Date.now() + 86400000) {
     throw new ErrorPedido("Cambio con fecha de modificación inválida");
@@ -341,4 +423,42 @@ async function avisarVencidas(env) {
     }
     await almacen.marcarAvisoPrevio(t.id, ahora);
   }
+  if (puedeAvisar && intentos < MAX_ENVIOS_POR_MINUTO) await avisarHueco(env, almacen, ahora, firmas);
+}
+
+// ------------------------------------------------------------ hueco libre (v3.20)
+const MINUTOS_GRACIA_HUECO = 5;      // si la laptop te lo ofreció (estabas frente a ella), aquí no se repite
+const MINUTOS_PARA_SUGERIR = 20;     // si el hueco empezó hace más, ya no se avisa
+
+/**
+ * Al empezar un hueco libre (saliste del trabajo, terminó una clase) te propone qué hacer, con la misma
+ * lógica que la laptop y el celular (comun/horario.js, comun/recomendador.js). Una vez por hueco.
+ * Espera unos minutos: si la laptop ya te lo dijo en la burbuja, sube 'hueco_avisado' y aquí se calla.
+ * Se apaga desde la laptop: SUGERENCIAS_EN_CELULAR = False en config.py.
+ */
+async function avisarHueco(env, almacen, ahora, firmas) {
+  const base = await almacen.contexto();
+  if (!base || base.perfil?.avisar_huecos === false || !base.horario?.length) return;
+  const ctx = combinar(base, await almacen.acciones());
+  const dia = conHora(ahora, 0, 0);
+  const tareas = await almacen.pendientes();
+  const despertar = conHora(dia, ...ctx.perfil.despertar.split(":").map(Number));
+  const inicio = huecos(dia, ctx.horario, ctx.perfil.despertar, ctx.perfil.dormir, null, 30, ctx.excepciones,
+    tareas.filter((t) => t.duracion && t.fecha.startsWith(isoDia(dia)))
+      .map((t) => [desdeTexto(t.fecha), sumarMinutos(desdeTexto(t.fecha), t.duracion), t.titulo]))
+    .map(([a]) => a)
+    .find((a) => a > despertar && sumarMinutos(a, MINUTOS_GRACIA_HUECO) <= ahora && ahora < sumarMinutos(a, MINUTOS_PARA_SUGERIR));
+  if (!inicio) return;
+  const clave = aTexto(inicio);
+  if (base.hueco_avisado === clave || (await almacen.leerAjuste("hueco_avisado")) === clave) return;
+  await almacen.guardarAjuste("hueco_avisado", clave);       // se intenta una sola vez, llegue o no
+  const plan = planDelDia(ctx, tareas, dia, ahora);
+  const s = plan.sugerencias[0];
+  if (!s || s.inicio > sumarMinutos(ahora, 30)) return;
+  const hasta = horasLibres(ctx, tareas, dia, ahora, 1).find(([a, b]) => a <= s.inicio && s.inicio < b)?.[1] || s.fin;
+  const que = s.clase === "estudio" ? "estudiar" : s.nombre;
+  await enviarATodos(env, almacen, {
+    tipo: "hueco", id: clave, titulo: "💡 Tienes un hueco libre",
+    cuerpo: `Hasta las ${hhmm(hasta)}. ¿Qué tal ${que}? (${s.motivo})`,
+  }, firmas);
 }

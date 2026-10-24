@@ -9,7 +9,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -19,7 +20,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -29,7 +31,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -39,7 +42,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -49,7 +53,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -59,7 +64,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -69,7 +75,8 @@
    "repeticion": "semanal",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "1"
+   "avisos": "1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -79,7 +86,8 @@
    "repeticion": "diaria",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -89,7 +97,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -99,7 +108,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -109,7 +119,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -119,7 +130,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -129,7 +141,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -139,7 +152,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -149,7 +163,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -159,7 +174,8 @@
    "repeticion": "laborables",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -169,7 +185,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -179,7 +196,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -189,7 +207,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -199,7 +218,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -209,7 +229,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -219,7 +240,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -229,7 +251,8 @@
    "repeticion": "mensual",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -239,7 +262,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -249,7 +273,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -259,7 +284,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -269,7 +295,8 @@
    "repeticion": "semanal",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -279,7 +306,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -289,7 +317,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -299,7 +328,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -309,7 +339,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -319,7 +350,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -329,7 +361,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -339,7 +372,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -349,7 +383,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -359,7 +394,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -369,7 +405,8 @@
    "repeticion": "semanal",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -379,7 +416,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -389,7 +427,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -399,7 +438,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -409,7 +449,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -419,7 +460,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -429,7 +471,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -439,7 +482,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "3",
-   "avisos": "3"
+   "avisos": "3",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -449,7 +493,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -459,7 +504,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -469,7 +515,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -479,7 +526,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -489,7 +537,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "7",
-   "avisos": "7"
+   "avisos": "7",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -499,7 +548,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "14",
-   "avisos": "14"
+   "avisos": "14",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -509,7 +559,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -519,7 +570,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -529,7 +581,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -539,7 +592,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -549,7 +603,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -559,7 +614,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -569,7 +625,8 @@
    "repeticion": "anual",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -579,7 +636,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "1",
-   "avisos": "1"
+   "avisos": "1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -589,7 +647,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-07 06:30",
@@ -599,7 +658,129 @@
    "repeticion": "diaria",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "examen el viernes de 8 a 10",
+   "titulo": "Examen",
+   "fecha": "2026-10-09 08:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1",
+   "duracion": 120
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "mañana de 7 a 10 de la noche clase de redes",
+   "titulo": "Clase de redes",
+   "fecha": "2026-10-08 19:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 180
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "reunión mañana a las 3 durante 1 hora",
+   "titulo": "Reunión",
+   "fecha": "2026-10-08 15:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1",
+   "duracion": 60
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "el sábado de 9am a 12pm taller de pintura",
+   "titulo": "Taller de pintura",
+   "fecha": "2026-10-10 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 180
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "gimnasio mañana 18:00-19:30",
+   "titulo": "Gimnasio",
+   "fecha": "2026-10-08 18:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 90
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "mañana de 2 a 4 estudiar",
+   "titulo": "Estudiar",
+   "fecha": "2026-10-08 14:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 120
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "llamar a mamá por 15 minutos a las 8 de la noche",
+   "titulo": "Llamar a mamá",
+   "fecha": "2026-10-07 20:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 15
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cita el lunes desde las 10 hasta las 11:30",
+   "titulo": "Cita",
+   "fecha": "2026-10-12 10:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1",
+   "duracion": 90
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "de lunes a viernes de 9 a 6 trabajar",
+   "titulo": "Trabajar",
+   "fecha": "2026-10-07 09:00",
+   "repeticion": "laborables",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 540
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "mañana de 10 a 9 algo raro",
+   "titulo": "Algo raro",
+   "fecha": "2026-10-08 10:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 660
+  },
+  {
+   "ahora": "2026-10-07 06:30",
+   "texto": "cada sábado de 8 a 10 inglés",
+   "titulo": "Inglés",
+   "fecha": "2026-10-10 08:00",
+   "repeticion": "semanal",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 120
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -609,7 +790,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -619,7 +801,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -629,7 +812,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -639,7 +823,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -649,7 +834,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -659,7 +845,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -669,7 +856,8 @@
    "repeticion": "semanal",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "1"
+   "avisos": "1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -679,7 +867,8 @@
    "repeticion": "diaria",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -689,7 +878,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -699,7 +889,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -709,7 +900,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -719,7 +911,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -729,7 +922,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -739,7 +933,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -749,7 +944,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -759,7 +955,8 @@
    "repeticion": "laborables",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -769,7 +966,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -779,7 +977,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -789,7 +988,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -799,7 +999,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -809,7 +1010,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -819,7 +1021,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -829,7 +1032,8 @@
    "repeticion": "mensual",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -839,7 +1043,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -849,7 +1054,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -859,7 +1065,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -869,7 +1076,8 @@
    "repeticion": "semanal",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -879,7 +1087,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -889,7 +1098,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -899,7 +1109,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -909,7 +1120,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -919,7 +1131,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -929,7 +1142,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -939,7 +1153,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -949,7 +1164,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -959,7 +1175,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -969,7 +1186,8 @@
    "repeticion": "semanal",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -979,7 +1197,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -989,7 +1208,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -999,7 +1219,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1009,7 +1230,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1019,7 +1241,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1029,7 +1252,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1039,7 +1263,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "3",
-   "avisos": "3"
+   "avisos": "3",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1049,7 +1274,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1059,7 +1285,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1069,7 +1296,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1079,7 +1307,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1089,7 +1318,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "7",
-   "avisos": "7"
+   "avisos": "7",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1099,7 +1329,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "14",
-   "avisos": "14"
+   "avisos": "14",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1109,7 +1340,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1119,7 +1351,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1129,7 +1362,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1139,7 +1373,8 @@
    "repeticion": "anual",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1149,7 +1384,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1159,7 +1395,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": "7,1"
+   "avisos": "7,1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1169,7 +1406,8 @@
    "repeticion": "anual",
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1179,7 +1417,8 @@
    "repeticion": null,
    "tipo": "evento",
    "anticipacion": "1",
-   "avisos": "1"
+   "avisos": "1",
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1189,7 +1428,8 @@
    "repeticion": null,
    "tipo": "tarea",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
   },
   {
    "ahora": "2026-10-10 22:15",
@@ -1199,7 +1439,129 @@
    "repeticion": "diaria",
    "tipo": "evento",
    "anticipacion": null,
-   "avisos": null
+   "avisos": null,
+   "duracion": null
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "examen el viernes de 8 a 10",
+   "titulo": "Examen",
+   "fecha": "2026-10-16 08:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1",
+   "duracion": 120
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "mañana de 7 a 10 de la noche clase de redes",
+   "titulo": "Clase de redes",
+   "fecha": "2026-10-11 19:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 180
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "reunión mañana a las 3 durante 1 hora",
+   "titulo": "Reunión",
+   "fecha": "2026-10-11 15:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1",
+   "duracion": 60
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "el sábado de 9am a 12pm taller de pintura",
+   "titulo": "Taller de pintura",
+   "fecha": "2026-10-17 09:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 180
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "gimnasio mañana 18:00-19:30",
+   "titulo": "Gimnasio",
+   "fecha": "2026-10-11 18:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 90
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "mañana de 2 a 4 estudiar",
+   "titulo": "Estudiar",
+   "fecha": "2026-10-11 14:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 120
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "llamar a mamá por 15 minutos a las 8 de la noche",
+   "titulo": "Llamar a mamá",
+   "fecha": "2026-10-11 20:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 15
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cita el lunes desde las 10 hasta las 11:30",
+   "titulo": "Cita",
+   "fecha": "2026-10-12 10:00",
+   "repeticion": null,
+   "tipo": "evento",
+   "anticipacion": null,
+   "avisos": "7,1",
+   "duracion": 90
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "de lunes a viernes de 9 a 6 trabajar",
+   "titulo": "Trabajar",
+   "fecha": "2026-10-12 09:00",
+   "repeticion": "laborables",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 540
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "mañana de 10 a 9 algo raro",
+   "titulo": "Algo raro",
+   "fecha": "2026-10-11 10:00",
+   "repeticion": null,
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 660
+  },
+  {
+   "ahora": "2026-10-10 22:15",
+   "texto": "cada sábado de 8 a 10 inglés",
+   "titulo": "Inglés",
+   "fecha": "2026-10-17 08:00",
+   "repeticion": "semanal",
+   "tipo": "tarea",
+   "anticipacion": null,
+   "avisos": null,
+   "duracion": 120
   }
  ],
  "comandos": [
@@ -1634,6 +1996,332 @@
     "destino": null,
     "navegador": null
    }
+  },
+  {
+   "texto": "El 1 de noviembre no trabajo",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "El 1 de noviembre no trabajo",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Vacaciones del 20 al 30 de diciembre",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "Vacaciones del 20 al 30 de diciembre",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mañana no tengo clases",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "mañana no tengo clases",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "el viernes es feriado",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "el viernes es feriado",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "el 15 tengo libre",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "el 15 tengo libre",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "no voy al gimnasio el lunes",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "no voy al gimnasio el lunes",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mis días libres",
+   "comando": {
+    "accion": "excepciones",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿qué tiempo tengo libre mañana?",
+   "comando": null
+  },
+  {
+   "texto": "comprar maleta para las vacaciones el viernes",
+   "comando": null
+  },
+  {
+   "texto": "del 28 de diciembre al 3 de enero son mis vacaciones",
+   "comando": {
+    "accion": "excepcion",
+    "minutos": null,
+    "texto": "del 28 de diciembre al 3 de enero son mis vacaciones",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Qué hago hoy?",
+   "comando": {
+    "accion": "sugerir",
+    "minutos": null,
+    "texto": "hoy",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "recomiéndame algo para mañana",
+   "comando": {
+    "accion": "sugerir",
+    "minutos": null,
+    "texto": "manana",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿qué puedo hacer?",
+   "comando": {
+    "accion": "sugerir",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "sugerencias",
+   "comando": {
+    "accion": "sugerir",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Más tarde, a las 8",
+   "comando": {
+    "accion": "posponer_hasta",
+    "minutos": null,
+    "texto": "8",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "luego a las 8:30 de la noche",
+   "comando": {
+    "accion": "posponer_hasta",
+    "minutos": null,
+    "texto": "8:30 de la noche",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "más tarde a las 8 llamar a mamá",
+   "comando": null
+  },
+  {
+   "texto": "Agéndalo",
+   "comando": {
+    "accion": "agendar_plan",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "agenda las sugerencias",
+   "comando": {
+    "accion": "agendar_plan",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "vuelve a sugerirme todo",
+   "comando": {
+    "accion": "olvidar_rechazos",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Ya fui al gimnasio",
+   "comando": {
+    "accion": "actividad_hecha",
+    "minutos": null,
+    "texto": "gimnasio",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "hice yoga",
+   "comando": {
+    "accion": "actividad_hecha",
+    "minutos": null,
+    "texto": "yoga",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "terminé de leer",
+   "comando": {
+    "accion": "actividad_hecha",
+    "minutos": null,
+    "texto": "leer",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "fui a la piscina",
+   "comando": {
+    "accion": "actividad_hecha",
+    "minutos": null,
+    "texto": "piscina",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "ya terminé",
+   "comando": {
+    "accion": "terminar",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "¿Qué sabes de mí?",
+   "comando": {
+    "accion": "perfil",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "me despierto a las 6:30",
+   "comando": {
+    "accion": "despertar",
+    "minutos": null,
+    "texto": "6:30",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Me duermo a las 11 de la noche",
+   "comando": {
+    "accion": "dormir",
+    "minutos": null,
+    "texto": "11 de la noche",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "meta de estudio 120 minutos",
+   "comando": {
+    "accion": "meta_estudio",
+    "minutos": null,
+    "texto": "120 minutos",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Actividad: Gimnasio 1 hora 3 veces por semana en la tarde",
+   "comando": {
+    "accion": "actividad",
+    "minutos": null,
+    "texto": "Gimnasio 1 hora 3 veces por semana en la tarde",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "me gusta leer 30 min todos los días",
+   "comando": {
+    "accion": "actividad",
+    "minutos": null,
+    "texto": "leer 30 min todos los días",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "mis actividades",
+   "comando": {
+    "accion": "actividades",
+    "minutos": null,
+    "texto": null,
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "borra la actividad gimnasio",
+   "comando": {
+    "accion": "borrar_actividad",
+    "minutos": null,
+    "texto": "gimnasio",
+    "destino": null,
+    "navegador": null
+   }
+  },
+  {
+   "texto": "al trabajo tardo 45 minutos",
+   "comando": {
+    "accion": "traslado",
+    "minutos": null,
+    "texto": "trabajo",
+    "destino": "45 minutos",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "quiero hacer ejercicio mañana",
+   "comando": null
   }
  ],
  "avisos_previos": [
@@ -1834,6 +2522,1554 @@
   "Si algo te preocupa, anótalo: tu mente descansa cuando no tiene que recordarlo todo.",
   "La constancia le gana a la prisa."
  ],
+ "horario": {
+  "excepciones": [
+   {
+    "hoy": "2026-10-21",
+    "texto": "el 1 de noviembre no trabajo",
+    "resultado": {
+     "desde": "2026-11-01",
+     "hasta": "2026-11-01",
+     "filtro": "traba",
+     "titulo": "No trabajo"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "Vacaciones del 20 al 30 de diciembre",
+    "resultado": {
+     "desde": "2026-12-20",
+     "hasta": "2026-12-30",
+     "filtro": "",
+     "titulo": "Vacaciones"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "mañana no tengo clases",
+    "resultado": {
+     "desde": "2026-10-22",
+     "hasta": "2026-10-22",
+     "filtro": "clase",
+     "titulo": "No tengo clases"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "el viernes es feriado",
+    "resultado": {
+     "desde": "2026-10-23",
+     "hasta": "2026-10-23",
+     "filtro": "",
+     "titulo": "Feriado"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "el 15 tengo libre",
+    "resultado": {
+     "desde": "2026-11-15",
+     "hasta": "2026-11-15",
+     "filtro": "",
+     "titulo": "Día libre"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "del 28 de diciembre al 3 de enero son mis vacaciones",
+    "resultado": {
+     "desde": "2026-12-28",
+     "hasta": "2027-01-03",
+     "filtro": "",
+     "titulo": "Vacaciones"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "no voy al gimnasio el lunes",
+    "resultado": {
+     "desde": "2026-10-26",
+     "hasta": "2026-10-26",
+     "filtro": "gimna",
+     "titulo": "No voy al gimnasio"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "El lunes 3 de noviembre no voy a la Universidad",
+    "resultado": {
+     "desde": "2026-11-03",
+     "hasta": "2026-11-03",
+     "filtro": "unive",
+     "titulo": "No voy a la Universidad"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "pasado mañana no trabajo",
+    "resultado": {
+     "desde": "2026-10-23",
+     "hasta": "2026-10-23",
+     "filtro": "traba",
+     "titulo": "No trabajo"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "no trabajo",
+    "resultado": "¿Qué día? Escribe la fecha, por ejemplo: «el 1 de noviembre no trabajo» o «vacaciones del 20 al 30 de diciembre»."
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "del 5 al 2 de mayo",
+    "resultado": "La fecha de inicio queda después del final. Revisa el rango (por ejemplo: «del 20 al 30 de diciembre»)."
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "el 31 no trabajo",
+    "resultado": {
+     "desde": "2026-10-31",
+     "hasta": "2026-10-31",
+     "filtro": "traba",
+     "titulo": "No trabajo"
+    }
+   },
+   {
+    "hoy": "2026-12-30",
+    "texto": "el 2 no trabajo",
+    "resultado": {
+     "desde": "2027-01-02",
+     "hasta": "2027-01-02",
+     "filtro": "traba",
+     "titulo": "No trabajo"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "el 31 de febrero libre",
+    "resultado": "¿Qué día? Escribe la fecha, por ejemplo: «el 1 de noviembre no trabajo» o «vacaciones del 20 al 30 de diciembre»."
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "feriado el 8 de diciembre",
+    "resultado": {
+     "desde": "2026-12-08",
+     "hasta": "2026-12-08",
+     "filtro": "",
+     "titulo": "Feriado"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "del 1 de enero al 30 de junio vacaciones",
+    "resultado": "Es un rango muy largo (más de 4 meses). Revisa las fechas."
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "hoy es mi día libre",
+    "resultado": {
+     "desde": "2026-10-21",
+     "hasta": "2026-10-21",
+     "filtro": "",
+     "titulo": "Día libre"
+    }
+   },
+   {
+    "hoy": "2026-10-21",
+    "texto": "del 10 al 12 no hay clases",
+    "resultado": {
+     "desde": "2026-11-10",
+     "hasta": "2026-11-12",
+     "filtro": "clase",
+     "titulo": "No hay clases"
+    }
+   }
+  ],
+  "huecos": [
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "ahora": null,
+    "minimo": 30,
+    "excepciones": [],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-22 06:00",
+      "2026-10-22 07:45"
+     ],
+     [
+      "2026-10-22 18:15",
+      "2026-10-22 19:00"
+     ],
+     [
+      "2026-10-22 22:00",
+      "2026-10-22 23:00"
+     ]
+    ],
+    "texto": "06:00–07:45 (1 h 45 min) · 18:15–19:00 (45 min) · 22:00–23:00 (1 h)"
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "ahora": "2026-10-22 18:40",
+    "minimo": 30,
+    "excepciones": [],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-22 22:00",
+      "2026-10-22 23:00"
+     ]
+    ],
+    "texto": "22:00–23:00 (1 h)"
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:30",
+    "dormir": "00:30",
+    "ahora": null,
+    "minimo": 30,
+    "excepciones": [],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-22 06:30",
+      "2026-10-22 07:45"
+     ],
+     [
+      "2026-10-22 18:15",
+      "2026-10-22 19:00"
+     ],
+     [
+      "2026-10-22 22:00",
+      "2026-10-22 23:59"
+     ]
+    ],
+    "texto": "06:30–07:45 (1 h 15 min) · 18:15–19:00 (45 min) · 22:00–23:59 (1 h 59 min)"
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "ahora": null,
+    "minimo": 30,
+    "excepciones": [
+     {
+      "desde": "2026-10-22",
+      "hasta": "2026-10-22",
+      "filtro": "clase",
+      "titulo": "No tengo clases"
+     }
+    ],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-22 06:00",
+      "2026-10-22 07:45"
+     ],
+     [
+      "2026-10-22 18:15",
+      "2026-10-22 23:00"
+     ]
+    ],
+    "texto": "06:00–07:45 (1 h 45 min) · 18:15–23:00 (4 h 45 min)"
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "ahora": null,
+    "minimo": 30,
+    "excepciones": [
+     {
+      "desde": "2026-10-20",
+      "hasta": "2026-10-25",
+      "filtro": "",
+      "titulo": "Vacaciones"
+     }
+    ],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-22 06:00",
+      "2026-10-22 23:00"
+     ]
+    ],
+    "texto": "06:00–23:00 (17 h)"
+   },
+   {
+    "dia": "2026-10-24",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       5
+      ],
+      "inicio": "08:00",
+      "fin": "12:00",
+      "titulo": "Inglés",
+      "traslado": 15
+     }
+    ],
+    "despertar": "07:00",
+    "dormir": "23:30",
+    "ahora": null,
+    "minimo": 30,
+    "excepciones": [],
+    "extras": [
+     [
+      "2026-10-24 15:00",
+      "2026-10-24 17:00",
+      "Cine"
+     ],
+     [
+      "2026-10-25 08:00",
+      "2026-10-25 10:00",
+      "Otro día"
+     ]
+    ],
+    "libres": [
+     [
+      "2026-10-24 07:00",
+      "2026-10-24 07:45"
+     ],
+     [
+      "2026-10-24 12:15",
+      "2026-10-24 15:00"
+     ],
+     [
+      "2026-10-24 17:00",
+      "2026-10-24 23:30"
+     ]
+    ],
+    "texto": "07:00–07:45 (45 min) · 12:15–15:00 (2 h 45 min) · 17:00–23:30 (6 h 30 min)"
+   },
+   {
+    "dia": "2026-10-24",
+    "bloques": [
+     {
+      "dias": [
+       5
+      ],
+      "inicio": "08:00",
+      "fin": "12:00",
+      "titulo": "Inglés",
+      "traslado": 15
+     }
+    ],
+    "despertar": "07:00",
+    "dormir": "23:30",
+    "ahora": "2026-10-24 23:10",
+    "minimo": 1,
+    "excepciones": [],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-24 23:10",
+      "2026-10-24 23:30"
+     ]
+    ],
+    "texto": "23:10–23:30 (20 min)"
+   },
+   {
+    "dia": "2026-10-26",
+    "bloques": [],
+    "despertar": "06:00",
+    "dormir": "22:00",
+    "ahora": null,
+    "minimo": 30,
+    "excepciones": [],
+    "extras": [],
+    "libres": [
+     [
+      "2026-10-26 06:00",
+      "2026-10-26 22:00"
+     ]
+    ],
+    "texto": "06:00–22:00 (16 h)"
+   }
+  ],
+  "choques": [
+   {
+    "inicio": "2026-10-23 08:00",
+    "minutos": 120,
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "excepciones": [],
+    "choca": "Trabajo en Sanna"
+   },
+   {
+    "inicio": "2026-10-23 08:00",
+    "minutos": 30,
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "excepciones": [],
+    "choca": null
+   },
+   {
+    "inicio": "2026-10-23 12:00",
+    "minutos": null,
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "excepciones": [],
+    "choca": "Trabajo en Sanna"
+   },
+   {
+    "inicio": "2026-10-24 09:00",
+    "minutos": 60,
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "excepciones": [],
+    "choca": null
+   },
+   {
+    "inicio": "2026-10-23 12:00",
+    "minutos": null,
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "excepciones": [
+     {
+      "desde": "2026-10-23",
+      "hasta": "2026-10-23",
+      "filtro": "traba",
+      "titulo": "No trabajo"
+     }
+    ],
+    "choca": null
+   },
+   {
+    "inicio": "2026-10-22 21:30",
+    "minutos": 60,
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "excepciones": [],
+    "choca": "Clase de redes"
+   }
+  ],
+  "planes": [
+   {
+    "dia": "2026-10-24",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 2,
+      "nombre": "Leer",
+      "minutos": 30,
+      "veces_semana": null,
+      "momento": "noche"
+     },
+     {
+      "id": 3,
+      "nombre": "Correr",
+      "minutos": 40,
+      "veces_semana": 2,
+      "momento": "manana"
+     }
+    ],
+    "hechas_semana": {
+     "1": 1
+    },
+    "hechas_hoy": [],
+    "estudio": 20,
+    "meta": 120,
+    "evitar": {},
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Correr",
+      "inicio": "2026-10-24 06:00",
+      "fin": "2026-10-24 06:40",
+      "motivo": "llevas 0 de 2 esta semana",
+      "clase": "actividad",
+      "actividad_id": 3
+     },
+     {
+      "nombre": "Estudiar",
+      "inicio": "2026-10-24 06:50",
+      "fin": "2026-10-24 08:30",
+      "motivo": "te faltan 1 h 40 min para tu meta",
+      "clase": "estudio",
+      "actividad_id": null
+     },
+     {
+      "nombre": "Gimnasio",
+      "inicio": "2026-10-24 12:00",
+      "fin": "2026-10-24 13:00",
+      "motivo": "llevas 1 de 3 esta semana",
+      "clase": "actividad",
+      "actividad_id": 1
+     },
+     {
+      "nombre": "Leer",
+      "inicio": "2026-10-24 19:00",
+      "fin": "2026-10-24 19:30",
+      "motivo": "te gusta y hoy hay tiempo",
+      "clase": "actividad",
+      "actividad_id": 2
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 06:00–06:40 · Correr (llevas 0 de 2 esta semana)\n• 06:50–08:30 · Estudiar (te faltan 1 h 40 min para tu meta)\n• 12:00–13:00 · Gimnasio (llevas 1 de 3 esta semana)\n• 19:00–19:30 · Leer (te gusta y hoy hay tiempo)",
+    "hablado": "Te sugiero Correr a las 6 de la mañana, estudiar a las 6 y 50 de la mañana y Gimnasio a las 12 del mediodía."
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 2,
+      "nombre": "Leer",
+      "minutos": 30,
+      "veces_semana": null,
+      "momento": "noche"
+     },
+     {
+      "id": 3,
+      "nombre": "Correr",
+      "minutos": 40,
+      "veces_semana": 2,
+      "momento": "manana"
+     }
+    ],
+    "hechas_semana": {
+     "1": 1
+    },
+    "hechas_hoy": [],
+    "estudio": 20,
+    "meta": 120,
+    "evitar": {},
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Estudiar",
+      "inicio": "2026-10-22 06:00",
+      "fin": "2026-10-22 07:40",
+      "motivo": "te faltan 1 h 40 min para tu meta",
+      "clase": "estudio",
+      "actividad_id": null
+     },
+     {
+      "nombre": "Correr",
+      "inicio": "2026-10-22 18:15",
+      "fin": "2026-10-22 18:55",
+      "motivo": "llevas 0 de 2 esta semana; no hay hueco en la mañana",
+      "clase": "actividad",
+      "actividad_id": 3
+     },
+     {
+      "nombre": "Gimnasio",
+      "inicio": "2026-10-22 22:00",
+      "fin": "2026-10-22 23:00",
+      "motivo": "llevas 1 de 3 esta semana; no hay hueco en la tarde",
+      "clase": "actividad",
+      "actividad_id": 1
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 06:00–07:40 · Estudiar (te faltan 1 h 40 min para tu meta)\n• 18:15–18:55 · Correr (llevas 0 de 2 esta semana; no hay hueco en la mañana)\n• 22:00–23:00 · Gimnasio (llevas 1 de 3 esta semana; no hay hueco en la tarde)",
+    "hablado": "Te sugiero estudiar a las 6 de la mañana, Correr a las 6 y cuarto de la tarde y Gimnasio a las 10 de la noche."
+   },
+   {
+    "dia": "2026-10-26",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 2,
+      "nombre": "Leer",
+      "minutos": 30,
+      "veces_semana": null,
+      "momento": "noche"
+     },
+     {
+      "id": 3,
+      "nombre": "Correr",
+      "minutos": 40,
+      "veces_semana": 2,
+      "momento": "manana"
+     }
+    ],
+    "hechas_semana": {
+     "1": 1
+    },
+    "hechas_hoy": [],
+    "estudio": 20,
+    "meta": 120,
+    "evitar": {},
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Correr",
+      "inicio": "2026-10-26 06:00",
+      "fin": "2026-10-26 06:40",
+      "motivo": "llevas 0 de 2 esta semana",
+      "clase": "actividad",
+      "actividad_id": 3
+     },
+     {
+      "nombre": "Leer",
+      "inicio": "2026-10-26 19:00",
+      "fin": "2026-10-26 19:30",
+      "motivo": "te gusta y hoy hay tiempo",
+      "clase": "actividad",
+      "actividad_id": 2
+     },
+     {
+      "nombre": "Estudiar",
+      "inicio": "2026-10-26 19:40",
+      "fin": "2026-10-26 21:20",
+      "motivo": "te faltan 1 h 40 min para tu meta",
+      "clase": "estudio",
+      "actividad_id": null
+     },
+     {
+      "nombre": "Gimnasio",
+      "inicio": "2026-10-26 21:30",
+      "fin": "2026-10-26 22:30",
+      "motivo": "llevas 1 de 3 esta semana; no hay hueco en la tarde",
+      "clase": "actividad",
+      "actividad_id": 1
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 06:00–06:40 · Correr (llevas 0 de 2 esta semana)\n• 19:00–19:30 · Leer (te gusta y hoy hay tiempo)\n• 19:40–21:20 · Estudiar (te faltan 1 h 40 min para tu meta)\n• 21:30–22:30 · Gimnasio (llevas 1 de 3 esta semana; no hay hueco en la tarde)",
+    "hablado": "Te sugiero Correr a las 6 de la mañana, Leer a las 7 de la noche y estudiar a las 7 y 40 de la noche."
+   },
+   {
+    "dia": "2026-10-24",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 2,
+      "nombre": "Leer",
+      "minutos": 30,
+      "veces_semana": null,
+      "momento": "noche"
+     },
+     {
+      "id": 3,
+      "nombre": "Correr",
+      "minutos": 40,
+      "veces_semana": 2,
+      "momento": "manana"
+     }
+    ],
+    "hechas_semana": {
+     "1": 3,
+     "3": 1
+    },
+    "hechas_hoy": [
+     3
+    ],
+    "estudio": 120,
+    "meta": 120,
+    "evitar": {},
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Leer",
+      "inicio": "2026-10-24 19:00",
+      "fin": "2026-10-24 19:30",
+      "motivo": "te gusta y hoy hay tiempo",
+      "clase": "actividad",
+      "actividad_id": 2
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 19:00–19:30 · Leer (te gusta y hoy hay tiempo)",
+    "hablado": "Te sugiero Leer a las 7 de la noche."
+   },
+   {
+    "dia": "2026-10-24",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 3,
+      "nombre": "Correr",
+      "minutos": 40,
+      "veces_semana": 2,
+      "momento": "manana"
+     }
+    ],
+    "hechas_semana": {
+     "1": 3,
+     "3": 2
+    },
+    "hechas_hoy": [],
+    "estudio": 150,
+    "meta": 120,
+    "evitar": {},
+    "ahora": null,
+    "sugerencias": [],
+    "sin_lugar": [],
+    "texto": "Hoy no tengo nada que sugerirte: vas al día. 👌",
+    "hablado": "Hoy no tengo nada que sugerirte: vas al día."
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 4,
+      "nombre": "Yoga",
+      "minutos": 45,
+      "veces_semana": 7,
+      "momento": null
+     }
+    ],
+    "hechas_semana": {},
+    "hechas_hoy": [],
+    "estudio": 0,
+    "meta": 100,
+    "evitar": {
+     "gimnasio": [
+      "tarde"
+     ]
+    },
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Estudiar",
+      "inicio": "2026-10-22 06:00",
+      "fin": "2026-10-22 07:40",
+      "motivo": "te faltan 1 h 40 min para tu meta",
+      "clase": "estudio",
+      "actividad_id": null
+     },
+     {
+      "nombre": "Yoga",
+      "inicio": "2026-10-22 18:15",
+      "fin": "2026-10-22 19:00",
+      "motivo": "llevas 0 de 7 esta semana",
+      "clase": "actividad",
+      "actividad_id": 4
+     },
+     {
+      "nombre": "Gimnasio",
+      "inicio": "2026-10-22 22:00",
+      "fin": "2026-10-22 23:00",
+      "motivo": "llevas 0 de 3 esta semana; no hay hueco en la tarde",
+      "clase": "actividad",
+      "actividad_id": 1
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 06:00–07:40 · Estudiar (te faltan 1 h 40 min para tu meta)\n• 18:15–19:00 · Yoga (llevas 0 de 7 esta semana)\n• 22:00–23:00 · Gimnasio (llevas 0 de 3 esta semana; no hay hueco en la tarde)",
+    "hablado": "Te sugiero estudiar a las 6 de la mañana, Yoga a las 6 y cuarto de la tarde y Gimnasio a las 10 de la noche."
+   },
+   {
+    "dia": "2026-10-25",
+    "bloques": [],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 3,
+      "nombre": "Correr",
+      "minutos": 40,
+      "veces_semana": 2,
+      "momento": "manana"
+     },
+     {
+      "id": 4,
+      "nombre": "Yoga",
+      "minutos": 45,
+      "veces_semana": 7,
+      "momento": null
+     },
+     {
+      "id": 2,
+      "nombre": "Leer",
+      "minutos": 30,
+      "veces_semana": null,
+      "momento": "noche"
+     }
+    ],
+    "hechas_semana": {
+     "1": 2,
+     "4": 5
+    },
+    "hechas_hoy": [],
+    "estudio": 0,
+    "meta": 0,
+    "evitar": {},
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Correr",
+      "inicio": "2026-10-25 06:00",
+      "fin": "2026-10-25 06:40",
+      "motivo": "llevas 0 de 2 esta semana",
+      "clase": "actividad",
+      "actividad_id": 3
+     },
+     {
+      "nombre": "Yoga",
+      "inicio": "2026-10-25 06:50",
+      "fin": "2026-10-25 07:35",
+      "motivo": "llevas 5 de 7 esta semana",
+      "clase": "actividad",
+      "actividad_id": 4
+     },
+     {
+      "nombre": "Gimnasio",
+      "inicio": "2026-10-25 12:00",
+      "fin": "2026-10-25 13:00",
+      "motivo": "llevas 2 de 3 esta semana",
+      "clase": "actividad",
+      "actividad_id": 1
+     },
+     {
+      "nombre": "Leer",
+      "inicio": "2026-10-25 19:00",
+      "fin": "2026-10-25 19:30",
+      "motivo": "te gusta y hoy hay tiempo",
+      "clase": "actividad",
+      "actividad_id": 2
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 06:00–06:40 · Correr (llevas 0 de 2 esta semana)\n• 06:50–07:35 · Yoga (llevas 5 de 7 esta semana)\n• 12:00–13:00 · Gimnasio (llevas 2 de 3 esta semana)\n• 19:00–19:30 · Leer (te gusta y hoy hay tiempo)",
+    "hablado": "Te sugiero Correr a las 6 de la mañana, Yoga a las 6 y 50 de la mañana y Gimnasio a las 12 del mediodía."
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     },
+     {
+      "dias": [
+       1,
+       3
+      ],
+      "inicio": "19:00",
+      "fin": "22:00",
+      "titulo": "Clase de redes",
+      "traslado": 0
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     },
+     {
+      "id": 2,
+      "nombre": "Leer",
+      "minutos": 30,
+      "veces_semana": null,
+      "momento": "noche"
+     }
+    ],
+    "hechas_semana": {},
+    "hechas_hoy": [],
+    "estudio": 0,
+    "meta": 240,
+    "evitar": {},
+    "ahora": "2026-10-22 18:20",
+    "sugerencias": [
+     {
+      "nombre": "Estudiar",
+      "inicio": "2026-10-22 18:20",
+      "fin": "2026-10-22 19:00",
+      "motivo": "te faltan 4 h para tu meta",
+      "clase": "estudio",
+      "actividad_id": null
+     },
+     {
+      "nombre": "Gimnasio",
+      "inicio": "2026-10-22 22:00",
+      "fin": "2026-10-22 23:00",
+      "motivo": "llevas 0 de 3 esta semana; no hay hueco en la tarde",
+      "clase": "actividad",
+      "actividad_id": 1
+     }
+    ],
+    "sin_lugar": [],
+    "texto": "• 18:20–19:00 · Estudiar (te faltan 4 h para tu meta)\n• 22:00–23:00 · Gimnasio (llevas 0 de 3 esta semana; no hay hueco en la tarde)",
+    "hablado": "Te sugiero estudiar a las 6 y 20 de la tarde y Gimnasio a las 10 de la noche."
+   },
+   {
+    "dia": "2026-10-22",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "06:00",
+    "actividades": [
+     {
+      "id": 1,
+      "nombre": "Gimnasio",
+      "minutos": 60,
+      "veces_semana": 3,
+      "momento": "tarde"
+     }
+    ],
+    "hechas_semana": {},
+    "hechas_hoy": [],
+    "estudio": 0,
+    "meta": 60,
+    "evitar": {
+     "gimnasio": [
+      "tarde",
+      "noche",
+      "manana"
+     ]
+    },
+    "ahora": null,
+    "sugerencias": [
+     {
+      "nombre": "Estudiar",
+      "inicio": "2026-10-22 06:00",
+      "fin": "2026-10-22 07:00",
+      "motivo": "te faltan 1 h para tu meta",
+      "clase": "estudio",
+      "actividad_id": null
+     }
+    ],
+    "sin_lugar": [
+     "Gimnasio"
+    ],
+    "texto": "• 06:00–07:00 · Estudiar (te faltan 1 h para tu meta)\nNo entra hoy: Gimnasio.",
+    "hablado": "Te sugiero estudiar a las 6 de la mañana."
+   },
+   {
+    "dia": "2026-10-21",
+    "bloques": [
+     {
+      "dias": [
+       0,
+       1,
+       2,
+       3,
+       4
+      ],
+      "inicio": "08:30",
+      "fin": "17:30",
+      "titulo": "Trabajo en Sanna",
+      "traslado": 45
+     }
+    ],
+    "despertar": "06:00",
+    "dormir": "23:00",
+    "actividades": [],
+    "hechas_semana": {},
+    "hechas_hoy": [],
+    "estudio": 0,
+    "meta": 60,
+    "evitar": {},
+    "ahora": "2026-10-21 23:40",
+    "sugerencias": [],
+    "sin_lugar": [
+     "Estudiar"
+    ],
+    "texto": "No encontré un buen hueco para sugerirte algo hoy. No entra: Estudiar.",
+    "hablado": "No encontré un buen hueco para sugerirte algo hoy. No entra: Estudiar."
+   }
+  ],
+  "textos": {
+   "dias": {
+    "0,1,2,3,4": "lun a vie",
+    "1,3": "mar y jue",
+    "0,2,4": "lun, mié y vie",
+    "0,1,2,3,4,5,6": "todos los días",
+    "5": "sáb",
+    "5,6": "sáb y dom"
+   },
+   "duracion": {
+    "5": "5 min",
+    "45": "45 min",
+    "60": "1 h",
+    "90": "1 h 30 min",
+    "135": "2 h 15 min"
+   },
+   "hablar": {
+    "15": "15 minutos",
+    "30": "media hora",
+    "60": "una hora",
+    "90": "una hora y media",
+    "135": "2 horas y 15 minutos",
+    "120": "2 horas"
+   }
+  },
+  "actividades": [
+   {
+    "texto": "gimnasio 1 hora 3 veces por semana en la tarde",
+    "resultado": {
+     "nombre": "Gimnasio",
+     "minutos": 60,
+     "veces_semana": 3,
+     "momento": "tarde"
+    },
+    "descripcion": "Gimnasio · 1 h · 3 veces por semana · en la tarde"
+   },
+   {
+    "texto": "Leer 30 min todos los días en la noche",
+    "resultado": {
+     "nombre": "Leer",
+     "minutos": 30,
+     "veces_semana": 7,
+     "momento": "noche"
+    },
+    "descripcion": "Leer · 30 min · todos los días · en la noche"
+   },
+   {
+    "texto": "correr 40 minutos 2 veces por semana por la mañana",
+    "resultado": {
+     "nombre": "Correr",
+     "minutos": 40,
+     "veces_semana": 2,
+     "momento": "manana"
+    },
+    "descripcion": "Correr · 40 min · 2 veces por semana · en la mañana"
+   },
+   {
+    "texto": "Ir al gimnasio hora y media tres veces por semana",
+    "resultado": {
+     "nombre": "Gimnasio",
+     "minutos": 90,
+     "veces_semana": 3,
+     "momento": null
+    },
+    "descripcion": "Gimnasio · 1 h 30 min · 3 veces por semana · cuando puedas"
+   },
+   {
+    "texto": "hacer yoga media hora diario",
+    "resultado": {
+     "nombre": "Yoga",
+     "minutos": 30,
+     "veces_semana": 7,
+     "momento": null
+    },
+    "descripcion": "Yoga · 30 min · todos los días · cuando puedas"
+   },
+   {
+    "texto": "practicar guitarra 2h 15min 5 veces por semana",
+    "resultado": {
+     "nombre": "Guitarra",
+     "minutos": 135,
+     "veces_semana": 5,
+     "momento": null
+    },
+    "descripcion": "Guitarra · 2 h 15 min · 5 veces por semana · cuando puedas"
+   },
+   {
+    "texto": "Natación una vez por semana",
+    "resultado": {
+     "nombre": "Natación",
+     "minutos": 60,
+     "veces_semana": 1,
+     "momento": null
+    },
+    "descripcion": "Natación · 1 h · 1 vez por semana · cuando puedas"
+   },
+   {
+    "texto": "las tardes salir a caminar 45 min",
+    "resultado": {
+     "nombre": "Salir a caminar",
+     "minutos": 45,
+     "veces_semana": null,
+     "momento": "tarde"
+    },
+    "descripcion": "Salir a caminar · 45 min · en la tarde"
+   },
+   {
+    "texto": "1 hora 3 veces por semana",
+    "resultado": "¿Qué actividad? Por ejemplo: «actividad: gimnasio 1 hora 3 veces por semana en la tarde».",
+    "descripcion": null
+   },
+   {
+    "texto": "dibujar 20 veces por semana",
+    "resultado": {
+     "nombre": "Dibujar 20 veces por semana",
+     "minutos": 60,
+     "veces_semana": null,
+     "momento": null
+    },
+    "descripcion": "Dibujar 20 veces por semana · 1 h · cuando puedas"
+   },
+   {
+    "texto": "Meditar 10 min cada día en las mañanas",
+    "resultado": {
+     "nombre": "Meditar",
+     "minutos": 10,
+     "veces_semana": 7,
+     "momento": "manana"
+    },
+    "descripcion": "Meditar · 10 min · todos los días · en la mañana"
+   },
+   {
+    "texto": "inglés 1 hora y media 2 veces a la semana de la noche",
+    "resultado": {
+     "nombre": "Inglés",
+     "minutos": 90,
+     "veces_semana": 2,
+     "momento": "noche"
+    },
+    "descripcion": "Inglés · 1 h 30 min · 2 veces por semana · en la noche"
+   }
+  ]
+ },
  "con_vocabulario": [
   {
    "texto": "cita con el banco mañana",

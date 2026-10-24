@@ -23,6 +23,9 @@ class Comando:
     #                           apodo | olvidar_apodo | apodos | abrir_web | buscar
     #                           saludo | semana | vencidas | vencidas_manana | actualizacion
     #                           frase | guardar_frase | horario_ver | horario_agregar | horario_borrar | libre
+    #                           excepcion | excepciones
+    #                           perfil | despertar | dormir | meta_estudio | actividad | actividades
+    #                           borrar_actividad | traslado
     minutos: int | None = None
     texto: str | None = None  # p. ej. el nombre de la app en "abre spotify", o el apodo
     destino: str | None = None  # a qué app apunta un apodo nuevo, o dónde buscar (youtube, google)
@@ -74,6 +77,16 @@ REGLAS = [
      r"pendientes(?: de hoy)?|agenda(?: de hoy)?)$", "agenda", None),
     (r"^(?:escuchame|escucha|activa(?:r)? la escucha|empieza a escuchar)$", "escucha_on", None),
     (r"^(?:deja de escuchar|no escuches|desactiva(?:r)? la escucha)$", "escucha_off", None),
+    # Perfil (v3.13): lo que Lancelot sabe de ti
+    (r"^(?:que sabes de mi|que sabes sobre mi|mi perfil|perfil|quien soy)$", "perfil", None),
+    (r"^(?:me despierto|me levanto|despierto|me paro)(?: a eso de las?| a las?)? (.+)$", "despertar", "texto"),
+    (r"^(?:me duermo|me acuesto|duermo|me voy a dormir)(?: a eso de las?| a las?)? (.+)$", "dormir", "texto"),
+    (r"^(?:mi )?meta (?:de estudio|diaria)(?: diaria)?(?: es| de)?:? (.+)$", "meta_estudio", "texto"),
+    (r"^(?:mis actividades|que actividades tengo)$", "actividades", None),
+    (r"^(?:actividad|nueva actividad|agrega(?:r)? (?:la )?actividad|me gusta(?: hacer)?)\s*:?\s+(.+)$", "actividad",
+     "original"),
+    (r"^(?:borra|borrar|elimina|quita) (?:la )?actividad (?:de )?(.+)$", "borrar_actividad", "texto"),
+    (r"^(?:al|a la|hasta el|hasta la) (.+?) (?:tardo|me demoro|demoro|me toma|son) (.+)$", "traslado", "dos_textos"),
     # Horario fijo y horas libres (v3.12)
     (r"^(?:mi horario|horario|ver (?:mi )?horario|muestrame mi horario|cual es mi horario)$", "horario_ver", None),
     (r"^(?:cuando estoy libre|que tiempo libre tengo|cuanto tiempo libre tengo|tiempo libre|mis horas libres|"
@@ -81,6 +94,20 @@ REGLAS = [
     (r"^(?:horario|ocupado|estoy ocupado|mi horario(?: es)?|agrega(?:r)? (?:a mi |al |en mi )?horario|"
      r"anota en (?:mi|el) horario)\s*:?\s+(.+)$", "horario_agregar", "original"),
     (r"^(?:borra|borrar|elimina|quita) (?:el |del )?(?:bloque|horario) (?:de |del )?(.+)$", "horario_borrar", "texto"),
+    # Excepciones al horario (v3.14): "el 1 de noviembre no trabajo", "vacaciones del 20 al 30 de diciembre"
+    (r"^(?:mis dias libres|dias libres|mis excepciones|excepciones|mis vacaciones|mis feriados)$", "excepciones", None),
+    (r"^(?!(?:que|cuanto|cuando|cual|cuales) )((?:vacaciones|feriado|dia libre) .+|"
+     r"(?:.+ )?(?:no trabajo|no (?:tengo|hay) (?:clases?|trabajo|universidad|turno)|"
+     r"no (?:voy|asisto) (?:a|al) (?:la |el )?[a-z]+|es feriado|(?:tengo|es) (?:mi |el )?(?:dia )?libre|"
+     r"(?:estoy|me voy) de vacaciones|son mis vacaciones)(?: .+)?)$", "excepcion", "original"),
+    # Sugerencias (v3.15): "¿qué hago hoy?" y "ya fui al gimnasio" (cuenta para tu meta semanal)
+    (r"^(?:que (?:hago|puedo hacer|me recomiendas|me sugieres)|recomiendame algo|recomiendame que hacer|sugiereme algo|dame (?:una |unas )?sugerencias?|sugerencias|que hago con mi tiempo libre|plan del dia)(?: (?:para )?(hoy|manana|ahora))?$",
+     "sugerir", "texto"),
+    (r"^(?:agendalo|agendala|agendalas|agendalos|agenda(?:r)? (?:las sugerencias|el plan|eso|todo)|si,? agendalo)$", "agendar_plan", None),
+    (r"^(?:vuelve a sugerirme todo|olvida (?:mis rechazos|lo que rechace)|reinicia (?:las )?sugerencias)$", "olvidar_rechazos", None),
+    (r"^(?:mas tarde|despues|luego|mejor|proponmelo|recuerdamelo)(?: mas tarde)?,? (?:a las?|a eso de las?) (\d{1,2}(?::\d{2})?(?: ?(?:am|pm))?(?: de la (?:manana|tarde|noche))?)$",
+     "posponer_hasta", "texto"),
+    (r"^(?:ya )?(?:hice|fui (?:a la|al|a)|termine de|complete) (.+)$", "actividad_hecha", "texto"),
     # Frases (v3.10). "guarda esta frase: …" conserva tus mayúsculas y tildes (ver "original")
     (r"^(?:guarda|guardar|guardame|anota|agrega|aprende|aprendete|recuerda) (?:esta|la|una|mi|esta otra|otra) "
      r"frase:? (.+)$", "guardar_frase", "original"),

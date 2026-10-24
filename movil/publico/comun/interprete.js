@@ -70,6 +70,12 @@ const PATRONES_REPETICION = [
   [/\b(?:cada mes|mensualmente|mensual)\b/g, "mensual"],
   [/\b(?:cada ano|todos los anos|anualmente|anual)\b/g, "anual"],
 ];
+// "de 8 a 10", "14:00-16:30": hora de inicio + duración · "durante 2 horas", "por 45 minutos"
+const _H = String.raw`(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|a\.m\.|p\.m\.))?`;
+const PATRON_RANGO_HORAS = new RegExp(String.raw`\b(?:de|desde) (?:las? )?` + _H + String.raw` (?:a|hasta) (?:las? )?` + _H +
+  String.raw`(?: (?:de|en|por) la (manana|tarde|noche))?(?: ?(?:hrs|horas|h)\b)?`, "g");
+const PATRON_RANGO_GUION = /\b(\d{1,2}):(\d{2}) ?- ?(\d{1,2}):(\d{2})\b/g;
+const PATRON_DURACION = /\b(?:durante|por) (\d{1,3}|una?|dos|tres|cuatro|cinco|media) ?(horas?|hrs?|h|minutos?|mins?)( y media)?\b/g;
 const PATRON_MARCA_EVENTO = /^\s*(?:(?:anota|agrega|apunta|crea|nuevo|un) )?evento(?:\s*:\s*|\s*,\s*|\s+(?!de\b|del\b))/g;
 const PATRON_MARCA_TAREA = /^\s*(?:nueva )?tarea\s*:\s*/g;
 const PATRON_ANTICIPACION = new RegExp(
@@ -118,13 +124,14 @@ export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO, voc
   const usar = (m) => { tramos.push([m.index, m.index + m[0].length]); return m; };
 
   let repeticion = null, diaSem = null, dia = null, relativo = null, momento = null, hora = null;
-  let tipo = null, anticipacion = null;
+  let tipo = null, anticipacion = null, duracion = null;
   let m;
 
   // 0) ¿Evento o tarea dicho explícito? ¿Con cuánta anticipación avisar?
   if ((m = buscar(PATRON_MARCA_EVENTO))) { usar(m); tipo = "evento"; }
   else if ((m = buscar(PATRON_MARCA_TAREA))) { usar(m); tipo = "tarea"; }
   if ((m = buscar(PATRON_ANTICIPACION))) { usar(m); anticipacion = aAnticipacion(m[1], m[2]); }
+  if ((m = buscar(PATRON_DURACION))) { usar(m); duracion = aMinutosDuracion(m[1], m[2], m[3]); }
 
   // 1) Repetición
   for (const [patron, clave] of PATRONES_REPETICION) {
@@ -161,9 +168,23 @@ export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO, voc
     }
   }
 
-  // 4) Hora
+  // 4) Hora (un rango "de 8 a 10" trae la hora Y la duración)
   if (relativo === null) {
-    if ((m = buscar(PATRON_MEDIODIA))) {
+    let rango = null;
+    if ((m = buscar(PATRON_RANGO_HORAS))) {
+      rango = resolverRango(m[1], m[2], m[3], m[4], m[5], m[6], m[7]);
+    } else if ((m = buscar(PATRON_RANGO_GUION))) {
+      const [h1, m1, h2, m2] = [m[1], m[2], m[3], m[4]].map(Number);
+      rango = h1 < 24 && h2 < 24 && m1 < 60 && m2 < 60 ? [h1, m1, h2, m2] : null;
+    }
+    if (rango && rango[2] * 60 + rango[3] > rango[0] * 60 + rango[1]) {
+      usar(m);
+      hora = [rango[0], rango[1], true];
+      duracion = rango[2] * 60 + rango[3] - (rango[0] * 60 + rango[1]);
+    }
+    if (hora !== null) {
+      // ya la dio el rango
+    } else if ((m = buscar(PATRON_MEDIODIA))) {
       usar(m);
       hora = m[1] === "mediodia" ? [12, 0, true] : [0, 0, true];
     } else {
@@ -185,13 +206,43 @@ export function interpretar(texto, ahora, horaPorDefecto = HORA_POR_DEFECTO, voc
   // 6) ¿Tarea o evento?
   tipo = tipo || (esEvento(titulo, vocabulario) ? "evento" : "tarea");
   if (tipo === "evento" && repeticion === null && PALABRA_ANUAL.test(normalizar(titulo))) repeticion = "anual";
-  return { titulo, fecha, repeticion, tipo, anticipacion, avisos: avisosPrevios(tipo, repeticion, anticipacion) };
+  return { titulo, fecha, repeticion, tipo, anticipacion, avisos: avisosPrevios(tipo, repeticion, anticipacion), duracion };
 }
 
 // ----------------------------------------------------------------- ayudantes
 function indiceDia(nombre) {
   if (nombre === "sabados" || nombre === "domingos") nombre = nombre.slice(0, -1);
   return DIAS_SEMANA.indexOf(nombre);
+}
+
+const ajustarAmPm = (h, ampm) => (ampm === "pm" && h < 12 ? h + 12 : ampm === "am" && h === 12 ? 0 : h);
+
+/** "de 7 a 10 de la noche" -> [19, 0, 22, 0]. Mismas reglas que _resolver_rango de la laptop. */
+function resolverRango(h1, m1, ap1, h2, m2, ap2, momento) {
+  h1 = +h1; h2 = +h2; m1 = +(m1 || 0); m2 = +(m2 || 0);
+  if (h1 > 23 || h2 > 24 || m1 > 59 || m2 > 59) return null;
+  ap1 = (ap1 || "").replace(/\./g, ""); ap2 = (ap2 || "").replace(/\./g, "");
+  const tarde = ap2 === "pm" || momento === "tarde" || momento === "noche";
+  h2 = ajustarAmPm(h2, ap2 || (tarde ? "pm" : ""));
+  if (h2 === 0 && m2 === 0) h2 = 24;
+  if (ap1) h1 = ajustarAmPm(h1, ap1);
+  else if (h1 < 12 && ((tarde && h1 + 12 < h2) || (!ap2 && !momento && h1 >= 1 && h1 <= 7))) h1 += 12;
+  if (!ap2 && !momento && h2 < 12 && h2 <= h1) h2 += 12;
+  if (h2 === 24) { h2 = 23; m2 = 59; }
+  return h2 < 24 ? [h1, m1, h2, m2] : null;
+}
+
+function aMinutosDuracion(cantidad, unidad, yMedia) {
+  const n = cantidad === "media" ? 0.5 : numero(cantidad);
+  let minutos = unidad.startsWith("h") ? Math.floor(n * 60) : Math.floor(n);
+  if (yMedia && unidad.startsWith("h")) minutos += 30;
+  return minutos > 0 && minutos <= 1440 ? minutos : null;
+}
+
+/** "08:00–10:00" si tiene duración; si no, "08:00". */
+export function describirRango(fecha, duracion) {
+  const hh = (f) => `${String(f.getUTCHours()).padStart(2, "0")}:${String(f.getUTCMinutes()).padStart(2, "0")}`;
+  return duracion ? `${hh(fecha)}–${hh(new Date(fecha.getTime() + duracion * 60000))}` : hh(fecha);
 }
 
 const numero = (c) => (/^\d+$/.test(c) ? +c : (NUMEROS_TEXTO[c] ?? 1));
