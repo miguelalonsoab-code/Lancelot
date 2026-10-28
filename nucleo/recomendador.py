@@ -242,10 +242,10 @@ def describir_plan(plan: Plan, cuando: str = "hoy") -> tuple[str, str]:
     """(texto para la burbuja, frase para la voz)."""
     if not plan.sugerencias:
         texto = (f"No encontré un buen hueco para sugerirte algo {cuando}."
-                 if plan.sin_lugar else f"{cuando.capitalize()} no tengo nada que sugerirte: vas al día. 👌")
+                 if plan.sin_lugar else f"{cuando.capitalize()} no tengo nada que sugerirte: vas al día.")
         if plan.sin_lugar:
             texto += " No entra: " + ", ".join(plan.sin_lugar) + "."
-        return texto, texto.replace(" 👌", "")
+        return texto, texto
     lineas = [f"• {s.describir()}" for s in plan.sugerencias]
     if plan.sin_lugar:
         lineas.append("No entra " + cuando + ": " + ", ".join(plan.sin_lugar) + ".")

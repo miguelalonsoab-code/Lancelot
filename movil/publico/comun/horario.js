@@ -26,6 +26,50 @@ export const isoDia = (f) => f.toISOString().slice(0, 10);
 export const deIsoDia = (t) => { const [a, m, d] = t.split("-").map(Number); return crear(a, m, d); };
 const enDia = (dia, texto) => conHora(dia, ...hm(texto));
 
+// ------------------------------------------------------------ categorías de los bloques (v3.22)
+export const CATEGORIAS = ["trabajo", "clase", "otro"];
+export const NOMBRE_CATEGORIA = { trabajo: "Trabajo", clase: "Clase", otro: "Otro" };
+// v3.23: nombres de iconos de línea (publico/iconos.js), ya no emoji. Los mismos que nucleo/horario.py.
+export const ICONO_CATEGORIA = { trabajo: "maletin", clase: "birrete", otro: "etiqueta" };
+// Lo mismo que _RAICES_CATEGORIA de nucleo/horario.py: se compara el principio de cada palabra del título y la
+// primera palabra que coincida decide («Clase de trabajo social» es clase, «Trabajo en la universidad» es trabajo).
+const RAICES_CATEGORIA = [
+  ["trabajo", ["trabaj", "oficina", "turno", "chamba"]],
+  ["clase", ["clase", "curso", "univers", "upn", "taller", "laborat", "semin"]],
+];
+
+/** 'Trabajo en Sanna' -> 'trabajo' · 'Clase de redes' -> 'clase' · 'Inglés' -> 'otro' */
+export function inferirCategoria(titulo) {
+  for (const palabra of normalizar(titulo).split(/\s+/)) {
+    for (const [categoria, raices] of RAICES_CATEGORIA) {
+      if (raices.some((r) => palabra.startsWith(r))) return categoria;
+    }
+  }
+  return "otro";
+}
+
+/**
+ * v3.23: si ya hay un bloque con el mismo nombre, el nuevo toma su categoría (como heredar_categoria en Python):
+ * marcas «Computación Gráfica» como clase una vez y los otros días ya salen bien.
+ */
+export function heredarCategoria(nuevo, existentes) {
+  const clave = normalizar(nuevo.titulo).trim();
+  const igual = existentes.find((b) => normalizar(b.titulo).trim() === clave);
+  return igual ? { ...nuevo, categoria: categoriaDe(igual) } : nuevo;
+}
+
+/** v3.24: los bloques que se llaman 'nombre' (sin tildes) o, si no hay, los que lo contienen. Como buscar_por_nombre. */
+export function buscarPorNombre(nombre, bloques) {
+  const limpio = (s) => normalizar(s).split(/\s+/).filter(Boolean).join(" ");
+  const buscado = limpio(nombre);
+  if (!buscado) return [];
+  const iguales = bloques.filter((b) => limpio(b.titulo) === buscado);
+  return iguales.length ? iguales : bloques.filter((b) => normalizar(b.titulo).includes(buscado));
+}
+
+/** La categoría de un bloque del contexto. Un contexto guardado antes de la v3.22 no la trae: se deduce del título. */
+export const categoriaDe = (bloque) => (CATEGORIAS.includes(bloque.categoria) ? bloque.categoria : inferirCategoria(bloque.titulo));
+
 // ------------------------------------------------------------ duraciones y bloques (v3.21)
 const NUMEROS = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4 };
 const NUM = String.raw`(\d{1,3}|una?|dos|tres|cuatro|media)`;
@@ -129,7 +173,8 @@ export function interpretarBloque(texto) {
   const limpiar = (s) => s.replace(/^[ ,.;:-]+|[ ,.;:-]+$/g, "");
   titulo = limpiar(titulo.replace(/\s+/g, " "));
   titulo = limpiar(titulo.replace(/^(?:(?:tengo|hay|de|el|los|y)\s+)+/i, "")) || "Ocupado";
-  return { dias, inicio, fin, titulo: titulo.charAt(0).toUpperCase() + titulo.slice(1, 80), traslado };
+  titulo = titulo.charAt(0).toUpperCase() + titulo.slice(1, 80);
+  return { dias, inicio, fin, titulo, traslado, categoria: inferirCategoria(titulo) };
 }
 
 // ------------------------------------------------------------ textos
@@ -150,9 +195,9 @@ export function describirDias(dias) {
   return n.length === 1 ? n[0] : `${n.slice(0, -1).join(", ")} y ${n.at(-1)}`;
 }
 
-/** 'lun a vie 09:00–18:00 · Trabajo' (+ ' · 🚌 45 min') */
+/** 'lun a vie 09:00–18:00 · Trabajo' (+ ' · traslado 45 min') */
 export function describirBloque(b) {
-  return `${describirDias(b.dias)} ${b.inicio}–${b.fin} · ${b.titulo}` + (b.traslado ? ` · 🚌 ${duracionMinutos(b.traslado)}` : "");
+  return `${describirDias(b.dias)} ${b.inicio}–${b.fin} · ${b.titulo}` + (b.traslado ? ` · traslado ${duracionMinutos(b.traslado)}` : "");
 }
 
 /** 'sáb 01/11 · No trabajo' o '20/12–30/12 · Vacaciones' */

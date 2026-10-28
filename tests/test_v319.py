@@ -120,7 +120,7 @@ class TestAsistenteV319(unittest.TestCase):
         self.sincronizar()
         self.assertEqual(self.a.almacen.actividades_hechas(self.hoy, self.hoy), {gim.id: [self.hoy]})
         self.assertEqual([e.titulo for e in self.a.almacen.excepciones()], ["No trabajo"])
-        self.assertEqual(self.a.burbuja.cabecera.text(), "📱 Desde el celular")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Desde el celular")
         self.assertEqual(self.a._acciones_aplicadas(), [1, 2, 3])
         # La siguiente sincronización confirma (el servidor las borra) y sube el contexto con lo nuevo
         self.sincronizar()

@@ -152,7 +152,7 @@ class TestAsistenteV314(unittest.TestCase):
     def test_evento_que_se_cruza_avisa(self):
         inicio = datetime.combine(self.manana, TRABAJO.inicio) + timedelta(hours=1)
         self.a.agregar("Examen", inicio, None, "evento", "7,1", 120)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "⚠ Se cruza con tu horario")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Se cruza con tu horario")
         self.assertIn("«Examen» se cruza con Trabajo en Sanna (08:30–17:30)", self.a.burbuja.titulo.text())
         self.a.burbuja.ocultar()
         self.a.agregar("Llamar al banco", inicio, None)                         # tarea de un momento: no avisa
@@ -164,7 +164,7 @@ class TestAsistenteV314(unittest.TestCase):
         dia = self.manana.day
         antes = describir_libre(self.a.horas_libres(self.manana))
         self.comando(f"el {dia} no voy a trabajo en sanna", por_voz=True)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "🏖 Anotado")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Anotado")
         self.assertEqual(self.dichos, ["Listo, ese día no cuento Trabajo en Sanna."])
         despues = describir_libre(self.a.horas_libres(self.manana))
         self.assertNotEqual(antes, despues)
@@ -174,7 +174,7 @@ class TestAsistenteV314(unittest.TestCase):
         self.comando("mis días libres")
         self.assertIn("No voy a trabajo", self.a.burbuja.titulo.text())
         textos = [self.a.panel.lista_horario.item(i).text() for i in range(self.a.panel.lista_horario.count())]
-        self.assertTrue(any(t.startswith("🏖 DÍAS LIBRES") for t in textos))
+        self.assertTrue(any(t.startswith("DÍAS LIBRES") for t in textos))
 
     def test_filtro_que_no_existe_no_se_guarda(self):
         self.comando("mañana no voy al gimnasio")
@@ -198,7 +198,7 @@ class TestAsistenteV314(unittest.TestCase):
         dia = self.manana
         p.entrada.setText(f"examen el {dia.day}/{dia.month} de 9 a 11")
         self.assertIn("09:00–11:00", p.vista.text())
-        self.assertIn("⚠ se cruza con Trabajo en Sanna", p.vista.text())
+        self.assertIn("se cruza con Trabajo en Sanna", p.vista.text())
 
 
 if __name__ == "__main__":

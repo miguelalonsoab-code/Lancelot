@@ -158,10 +158,10 @@ class TestAsistenteV311(unittest.TestCase):
         self.a.agregar("Aniversario", ahora + timedelta(days=5), "anual", "evento", "7,1")
         self.a.agregar("Limpiar la sala", ahora + timedelta(hours=2), None)
         textos = [self._texto_fila(i) for i in range(self.a.panel.lista.count())]
-        self.assertTrue(textos[0].startswith("⚠ TAREAS VENCIDAS · 0"))
+        self.assertTrue(textos[0].startswith("TAREAS VENCIDAS · 0"))
         self.assertIn("Ninguna", textos[1])
-        self.assertTrue(textos[2].startswith("📅 PRÓXIMOS EVENTOS · 1"))
-        self.assertIn("📅 Aniversario", textos[3])
+        self.assertTrue(textos[2].startswith("PRÓXIMOS EVENTOS · 1"))
+        self.assertIn("Aniversario", textos[3])
         self.assertTrue(textos[4].startswith("PRÓXIMAS TAREAS · 1"))
         self.assertIn("Limpiar la sala", textos[5])
 
@@ -191,7 +191,7 @@ class TestAsistenteV311(unittest.TestCase):
         self.assertFalse(self.a.burbuja.isVisible())               # todavía no sabe qué avisó el celular
         self.sincronizar()
         self.a.revisar()
-        self.assertEqual(self.a.burbuja.cabecera.text(), "📅 Se acerca")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Se acerca")
 
     def _texto_fila(self, i):
         from PySide6.QtWidgets import QLabel

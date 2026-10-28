@@ -40,7 +40,7 @@ FRASES = {
         "Descanso terminado. Retoma justo donde lo dejaste.",
     ],
     "distraccion": [
-        "Eso parece {app} 👀 ¿Volvemos al estudio?",
+        "Eso parece {app}. ¿Volvemos al estudio?",
         "{app} puede esperar {resta} minutos. ¿Vuelves?",
         "Te vi en {app}. Sin culpa: solo regresa.",
     ],

@@ -7,12 +7,12 @@
  *
  * La copia guardada se renueva sola cada vez que abres la app con internet.
  */
-const VERSION = "lancelot-1.6";
+const VERSION = "lancelot-1.9";
 const ARCHIVOS = [
   "/", "/index.html", "/estilos.css", "/app.js", "/cara.js", "/manifest.webmanifest",
   "/comun/fechas.js", "/comun/interprete.js", "/comun/comandos.js", "/comun/planificador.js", "/comun/frases.js",
-  "/comun/horario.js", "/comun/recomendador.js", "/comun/perfil.js", "/contexto.js", "/calendario.js",
-  "/fuentes/nunito.woff2", "/iconos/icono-192.png", "/iconos/insignia-96.png",
+  "/comun/horario.js", "/comun/recomendador.js", "/comun/perfil.js", "/contexto.js", "/calendario.js", "/iconos.js", "/comun/silabas.js",
+  "/fuentes/manrope.woff2", "/fuentes/jetbrains-mono.woff2", "/iconos/icono-192.png", "/iconos/insignia-96.png",
 ];
 
 self.addEventListener("install", (e) => {

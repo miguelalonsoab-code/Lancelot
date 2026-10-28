@@ -149,9 +149,9 @@ export function recomendar(dia, libres, actividades, hechasSemana, hechasHoy, es
 export function describirPlan(plan, cuando = "hoy") {
   if (!plan.sugerencias.length) {
     let texto = plan.sin_lugar.length ? `No encontré un buen hueco para sugerirte algo ${cuando}.`
-      : `${cuando.charAt(0).toUpperCase() + cuando.slice(1)} no tengo nada que sugerirte: vas al día. 👌`;
+      : `${cuando.charAt(0).toUpperCase() + cuando.slice(1)} no tengo nada que sugerirte: vas al día.`;
     if (plan.sin_lugar.length) texto += ` No entra: ${plan.sin_lugar.join(", ")}.`;
-    return [texto, texto.replace(" 👌", "")];
+    return [texto, texto];
   }
   const lineas = plan.sugerencias.map((s) => `• ${describirSugerencia(s)}`);
   if (plan.sin_lugar.length) lineas.push(`No entra ${cuando}: ${plan.sin_lugar.join(", ")}.`);

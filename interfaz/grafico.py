@@ -16,7 +16,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from config import COLORES
+from interfaz.tema import ZAFIRO
 from nucleo.estadisticas import DIAS_CORTOS, DiaEstudio, horas
 
 
@@ -54,16 +54,15 @@ class GraficoSemana(QWidget):
         # Línea de la meta diaria
         if self.meta:
             y = arriba + alto_util * (1 - self.meta / tope)
-            p.setPen(QPen(QColor(COLORES["pendiente"]), 1, Qt.DashLine))
+            p.setPen(QPen(QColor(ZAFIRO["destaque"]), 1, Qt.DashLine))      # v3.24: «línea de meta» = destaque
             p.drawLine(4, int(y), ancho - 4, int(y))
 
         for i, d in enumerate(self.dias):
             x = columna * i + (columna - barra) / 2
             es_hoy = d.fecha == self.hoy
             cumplio = self.meta and d.minutos >= self.meta
-            color = QColor(COLORES["feliz"] if cumplio else COLORES["estudio"])
-            if not es_hoy:
-                color.setAlpha(170)
+            # v3.24 (tema Zafiro): meta cumplida = acento; sin cumplir = superficie alta con borde
+            color = QColor(ZAFIRO["acento"] if cumplio else ZAFIRO["superficie_alta"])
 
             if d.minutos:
                 h = max(4.0, alto_util * d.minutos / tope)
@@ -71,12 +70,15 @@ class GraficoSemana(QWidget):
                 camino = QPainterPath()
                 camino.addRoundedRect(QRectF(x, y, barra, h), 6, 6)
                 p.fillPath(camino, color)
-                p.setPen(QColor("#e8ebef"))
+                if not cumplio:
+                    p.setPen(QPen(QColor(ZAFIRO["linea_fuerte"]), 1))
+                    p.drawPath(camino)
+                p.setPen(QColor(ZAFIRO["tinta"]))
                 p.drawText(QRectF(columna * i, y - 18, columna, 16), Qt.AlignCenter, _corto(d.minutos))
             else:                                       # día sin estudio: una rayita en la base
-                p.fillRect(QRectF(x, arriba + alto_util - 2, barra, 2), QColor("#2a2f3a"))
+                p.fillRect(QRectF(x, arriba + alto_util - 2, barra, 2), QColor(ZAFIRO["linea"]))
 
-            p.setPen(QColor("#e8ebef" if es_hoy else "#8b93a1"))
+            p.setPen(QColor(ZAFIRO["tinta"] if es_hoy else ZAFIRO["tinta_suave"]))
             letra = QFont(fuente)
             letra.setBold(es_hoy)
             p.setFont(letra)

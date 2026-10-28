@@ -99,3 +99,32 @@ test("v3.21: horario fijo y perfil cambiados desde el celular", () => {
   const txt = (l) => l.map(([a, b]) => `${aTexto(a).slice(11)}-${aTexto(b).slice(11)}`);
   assert.deepEqual(txt(horasLibres(ctx, [], deIsoDia("2026-10-28"), null)), ["06:00-19:30", "22:40-23:30"]);
 });
+
+test("v3.22: la agenda trae la categoría de cada bloque (también con un contexto viejo, sin ella)", () => {
+  const ctx = combinar({
+    ...LAPTOP,
+    horario: [{ id: 1, dias: [0], inicio: "08:30", fin: "17:30", titulo: "Trabajo en Sanna", traslado: 0, categoria: "trabajo" },
+              { id: 2, dias: [0], inicio: "19:00", fin: "22:00", titulo: "Curso de Python", traslado: 0 },          // sin categoría: viene de la v3.21
+              { id: 3, dias: [0], inicio: "22:00", fin: "23:00", titulo: "Trabajo extra", traslado: 0, categoria: "otro" }],
+  });
+  const bloques = agendaDelDia(ctx, [], deIsoDia("2026-10-26"), null).filter((i) => i.tipo === "bloque");
+  assert.deepEqual(bloques.map((b) => [b.titulo, b.categoria]),
+    [["Trabajo en Sanna", "trabajo"], ["Curso de Python", "clase"], ["Trabajo extra", "otro"]]);
+});
+
+test("v3.22: un bloque nuevo hecho en el celular conserva su categoría mientras espera a la laptop", () => {
+  const ctx = combinar(LAPTOP, [{ id: 1, tipo: "bloque", datos: { dias: [2], inicio: "19:30", fin: "22:40", titulo: "Taller", traslado: 0, categoria: "clase" } }]);
+  const nuevo = ctx.horario.find((b) => b.titulo === "Taller");
+  assert.deepEqual([nuevo.categoria, nuevo.pendiente], ["clase", true]);
+});
+
+test("v3.23: la categoría cambiada en el celular se ve al instante (y solo en ese bloque)", () => {
+  const conIds = { ...LAPTOP, horario: [
+    { id: 5, dias: [0], inicio: "08:30", fin: "17:30", titulo: "Trabajo en Sanna", traslado: 0, categoria: "trabajo" },
+    { id: 6, dias: [0], inicio: "19:00", fin: "22:00", titulo: "Inglés", traslado: 0, categoria: "otro" }] };
+  const ctx = combinar(conIds, [{ id: 1, tipo: "categoria_bloque", datos: { id: 6, categoria: "clase" } }]);
+  assert.deepEqual(ctx.horario.map((b) => [b.titulo, b.categoria, Boolean(b.categoriaPendiente)]),
+    [["Trabajo en Sanna", "trabajo", false], ["Inglés", "clase", true]]);
+  const [, ingles] = agendaDelDia(ctx, [], deIsoDia("2026-10-26"), null).filter((i) => i.tipo === "bloque");
+  assert.equal(ingles.categoria, "clase");
+});

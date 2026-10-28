@@ -27,6 +27,76 @@ DIAS_CORTOS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 _P_DIA = r"(?:lunes|martes|miercoles|jueves|viernes|sabados?|domingos?)"
 
 
+# --------------------------------------------------------------------------- categorías (v3.22)
+CATEGORIAS = ("trabajo", "clase", "otro")
+NOMBRE_CATEGORIA = {"trabajo": "Trabajo", "clase": "Clase", "otro": "Otro"}
+# El nombre del icono de línea de cada categoría (v3.23: antes eran emoji). Se dibujan en interfaz/iconos.py
+# y movil/publico/iconos.js, con la forma de los iconos de Lucide: maletín, birrete y etiqueta.
+ICONO_CATEGORIA = {"trabajo": "maletin", "clase": "birrete", "otro": "etiqueta"}
+TEXTO_OSCURO, TEXTO_CLARO = "#07112a", "#eaf1ff"
+
+
+def texto_sobre(color: str) -> str:
+    """
+    El color del texto que se escribe ENCIMA de un bloque de ese color (v3.23): oscuro sobre colores claros
+    (el lavanda de las clases) y claro sobre oscuros. Usa la luminancia relativa de WCAG: así, si cambias los
+    colores en config.py, el nombre del bloque se sigue leyendo.
+    """
+    def lineal(v: int) -> float:
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    n = int(color.lstrip("#")[:6], 16)
+    luz = 0.2126 * lineal(n >> 16 & 255) + 0.7152 * lineal(n >> 8 & 255) + 0.0722 * lineal(n & 255)
+    return TEXTO_OSCURO if luz > 0.3 else TEXTO_CLARO
+
+# Se compara el PRINCIPIO de cada palabra del título (ya sin tildes ni mayúsculas): "trabaj" cubre
+# trabajo/trabajar/trabajando. La primera palabra del título que coincida decide: «Clase de trabajo
+# social» es clase, «Trabajo en la universidad» es trabajo. Lo que no coincide queda como «otro».
+_RAICES_CATEGORIA = (
+    ("trabajo", ("trabaj", "oficina", "turno", "chamba")),
+    ("clase", ("clase", "curso", "univers", "upn", "taller", "laborat", "semin")),
+)
+
+
+def inferir_categoria(titulo: str) -> str:
+    """'Trabajo en Sanna' -> 'trabajo' · 'Clase de redes' -> 'clase' · 'Inglés' -> 'otro'."""
+    for palabra in normalizar(titulo).split():
+        for categoria, raices in _RAICES_CATEGORIA:
+            if palabra.startswith(raices):
+                return categoria
+    return "otro"
+
+
+def heredar_categoria(nuevo: "Bloque", existentes: list["Bloque"]) -> "Bloque":
+    """
+    v3.23: si ya tienes un bloque con el mismo nombre («Computación Gráfica» el miércoles), el nuevo («… el viernes»)
+    toma la categoría que le diste a ese, en vez de la deducida por palabras (que no sabe que un curso es clase).
+    """
+    clave = normalizar(nuevo.titulo).strip()
+    igual = next((b for b in existentes if normalizar(b.titulo).strip() == clave), None)
+    if igual:
+        nuevo.categoria = igual.categoria
+    return nuevo
+
+
+def buscar_por_nombre(nombre: str, bloques: list["Bloque"]) -> list["Bloque"]:
+    """
+    v3.24: los bloques a los que se refiere 'nombre' («computación gráfica», «redes»): los que se llaman igual
+    (sin tildes ni mayúsculas) y, si no hay ninguno, los que lo contienen. Así «trabajo» encuentra
+    «Trabajo en Sanna», pero «clase» no se lleva también «Clase de redes» si tienes un bloque llamado «Clase».
+    """
+    buscado = " ".join(normalizar(nombre).split())
+    if not buscado:
+        return []
+    iguales = [b for b in bloques if " ".join(normalizar(b.titulo).split()) == buscado]
+    return iguales or [b for b in bloques if buscado in normalizar(b.titulo)]
+
+
+def siguiente_categoria(categoria: str) -> str:
+    """Para el botón que cambia la categoría: trabajo -> clase -> otro -> trabajo."""
+    return CATEGORIAS[(CATEGORIAS.index(categoria) + 1) % len(CATEGORIAS)] if categoria in CATEGORIAS else "otro"
+
+
 @dataclass
 class Bloque:
     dias: tuple[int, ...]        # 0 = lunes … 6 = domingo
@@ -35,11 +105,16 @@ class Bloque:
     titulo: str
     id: int | None = None
     traslado: int = 0            # minutos de viaje: se restan ANTES y DESPUÉS del bloque
+    categoria: str = "otro"      # 'trabajo' | 'clase' | 'otro' (v3.22): solo cambia colores y avisos, no las horas libres
+
+    def __post_init__(self):
+        if self.categoria not in CATEGORIAS:         # un dato raro (de la base o de la red) nunca rompe la vista
+            self.categoria = "otro"
 
     def describir(self) -> str:
-        """'lun a vie 09:00–18:00 · Trabajo' (+ ' · 🚌 45 min' si tiene traslado)"""
+        """'lun a vie 09:00–18:00 · Trabajo' (+ ' · traslado 45 min' si tiene traslado)"""
         texto = f"{describir_dias(self.dias)} {self.inicio:%H:%M}–{self.fin:%H:%M} · {self.titulo}"
-        return texto + (f" · 🚌 {duracion_minutos(self.traslado)}" if self.traslado else "")
+        return texto + (f" · traslado {duracion_minutos(self.traslado)}" if self.traslado else "")
 
     @property
     def cuando(self) -> str:
@@ -206,7 +281,8 @@ def interpretar_bloque(texto: str) -> Bloque | str:
         titulo = titulo[:ini] + " " + titulo[fin_t:]
     titulo = re.sub(r"\s+", " ", titulo).strip(" ,.;:-")
     titulo = re.sub(r"^(?:(?:tengo|hay|de|el|los|y)\s+)+", "", titulo, flags=re.I).strip(" ,.;:-") or "Ocupado"
-    return Bloque(dias, inicio, fin, titulo[:1].upper() + titulo[1:80], traslado=traslado)
+    titulo = titulo[:1].upper() + titulo[1:80]
+    return Bloque(dias, inicio, fin, titulo, traslado=traslado, categoria=inferir_categoria(titulo))
 
 
 # --------------------------------------------------------------------------- excepciones (v3.14)

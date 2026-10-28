@@ -84,7 +84,7 @@ class TestPerfil(unittest.TestCase):
     def test_que_sabes_de_mi(self):
         p = Perfil(time(6, 30), time(23), 120, [Actividad("Gimnasio", 60, 3, "tarde")])
         texto, hablado = describir_perfil(p, [interpretar_bloque("de lunes a viernes de 9 a 6 trabajo")])
-        self.assertIn("😴 Duermes de 23:00 a 06:30", texto)
+        self.assertIn("Duermes de 23:00 a 06:30", texto)
         self.assertIn("lun a vie 09:00–18:00 · Trabajo", texto)
         self.assertIn("Gimnasio · 1 h · 3 veces por semana · en la tarde", texto)
         self.assertIn("estudiar 2 horas al día", hablado)
@@ -131,7 +131,7 @@ class TestAsistentePerfil(unittest.TestCase):
                          (time(6, 30), time(23), 120, ["Gimnasio"]))
         self.assertEqual(self.a.resumen_de_semana().meta, 120)                 # el gráfico usa tu meta
         self.comando("¿qué sabes de mí?")
-        self.assertEqual(self.a.burbuja.cabecera.text(), "🙂 Lo que sé de ti")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Lo que sé de ti")
         self.assertTrue(self.a.panel.viendo_estudio is False and self.a.panel.pestanas.currentIndex() == 3)
         self.comando("borra la actividad gimnasio")
         self.assertEqual(self.a.perfil.actividades, [])

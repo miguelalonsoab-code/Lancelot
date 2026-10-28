@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.21"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.24"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------
@@ -100,6 +100,11 @@ COLORES = {
     "feliz": "#5be37d",           # acabas de completar algo
     "dormido": "#3a4a6b",         # de noche y sin pendientes
     "evento": "#c9b8ff",          # avisos anticipados de eventos (aniversario, examen…)
+    # Categorías del horario (v3.22; colores del sistema de diseño en la v3.23): el color de cada bloque.
+    # No se usa naranja: en el sistema de diseño el naranja es "vencida/error".
+    "bloque_trabajo": "#3460b8",  # azul medio (texto claro encima)
+    "bloque_clase": "#b9a7ff",    # lavanda (texto oscuro encima)
+    "bloque_otro": "#3a4254",     # gris pizarra oscuro (texto claro encima; más oscuro que trabajo)
     # Modo estudio
     "estudio": "#8b7cf6",         # enfocado (el anillo se va vaciando con el tiempo)
     "descanso": "#5be3c8",        # en descanso

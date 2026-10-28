@@ -78,7 +78,7 @@ const ahora = () => ahoraEn("America/Lima");
 test("sin clave no se puede leer nada", async () => {
   assert.equal((await api("/api/tareas", { clave: "otra" })).estado, 401);
   const estado = await api("/api/estado", { clave: "" });
-  assert.deepEqual(estado.datos, { ok: true, version: "1.6", configurado: true });
+  assert.deepEqual(estado.datos, { ok: true, version: "1.8", configurado: true });
 });
 
 test("agregar con texto libre, preguntar lo que falta y listar", async () => {
@@ -507,5 +507,34 @@ test("v3.20: acciones para quitar días libres y editar actividades", async () =
   const nuevas = r.datos.acciones.slice(-5, -2);
   assert.deepEqual(nuevas.map((a) => a.tipo), ["actividad", "quitar_actividad", "quitar_excepcion"]);
   assert.deepEqual(nuevas[0].datos, { nombre: "Yoga", minutos: 45, veces_semana: 2, momento: "tarde" });
+  await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [], acciones_ok: r.datos.acciones.map((a) => a.id) } });
+});
+
+test("v3.22: el bloque del horario trae su categoría (opcional) y solo acepta las tres conocidas", async () => {
+  const pedir = (datos) => api("/api/acciones", { metodo: "POST", cuerpo: { tipo: "bloque", datos } });
+  const base = { dias: [4], inicio: "18:00", fin: "20:00", traslado: 0 };
+  assert.equal((await pedir({ ...base, titulo: "Taller de robótica", categoria: "clase" })).estado, 201);
+  assert.equal((await pedir({ ...base, titulo: "Guardia" })).estado, 201, "un celular sin actualizar no manda categoría");
+  for (const categoria of ["estudio", "", null, 3, "Trabajo"]) {
+    assert.equal((await pedir({ ...base, titulo: "X", categoria })).estado, 400, JSON.stringify(categoria));
+  }
+  const r = await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [] } });
+  const bloques = r.datos.acciones.filter((a) => a.tipo === "bloque").map((a) => a.datos);
+  assert.deepEqual(bloques, [
+    { dias: [4], inicio: "18:00", fin: "20:00", titulo: "Taller de robótica", traslado: 0, categoria: "clase" },
+    { dias: [4], inicio: "18:00", fin: "20:00", titulo: "Guardia", traslado: 0 },   // sin la clave: la laptop la deduce del título
+  ]);
+  await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [], acciones_ok: r.datos.acciones.map((a) => a.id) } });
+});
+
+test("v3.23: cambiar la categoría de un bloque desde el celular", async () => {
+  const pedir = (datos) => api("/api/acciones", { metodo: "POST", cuerpo: { tipo: "categoria_bloque", datos } });
+  assert.equal((await pedir({ id: 4, categoria: "clase" })).estado, 201);
+  for (const datos of [{ id: 0, categoria: "clase" }, { id: "4", categoria: "clase" }, { id: 4, categoria: "estudio" },
+    { id: 4 }, { categoria: "otro" }]) {
+    assert.equal((await pedir(datos)).estado, 400, JSON.stringify(datos));
+  }
+  const r = await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [] } });
+  assert.deepEqual(r.datos.acciones.filter((a) => a.tipo === "categoria_bloque").map((a) => a.datos), [{ id: 4, categoria: "clase" }]);
   await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [], acciones_ok: r.datos.acciones.map((a) => a.id) } });
 });

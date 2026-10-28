@@ -20,17 +20,18 @@ import {
 import { avisosPrevios, describirAvisos, describirRango, interpretar as interpretarBase, REPETICIONES, TIPOS }
   from "./comun/interprete.js";
 import { BolsaFrases, REFLEXIONES } from "./comun/frases.js";
-import { coincide, describirBloque, describirExcepcion, describirLibre, duracionMinutos, hablarDuracion, interpretarBloque,
+import { CATEGORIAS, ICONO_CATEGORIA, NOMBRE_CATEGORIA, buscarPorNombre, categoriaDe, heredarCategoria, coincide, describirBloque, describirExcepcion, describirLibre, duracionMinutos, hablarDuracion, interpretarBloque,
   interpretarExcepcion, isoDia, leerDuracion, lunesDe, minutos } from "./comun/horario.js";
 import { opcionesReprogramar } from "./comun/planificador.js";
 import { describirActividad, interpretarActividad, leerHora } from "./comun/perfil.js";
 import { describirPlan } from "./comun/recomendador.js";
 import { pintarCalendario } from "./calendario.js";
+import { icono } from "./iconos.js";
 import { actividadesQueNombra, combinar, esSugerida, hechasEntre, horasLibres, planDelDia } from "./contexto.js";
 
 const ZONA = "America/Lima";
 const NOMBRE = "Miguel";
-const VERSION_APP = "1.6";
+const VERSION_APP = "1.9";
 
 const $ = (id) => document.getElementById(id);
 const ahora = () => ahoraEn(ZONA);
@@ -80,7 +81,8 @@ function el(tag, attrs = {}, ...hijos) {
 
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 const esEvento = (t) => t.tipo === "evento";
-const conIcono = (t) => (esEvento(t) ? `📅 ${t.titulo}` : t.titulo);
+// v3.24: sin emoji. En texto corrido, «(evento)»; en las filas, el icono de calendario (ver fila())
+const conIcono = (t) => (esEvento(t) ? `${t.titulo} (evento)` : t.titulo);
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const aInput = (texto) => texto.replace(" ", "T");                 // '2026-10-11 20:00' -> datetime-local
 const deInput = (valor) => (valor ? valor.replace("T", " ").slice(0, 16) : "");
@@ -109,7 +111,7 @@ function hablar(texto) {
 function decirFrase() {
   const frase = frases.sacar();
   if (!frase) return;
-  decir(`💬 ${frase}`);
+  decir(`«${frase}»`);
   hablar(frase);
   cara.celebrar(1.5);
 }
@@ -221,7 +223,7 @@ async function conectar(clave) {
     pintar();
     cargarPreferencias();
     cargarContexto();
-    decir(`¡Listo, ${NOMBRE}! Ya estamos conectados. Activa las notificaciones en ⚙.`);
+    decir(`¡Listo, ${NOMBRE}! Ya estamos conectados. Activa las notificaciones en Ajustes (arriba a la derecha).`);
     cara.celebrar();
   } catch (e) {
     if (e instanceof SinConexion) decir(e.message);
@@ -238,7 +240,7 @@ function agrupar(tareas, now) {
   const c = ctx();
   const grupos = new Map([["vencidas", { tipo: "vencidas", titulo: "", tareas: [] }]]);
   const eventos = tareas.filter(esEvento);
-  if (eventos.length) grupos.set("eventos", { tipo: "eventos", titulo: `📅 Próximos eventos · ${eventos.length}`, tareas: eventos });
+  if (eventos.length) grupos.set("eventos", { tipo: "eventos", titulo: `Próximos eventos · ${eventos.length}`, tareas: eventos });
   for (const t of tareas.filter((x) => !esEvento(x))) {
     const f = desdeTexto(t.fecha);
     let clave, titulo, tipo;
@@ -276,7 +278,7 @@ function pintar() {
     const cabeza = el("div", { class: "grupo-cabeza" }, el("h3", {}, g.titulo),
       g.tipo === "vencidas" && !vacia && el("button", { class: "enlace", onclick: todasAManana }, "Pasar todas a mañana"));
     lista.append(el("section", { class: "grupo", "data-tipo": g.tipo, "data-vacio": vacia }, cabeza,
-      vacia ? el("p", { class: "nada" }, "Ninguna. Vas al día 👌") : g.tareas.map((t) => fila(t, g.tipo, now))));
+      vacia ? el("p", { class: "nada" }, "Ninguna. Vas al día.") : g.tareas.map((t) => fila(t, g.tipo, now))));
   }
   if (estado.tareas.length === 0) {
     lista.append(el("p", { class: "vacio" }, "No tienes nada pendiente. Escribe abajo, por ejemplo: «el viernes a las 3 llamar al banco»."));
@@ -291,14 +293,15 @@ function fila(t, tipo, now) {
   const sugerida = esSugerida(ctx(), t);
   const pasada = t.fecha <= aTexto(now);
   const detalle = [dia, tipo === "vencidas" ? describirAtraso(f, now) : null,
-    sugerida && pasada ? `💡 Era a las ${hhmm(f)}: si no la haces, mañana se quita sola` : null,
+    sugerida && pasada ? `Sugerida: era a las ${hhmm(f)}; si no la haces, mañana se quita sola` : null,
     t.duracion && tipo !== "vencidas" ? `De ${describirRango(f, t.duracion).replace("–", " a ")}` : null,
     faltan && capital(faltan),
     t.repeticion ? `Se repite: ${REPETICIONES[t.repeticion].toLowerCase()}` : null].filter(Boolean).join(". ");
   const nodo = el("div", { class: "tarea", "data-id": t.id, "data-evento": esEvento(t) },
     el("span", { class: "hora" }, hhmm(f)),
     el("button", { class: "que", onclick: () => opcionesDeTarea(t) },
-      el("span", { class: "titulo" }, (sugerida ? "💡 " : "") + conIcono(t)), detalle && el("span", { class: "detalle" }, detalle)),
+      el("span", { class: "titulo" }, sugerida ? icono("bombilla", 16) : null, esEvento(t) ? icono("calendario", 16) : null, t.titulo),
+      detalle && el("span", { class: "detalle" }, detalle)),
     el("button", { class: "hecho", "aria-label": `Marcar «${t.titulo}» como hecha`, onclick: () => completar(t, nodo) }));
   return nodo;
 }
@@ -426,11 +429,12 @@ function vistaPrevia(texto) {
     vista.textContent = ACCIONES_CELULAR.has(c.accion) ? "Pregunta para Lancelot (Enter)" : "Eso es un comando de la laptop";
     if (c.accion === "horario_agregar") {
       const b = interpretarBloque(c.texto || "");
-      vista.textContent = typeof b === "string" ? b : `🗓 Horario: ${describirBloque(b)}`;
+      vista.textContent = typeof b === "string" ? b : `Horario: ${describirBloque(b)}`;
     }
+    if (c.accion === "categoria") vista.textContent = `Marcar «${c.texto}» como ${NOMBRE_CATEGORIA[c.destino].toLowerCase()} (Enter)`;
     if (c.accion === "excepcion") {                  // se ve antes de enviar qué día y qué se libera
       const e = interpretarExcepcion(c.texto || "", soloFecha(ahora()));
-      vista.textContent = typeof e === "string" ? e : `🏖 Día libre: ${describirExcepcion(e)}` +
+      vista.textContent = typeof e === "string" ? e : `Día libre: ${describirExcepcion(e)}` +
         (e.filtro ? " (solo ese bloque)" : " (todo el horario)");
     }
     return;
@@ -440,7 +444,7 @@ function vistaPrevia(texto) {
     vista.textContent = r.fecha ? `Para: ${describirFecha(r.fecha, ahora())}` : "Dime cuándo: «mañana a las 5», «en 2 horas»…";
     return;
   }
-  const partes = [`${r.tipo === "evento" ? "📅 " : ""}«${r.titulo || "…"}»`,
+  const partes = [`${r.tipo === "evento" ? "evento " : ""}«${r.titulo || "…"}»`,
     r.fecha ? describirFecha(r.fecha, ahora()) : "te preguntaré cuándo"];
   if (r.repeticion) partes.push(REPETICIONES[r.repeticion].toLowerCase());
   if (r.fecha && r.duracion) partes[1] = `${describirFecha(r.fecha, ahora())}–${describirRango(r.fecha, r.duracion).split("–")[1]}`;
@@ -521,7 +525,7 @@ async function comando(c) {
   if (c.accion === "vencidas_manana") return todasAManana();
   if (["sugerir", "agendar_plan", "actividad_hecha", "excepcion", "excepciones", "libre", "horario_ver",
        "actividad", "actividades", "borrar_actividad", "horario_agregar", "horario_borrar", "despertar", "dormir",
-       "meta_estudio", "perfil"].includes(c.accion)) {
+       "meta_estudio", "perfil", "categoria"].includes(c.accion)) {
     return comandoDelHorario(c, now);
   }
   decir("Eso lo hago en la laptop. Aquí anoto tareas, te digo tu agenda, tus horas libres y qué hacer, " +
@@ -553,6 +557,19 @@ async function comandoDelHorario(c, now) {
     const b = x.horario.find((y) => buscado && normalizarSimple(y.titulo).includes(buscado));
     return b ? quitarBloque(b) : decir(`No encontré «${c.texto}» en tu horario.`);
   }
+  if (c.accion === "categoria") {                    // v3.24: «computación gráfica es clase»
+    const bloques = buscarPorNombre(c.texto || "", x.horario);
+    if (!bloques.length) return decir(`No encontré «${c.texto}» en tu horario.`);
+    const sinId = bloques.filter((b) => b.id == null);
+    for (const b of bloques.filter((y) => y.id != null && categoriaDe(y) !== c.destino)) {
+      if (!(await accion("categoria_bloque", { id: b.id, categoria: c.destino }))) return null;
+    }
+    const nombres = [...new Set(bloques.map((b) => b.titulo))].join(", ");
+    decir(`${nombres}${bloques.length > 1 ? ` (${bloques.length} bloques)` : ""}: ahora es ${NOMBRE_CATEGORIA[c.destino].toLowerCase()}.` +
+      (sinId.length ? " Uno todavía no llegó a la laptop: cámbialo cuando sincronice." : ""));
+    pintar();
+    return null;
+  }
   if (c.accion === "despertar" || c.accion === "dormir") {
     const h = leerHora(c.texto || "", c.accion);
     if (!h) return decir("No entendí la hora. Por ejemplo: «me despierto a las 6:30».");
@@ -579,12 +596,12 @@ async function comandoDelHorario(c, now) {
     }
     if (!(await accion("excepcion", e))) return null;
     cara.celebrar();
-    decir(`🏖 Anotado: ${describirExcepcion(e)}. Ya lo cuento en tus horas libres (la laptop lo guarda al sincronizar).`);
+    decir(`Anotado: ${describirExcepcion(e)}. Ya lo cuento en tus horas libres (la laptop lo guarda al sincronizar).`);
     return pintar();
   }
   if (c.accion === "actividad_hecha") {
     const acts = actividadesQueNombra(x, c.texto || "");
-    if (!acts.length) return decir(`«${c.texto}» no está en tus actividades. Se agregan en la laptop (pestaña 🙂 Perfil).`);
+    if (!acts.length) return decir(`«${c.texto}» no está en tus actividades. Se agregan en la laptop (pestaña Perfil).`);
     for (const a of acts) await marcarHecha(a);
     return null;
   }
@@ -607,7 +624,7 @@ async function agregarActividad(texto) {
   }
   if (!(await accion("actividad", a))) return null;
   cara.celebrar();
-  decir(`🙂 Anotado: ${describirActividad(a)}. Ya te lo sugiero (la laptop lo guarda al sincronizar).`);
+  decir(`Anotado: ${describirActividad(a)}. Ya te lo sugiero (la laptop lo guarda al sincronizar).`);
   return pintar();
 }
 
@@ -621,13 +638,25 @@ async function quitarActividad(a) {
 }
 
 async function agregarBloque(texto) {
-  const b = interpretarBloque(texto);
+  let b = interpretarBloque(texto);
   if (typeof b === "string") { decir(b); return false; }
+  b = heredarCategoria(b, ctx().horario);                 // v3.23: mismo nombre, misma categoría
   if (!(await accion("bloque", b))) return false;
   cara.celebrar();
-  decir(`🗓 Anotado en tu horario: ${describirBloque(b)}. Ya lo cuento (la laptop lo guarda al sincronizar).`);
+  decir(`Anotado en tu horario: ${describirBloque(b)}. Ya lo cuento (la laptop lo guarda al sincronizar).`);
   pintar();
   return true;
+}
+
+/** v3.23: Trabajo · Clase · Otro en «Tu horario». La laptop la guarda al sincronizar; aquí se ve al instante. */
+async function cambiarCategoria(b, categoria) {
+  if (b.id == null) return decir("Ese bloque todavía no llegó a la laptop: espera a que sincronice y cámbialo.");
+  if (categoriaDe(b) === categoria) return null;
+  if (!(await accion("categoria_bloque", { id: b.id, categoria }))) return null;
+  decir(`${b.titulo}: ahora es ${NOMBRE_CATEGORIA[categoria].toLowerCase()}.`);
+  pintar();
+  if (hojaAbierta) mostrarMisCosas();
+  return null;
 }
 
 async function quitarBloque(b) {
@@ -642,7 +671,7 @@ async function quitarBloque(b) {
 async function guardarPerfil(datos) {
   if (!(await accion("perfil", datos))) return;
   const p = ctx().perfil;
-  decir(`🙂 Guardado: despiertas ${p.despertar}, duermes ${p.dormir}, meta de estudio ${duracionMinutos(p.meta_estudio)}.`);
+  decir(`Guardado: despiertas ${p.despertar}, duermes ${p.dormir}, meta de estudio ${duracionMinutos(p.meta_estudio)}.`);
   pintar();
 }
 
@@ -663,7 +692,19 @@ function mostrarMisCosas() {
   campo.addEventListener("keydown", (e) => { if (e.key === "Enter") agregar(); });
   const filaQuitar = (texto, extra, alQuitar, aria) => el("div", { class: "mi-fila" },
     el("span", {}, el("span", { class: "mi-tit" }, texto), extra && el("span", { class: "mi-det" }, extra)),
-    alQuitar && el("button", { class: "b-mini quitar", onclick: alQuitar, "aria-label": aria }, "✕"));
+    alQuitar && el("button", { class: "b-mini quitar", onclick: alQuitar, "aria-label": aria }, icono("x", 18)));
+  // v3.23: cada bloque con su color, y debajo el selector Trabajo · Clase · Otro (botones con aria-pressed)
+  const filaBloque = (b) => {
+    const actual = categoriaDe(b);
+    const pendiente = b.pendiente ? "esperando a la laptop" : b.categoriaPendiente ? "categoría: esperando a la laptop" : null;
+    return el("div", { class: "mi-fila mi-bloque", "data-cat": actual },
+      el("span", {}, el("span", { class: "mi-tit" }, el("i", { class: "cat-punto" }), b.titulo),
+        el("span", { class: "mi-det" }, describirBloque(b).split(" · ")[0]), pendiente && el("span", { class: "mi-det" }, pendiente)),
+      b.id == null ? null : el("button", { class: "b-mini quitar", onclick: () => quitarBloque(b), "aria-label": `Quitar ${b.titulo}` }, icono("x", 18)),
+      el("div", { class: "cat-sel", role: "group", "aria-label": `Categoría de ${b.titulo}` },
+        CATEGORIAS.map((c) => el("button", { type: "button", "aria-pressed": String(c === actual), disabled: b.id == null,
+          onclick: () => cambiarCategoria(b, c) }, icono(ICONO_CATEGORIA[c], 14), NOMBRE_CATEGORIA[c]))));
+  };
   const hoy = soloFecha(ahora());
   const [semana] = hechasEntre(x, lunesDe(hoy), hoy);
   const nuevoBloque = el("input", { type: "text", maxlength: 160, placeholder: "martes y jueves de 7 a 10 de la noche clase",
@@ -674,12 +715,10 @@ function mostrarMisCosas() {
   const dormir = el("input", { type: "time", value: x.perfil.dormir, "aria-label": "Me duermo" });
   const meta = el("input", { type: "number", min: 0, max: 600, step: 10, value: x.perfil.meta_estudio, "aria-label": "Meta de estudio (min)" });
   abrirHoja("Tu horario y tu perfil",
-    el("h3", { class: "mi-sec" }, "🗓 Horario fijo"),
-    x.horario.length ? x.horario.map((b) => filaQuitar(describirBloque(b), b.pendiente ? "esperando a la laptop" : null,
-      b.id == null ? null : () => quitarBloque(b), `Quitar ${b.titulo}`))
-      : el("p", { class: "sub" }, "Vacío. Agrega tu trabajo y tus clases."),
+    el("h3", { class: "mi-sec" }, "horario fijo"),
+    x.horario.length ? x.horario.map(filaBloque) : el("p", { class: "sub" }, "Vacío. Agrega tu trabajo y tus clases."),
     el("div", { class: "fila" }, nuevoBloque, el("button", { class: "b-secundario", onclick: agregarB }, "Agregar al horario")),
-    el("h3", { class: "mi-sec" }, "😴 Sueño y 📚 meta"),
+    el("h3", { class: "mi-sec" }, "sueño y meta de estudio"),
     el("div", { class: "perfil-campos" },
       el("label", {}, "Me despierto", despertar), el("label", {}, "Me duermo", dormir), el("label", {}, "Meta (min/día)", meta)),
     el("button", { class: "b-secundario", onclick: async () => {
@@ -691,12 +730,12 @@ function mostrarMisCosas() {
       await guardarPerfil(datos);
       mostrarMisCosas();
     } }, "Guardar sueño y meta"),
-    el("h3", { class: "mi-sec" }, "🏖 Días libres"),
+    el("h3", { class: "mi-sec" }, "días libres"),
     x.excepciones.length ? x.excepciones.map((e) => filaQuitar(describirExcepcion(e),
       e.pendiente ? "esperando a la laptop" : e.filtro ? "solo ese bloque" : "todo el horario",
       () => quitarExcepcion(e), `Quitar ${e.titulo}`))
       : el("p", { class: "sub" }, "Ninguno. Escribe abajo, por ejemplo: «el viernes no trabajo»."),
-    el("h3", { class: "mi-sec" }, "🏃 Actividades"),
+    el("h3", { class: "mi-sec" }, "actividades"),
     x.actividades.map((a) => filaQuitar(describirActividad(a),
       a.pendiente ? "esperando a la laptop" : a.veces_semana ? `esta semana: ${semana[a.id] || 0} de ${a.veces_semana}` : null,
       a.pendiente ? null : () => quitarActividad(a), `Quitar ${a.nombre}`)),
@@ -710,8 +749,8 @@ async function marcarHecha(a) {
   const [semana] = hechasEntre(ctx(), lunesDe(hoy), hoy);
   const n = semana[a.id] || 0;
   cara.celebrar();
-  decir(a.veces_semana ? `💪 ¡Bien! ${a.nombre}: ${n} de ${a.veces_semana} esta semana${n >= a.veces_semana ? " ✅" : ""}.`
-    : `💪 ¡Bien! Anoté ${a.nombre} hoy.`);
+  decir(a.veces_semana ? `¡Bien! ${a.nombre}: ${n} de ${a.veces_semana} esta semana${n >= a.veces_semana ? ". Meta cumplida" : ""}.`
+    : `¡Bien! Anoté ${a.nombre} hoy.`);
   pintar();
 }
 
@@ -721,9 +760,9 @@ function mostrarPlan(dia, now) {
   const cuando = diasEntre(now, dia) === 0 ? "hoy" : "mañana";
   estado.ultimoPlan = { plan, dia };
   const [texto] = describirPlan(plan, cuando);
-  decir(plan.sugerencias.length ? `💡 Para ${cuando}:\n${texto}` : texto);
+  decir(plan.sugerencias.length ? `Para ${cuando}:\n${texto}` : texto);
   if (!plan.sugerencias.length) return;
-  abrirHoja(`💡 Para ${cuando}`,
+  abrirHoja(`Sugerencias para ${cuando}`,
     plan.sugerencias.map((s) => opcion(s.nombre, s.clase === "actividad" && cuando === "hoy"
       ? () => { cerrarHoja(); marcarHecha(x.actividades.find((a) => a.id === s.actividad_id)); } : () => {},
     { extra: `${hhmm(s.inicio)}–${hhmm(s.fin)} · ${s.motivo}` })),
@@ -731,7 +770,7 @@ function mostrarPlan(dia, now) {
     el("div", { class: "separador" }),
     el("div", { class: "fila-botones" },
       el("button", { class: "b-secundario", onclick: cerrarHoja }, "Cerrar"),
-      el("button", { class: "b-principal", onclick: () => agendar(plan, dia) }, "📌 Agendar")));
+      el("button", { class: "b-principal", onclick: () => agendar(plan, dia) }, "Agendar")));
 }
 
 /** Cada sugerencia pasa a ser una tarea con su hora y duración (y la laptop la marca como 💡). */
@@ -753,7 +792,7 @@ async function agendar(plan, dia) {
   estado.ultimoPlan = null;
   cerrarHoja();
   if (hechas) cara.celebrar();
-  decir(hechas ? `📌 Agendé ${plural(hechas, "sugerencia", "sugerencias")}. Te aviso a cada hora; si alguna no la haces, mañana se quita sola.`
+  decir(hechas ? `Agendé ${plural(hechas, "sugerencia", "sugerencias")}. Te aviso a cada hora; si alguna no la haces, mañana se quita sola.`
     : "No había nada nuevo que agendar.");
   await recargar();
 }
@@ -880,7 +919,7 @@ function opcionesDeTarea(t) {
     }
   }, { clase: "peligro" });
 
-  abrirHoja(conIcono(t),
+  abrirHoja(t.titulo,
     el("p", { class: "sub" }, capital(cuando)),
     opcion("✓ Hecho", () => { cerrarHoja(); completar(t, document.querySelector(`[data-id="${t.id}"]`)); }, { clase: "principal-op" }),
     reprogramar,
@@ -995,7 +1034,7 @@ function claveAplicacion(base64) {
 
 async function activarNotificaciones() {
   if ((await Notification.requestPermission()) !== "granted") {
-    decir("Sin permiso no puedo avisarte. Puedes activarlo cuando quieras en ⚙.");
+    decir("Sin permiso no puedo avisarte. Puedes activarlo cuando quieras en Ajustes.");
     return ajustes();
   }
   await intentar(async () => {

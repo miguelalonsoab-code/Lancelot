@@ -60,7 +60,7 @@ for (const c of horario.actividades) {
 }
 
 // v3.21: horario y horas de sueño escritos en el celular
-import { interpretarBloque } from "../publico/comun/horario.js";
+import { categoriaDe, inferirCategoria, interpretarBloque } from "../publico/comun/horario.js";
 import { leerHora } from "../publico/comun/perfil.js";
 
 for (const c of horario.bloques) {
@@ -69,3 +69,33 @@ for (const c of horario.bloques) {
 for (const c of horario.horas) {
   test(`hora · ${c.texto} (${c.para})`, () => assert.equal(leerHora(c.texto, c.para), c.hora));
 }
+
+// v3.22: la categoría del bloque (trabajo | clase | otro) sale del título, igual que en Python
+for (const c of horario.categorias) {
+  test(`categoría · «${c.titulo}»`, () => assert.equal(inferirCategoria(c.titulo), c.categoria));
+}
+test("categoriaDe: usa la que trae el bloque y, si falta o es rara, la deduce del título", () => {
+  assert.equal(categoriaDe({ titulo: "Trabajo en Sanna", categoria: "otro" }), "otro", "la elegida por ti manda");
+  assert.equal(categoriaDe({ titulo: "Clase de redes" }), "clase", "un contexto de antes de la v3.22 no la trae");
+  assert.equal(categoriaDe({ titulo: "Clase de redes", categoria: "estudio" }), "clase");
+  assert.equal(categoriaDe({ titulo: "Inglés", categoria: null }), "otro");
+});
+
+// v3.23: cada categoría tiene un icono de línea que existe (los mismos nombres que interfaz/iconos.py)
+import { TRAZOS } from "../publico/iconos.js";
+import { CATEGORIAS, ICONO_CATEGORIA } from "../publico/comun/horario.js";
+test("iconos de las categorías: sin emoji y todos dibujables", () => {
+  for (const c of CATEGORIAS) {
+    assert.match(ICONO_CATEGORIA[c], /^[a-z]+$/);
+    assert.ok(TRAZOS[ICONO_CATEGORIA[c]]?.length, c);
+  }
+  assert.deepEqual(ICONO_CATEGORIA, horario.iconos, "los mismos nombres que en Python");
+});
+
+import { heredarCategoria } from "../publico/comun/horario.js";
+test("v3.23: un bloque nuevo con el mismo nombre hereda la categoría (como heredar_categoria en Python)", () => {
+  const hay = [{ id: 1, titulo: "Computación Gráfica", categoria: "clase" }, { id: 2, titulo: "Clase de redes" }];
+  assert.equal(heredarCategoria({ titulo: "computacion grafica ", categoria: "otro" }, hay).categoria, "clase");
+  assert.equal(heredarCategoria({ titulo: "Clase de Redes", categoria: "otro" }, hay).categoria, "clase", "sin categoría: la deduce");
+  assert.equal(heredarCategoria({ titulo: "Inglés", categoria: "otro" }, hay).categoria, "otro");
+});

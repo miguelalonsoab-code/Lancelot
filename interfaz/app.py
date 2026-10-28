@@ -71,6 +71,7 @@ from interfaz.cara import Cara, pixmap_cara
 from interfaz.estudio import ModoEstudio
 from interfaz.panel import Panel
 from interfaz.sincronizador import Resultado, Sincronizador, leer_configuracion
+from interfaz.tema import cargar_fuentes
 from notificadores.base import Notificador
 from notificadores.windows import NotificadorWindows
 from nucleo import aprendizaje
@@ -80,7 +81,7 @@ from nucleo.estadisticas import ResumenSemana, describir_semana, resumen_semana
 from nucleo.frases import (REFLEXIONES, BolsaFrases, crear_archivo_frases, guardar_frase_usuario,
                            leer_frases_usuario)
 from nucleo.hablado import hora_hablada
-from nucleo.horario import (Bloque, Excepcion, choque, coincide, describir_libre, duracion_minutos, hablar_duracion,
+from nucleo.horario import (NOMBRE_CATEGORIA, Bloque, Excepcion, buscar_por_nombre, choque, heredar_categoria, coincide, describir_libre, duracion_minutos, hablar_duracion,
                             huecos, interpretar_bloque, interpretar_excepcion, leer_duracion, minutos, raiz,
                             total_libre)
 from nucleo.perfil import Actividad, Perfil, describir_perfil, interpretar_actividad, leer_hora
@@ -112,6 +113,7 @@ class Asistente(QObject):
     def __init__(self, app: QApplication, ruta_bd=None):
         super().__init__()
         self.app = app
+        cargar_fuentes(app)                             # v3.24: Manrope y JetBrains Mono (tema Zafiro)
         self.ruta_bd = ruta_bd or RUTA_BD               # las pruebas usan una base temporal
         self.almacen = Almacen(self.ruta_bd)
         self.almacen.reactivar_avisos_pendientes()
@@ -183,6 +185,7 @@ class Asistente(QObject):
         self.panel.correccion_pedida.connect(self.aprender_correccion)
         self.panel.bloque_agregar_pedido.connect(lambda texto: self.agregar_bloque(texto))
         self.panel.bloque_borrar_pedido.connect(self.borrar_bloque)
+        self.panel.bloque_categoria_pedido.connect(self.cambiar_categoria_bloque)       # v3.22
         self.panel.excepcion_borrar_pedido.connect(self.borrar_excepcion)
         self.panel.aprendido_borrar_pedido.connect(self.olvidar_aprendido)
         self.panel.calendario_pedido.connect(self._mostrar_calendario)
@@ -200,7 +203,7 @@ class Asistente(QObject):
         self.actualizador.sin_novedad.connect(self._al_no_haber_actualizacion)
         self.actualizador.descargada.connect(self._al_descargar_actualizacion)
         self.actualizador.fallo.connect(
-            lambda texto: self.avisos.mostrar_mensaje("🔄 Actualización", texto, [], COLORES["alerta"], 10, False))
+            lambda texto: self.avisos.mostrar_mensaje("Actualización", texto, [], COLORES["alerta"], 10, False))
 
         self._menu_bandeja = QMenu()                 # se guarda para que no se libere
         self._menu_bandeja.aboutToShow.connect(lambda: self._llenar_menu(self._menu_bandeja))
@@ -225,7 +228,7 @@ class Asistente(QObject):
             self.nube_pronto = QTimer(self, singleShot=True)   # poco después de un cambio tuyo
             self.nube_pronto.timeout.connect(self.sincronizar)
             QTimer.singleShot(2000, self.sincronizar)
-            self.estado_nube = ("☁ Conectando con el celular…", False)
+            self.estado_nube = ("Conectando con el celular…", False)
         if self.busca_actualizaciones:
             self.actualizador.limpiar_descargas()
             QTimer.singleShot(60 * 1000, self.actualizador.buscar)      # un minuto después de abrir
@@ -287,7 +290,7 @@ class Asistente(QObject):
 
     def _avisar_eventos_proximos(self, ahora: datetime):
         """
-        Avisos anticipados ("📅 Aniversario · falta 1 semana"). Si estás estudiando o hablándole,
+        Avisos anticipados ("Aniversario · falta 1 semana"). Si estás estudiando o hablándole,
         esperan a que termines: no son urgentes. Si tocan varios a la vez, van juntos en una burbuja.
         """
         if self.estudio.activo or self.voz.dialogo or self.voz.escuchando_orden:
@@ -302,7 +305,7 @@ class Asistente(QObject):
         self._cambio_local()                         # que el celular sepa que ya lo viste aquí
         lineas = [f"{t.titulo}: {describir_faltan(t.fecha, ahora)} · {describir_fecha(t.fecha, ahora)}"
                   for t, _ in tocan]
-        cabecera = "📅 Se acerca" if len(tocan) == 1 else f"📅 Se acercan {len(tocan)} eventos"
+        cabecera = "Se acerca" if len(tocan) == 1 else f"Se acercan {len(tocan)} eventos"
         texto = lineas[0] if len(lineas) == 1 else "\n".join(f"• {l}" for l in lineas)
         self.avisos.mostrar_mensaje(cabecera, texto, [("Entendido", "cerrar")], COLORES["evento"], 0, False)
         if not self.silencio:
@@ -463,6 +466,10 @@ class Asistente(QObject):
                                for x in self.almacen.horario()):
                         self.almacen.agregar_bloque(b)
                         avisos.append(f"Horario: {b.describir()}")
+                elif tipo == "categoria_bloque":       # v3.23: cambiada desde el celular
+                    bloque = next((x for x in self.almacen.horario() if x.id == d["id"]), None)
+                    if bloque and bloque.categoria != d["categoria"] and self.almacen.cambiar_categoria(bloque.id, d["categoria"]):
+                        avisos.append(f"Categoría: {bloque.titulo} → {NOMBRE_CATEGORIA[d['categoria']]}")
                 elif tipo == "quitar_bloque":
                     quitado = next((x for x in self.almacen.horario() if x.id == d["id"]), None)
                     if quitado:
@@ -486,7 +493,7 @@ class Asistente(QObject):
             nuevas += 1
         self.almacen.guardar_ajuste("acciones_aplicadas", json.dumps(aplicadas[-500:]))
         if avisos:
-            self.avisos.mostrar_mensaje("📱 Desde el celular", "\n".join(f"• {x}" for x in avisos), [],
+            self.avisos.mostrar_mensaje("Desde el celular", "\n".join(f"• {x}" for x in avisos), [],
                                         COLORES["tranquilo"], 8, False)
         return nuevas
 
@@ -498,7 +505,7 @@ class Asistente(QObject):
     def _al_sincronizar(self, r: Resultado):
         self._nube_lista = True                      # (aunque falle: sin internet, la laptop avisa igual)
         if not r.ok:
-            self.estado_nube = (f"☁ {r.error}", True)
+            self.estado_nube = (f"{r.error}", True)
             self.actualizar_estado()
             return
         if r.preferencias:
@@ -522,7 +529,7 @@ class Asistente(QObject):
             t = self.almacen.obtener(id_)
             if not t or t.estado != "pendiente" or not t.fecha <= datetime.now():
                 self.avisos.quitar(id_)
-        self.estado_nube = (f"☁ Sincronizado con el celular · {datetime.now():%H:%M}", False)
+        self.estado_nube = (f"Sincronizado con el celular · {datetime.now():%H:%M}", False)
         if tocadas:
             log.info("sincronización: %d tarea(s) llegaron del celular", len(tocadas))
             self.refrescar()
@@ -577,20 +584,20 @@ class Asistente(QObject):
     def guardar_perfil(self, despertar: hora | None = None, dormir: hora | None = None, meta: int | None = None):
         self.almacen.guardar_perfil(despertar, dormir, meta)
         self._recargar_perfil()
-        self._responder("🙂 Perfil", f"Guardado. Despiertas {self.perfil.despertar:%H:%M}, duermes "
+        self._responder("Perfil", f"Guardado. Despiertas {self.perfil.despertar:%H:%M}, duermes "
                         f"{self.perfil.dormir:%H:%M}, meta de estudio {duracion_minutos(self.perfil.meta_estudio)}.",
                         None, False, 6)
 
     def agregar_actividad(self, texto: str, por_voz: bool = False) -> bool:
         a = interpretar_actividad(texto)
         if not isinstance(a, Actividad):
-            self.avisos.mostrar_mensaje("🙂 Actividades", a, [], COLORES["pendiente"], 10, False)
+            self.avisos.mostrar_mensaje("Actividades", a, [], COLORES["pendiente"], 10, False)
             if por_voz:
                 self.voz.decir("No entendí qué actividad. Dime, por ejemplo: gimnasio una hora tres veces por semana.")
             self.panel.actividad_anotada(False)
             return False
         self.almacen.agregar_actividad(a)
-        self._responder("🙂 Anotado en tu perfil", a.describir(), f"Listo, anoté {a.nombre}.", por_voz)
+        self._responder("Anotado en tu perfil", a.describir(), f"Listo, anoté {a.nombre}.", por_voz)
         self.panel.actividad_anotada(True)
         self._recargar_perfil()
         return True
@@ -601,7 +608,7 @@ class Asistente(QObject):
 
     def decir_perfil(self, por_voz: bool = False):
         texto, hablado = describir_perfil(self.perfil, self.almacen.horario())
-        self._responder("🙂 Lo que sé de ti", texto, hablado, por_voz, SEGUNDOS_MENSAJE)
+        self._responder("Lo que sé de ti", texto, hablado, por_voz, SEGUNDOS_MENSAJE)
         if not por_voz:
             self.panel.ver_perfil()
 
@@ -612,30 +619,30 @@ class Asistente(QObject):
         elif accion in ("despertar", "dormir"):
             h = leer_hora(texto, accion)
             if h is None:
-                self._responder("🙂 Perfil", "No entendí la hora. Por ejemplo: «me despierto a las 6:30».", None, por_voz)
+                self._responder("Perfil", "No entendí la hora. Por ejemplo: «me despierto a las 6:30».", None, por_voz)
                 return
             self.almacen.guardar_perfil(**{"despertar" if accion == "despertar" else "dormir": h})
             self._recargar_perfil()
             verbo = "te despiertas" if accion == "despertar" else "te duermes"
-            self._responder("🙂 Perfil", f"Anotado: {verbo} a las {h:%H:%M}.", f"Listo, {verbo} a las {h:%H:%M}.", por_voz)
+            self._responder("Perfil", f"Anotado: {verbo} a las {h:%H:%M}.", f"Listo, {verbo} a las {h:%H:%M}.", por_voz)
         elif accion == "meta_estudio":
             d = leer_duracion(normalizar(texto))
             numero = re.search(r"\d+", texto)
             meta = d[0] if d else int(numero.group()) if numero else None
             if not meta:
-                self._responder("📚 Meta de estudio", "No entendí. Por ejemplo: «meta de estudio 120 minutos».",
+                self._responder("Meta de estudio", "No entendí. Por ejemplo: «meta de estudio 120 minutos».",
                                 None, por_voz)
                 return
             self.almacen.guardar_perfil(meta_estudio=meta)
             self._recargar_perfil()
-            self._responder("📚 Meta de estudio", f"Tu meta diaria ahora es {duracion_minutos(self.perfil.meta_estudio)}.",
+            self._responder("Meta de estudio", f"Tu meta diaria ahora es {duracion_minutos(self.perfil.meta_estudio)}.",
                             f"Listo, tu meta es {hablar_duracion(self.perfil.meta_estudio)} al día.", por_voz)
         elif accion == "actividad":
             self.agregar_actividad(texto, por_voz)
         elif accion == "actividades":
             acts = self.perfil.actividades
             lista = "\n".join(f"• {a.describir()}" for a in acts) or "Todavía no me dijiste qué te gusta hacer."
-            self._responder("🙂 Tus actividades", lista, ("Tus actividades: " + ", ".join(a.nombre for a in acts) + "."
+            self._responder("Tus actividades", lista, ("Tus actividades: " + ", ".join(a.nombre for a in acts) + "."
                                                        if acts else None), por_voz, SEGUNDOS_MENSAJE)
         elif accion == "borrar_actividad":
             buscado = normalizar(texto).strip()
@@ -643,7 +650,7 @@ class Asistente(QObject):
             for a in borradas:
                 self.almacen.borrar_actividad(a.id)
             self._recargar_perfil()
-            self._responder("🙂 Actividades", "Quité: " + ", ".join(a.nombre for a in borradas) + "." if borradas
+            self._responder("Actividades", "Quité: " + ", ".join(a.nombre for a in borradas) + "." if borradas
                             else f"No encontré «{texto}» en tus actividades.", None, por_voz)
         elif accion == "traslado":
             lugar, d = normalizar(texto).strip(), leer_duracion(normalizar(c.destino or ""))
@@ -651,12 +658,12 @@ class Asistente(QObject):
             if not d or not bloques:
                 motivo = ("No entendí cuánto tardas. Por ejemplo: «al trabajo tardo 45 minutos»." if not d
                           else f"No tengo «{texto}» en tu horario. Anótalo primero: «horario: …».")
-                self._responder("🚌 Traslado", motivo, None, por_voz)
+                self._responder("Traslado", motivo, None, por_voz)
                 return
             for b in bloques:
                 self.almacen.cambiar_traslado(b.id, d[0])
             self.refrescar()
-            self._responder("🚌 Traslado", f"Anotado: {duracion_minutos(d[0])} para llegar a {bloques[0].titulo} "
+            self._responder("Traslado", f"Anotado: {duracion_minutos(d[0])} para llegar a {bloques[0].titulo} "
                             "(y otro tanto para volver). Ya lo resto de tus horas libres.",
                             "Listo, lo resto de tus horas libres.", por_voz)
 
@@ -696,14 +703,14 @@ class Asistente(QObject):
         b = self.bloque_que_choca(t.fecha, t.duracion, t.tipo)
         if b:
             self.avisos.mostrar_mensaje(
-                "⚠ Se cruza con tu horario",
+                "Se cruza con tu horario",
                 f"«{t.titulo}» se cruza con {b.titulo} ({b.inicio:%H:%M}–{b.fin:%H:%M}).\nSi ese día no vas, dime "
                 f"«el {t.fecha.day} no voy a {b.titulo.lower()}» y lo quito de tus horas ocupadas.",
                 [], COLORES["pendiente"], 12, False)
 
     # ------------------------------------------------------- calendario (v3.20)
     def _mostrar_calendario(self):
-        """La pestaña 📅: marcas del mes a la vista y la agenda (con sugerencias) del día elegido."""
+        """La pestaña: marcas del mes a la vista y la agenda (con sugerencias) del día elegido."""
         ahora = datetime.now()
         dia = self.panel.dia_calendario()
         anio, mes = self.panel.mes_calendario()
@@ -751,7 +758,7 @@ class Asistente(QObject):
         return sorted(((n, m) for n, ms in evitar.items() for m in ms), key=lambda x: (x[0], orden.index(x[1])))
 
     def olvidar_aprendido(self, nombre: str, momento: str):
-        """✕ en «💡 NO TE SUGIERO»: vuelve a sugerirte eso en ese momento del día."""
+        """✕ en «NO TE SUGIERO»: vuelve a sugerirte eso en ese momento del día."""
         self.almacen.olvidar_rechazo(nombre, momento)
         self.refrescar()
 
@@ -767,14 +774,14 @@ class Asistente(QObject):
             return ok
         b = interpretar_bloque(texto)
         if not isinstance(b, Bloque):                  # no se entendió: b es la explicación
-            self.avisos.mostrar_mensaje("🗓 Horario", b, [], COLORES["pendiente"], 10, False)
+            self.avisos.mostrar_mensaje("Horario", b, [], COLORES["pendiente"], 10, False)
             if por_voz:
                 self.voz.decir("No entendí los días o las horas. Prueba de nuevo, por ejemplo: "
                                "de lunes a viernes de 9 a 6 trabajo.")
             self.panel.bloque_anotado(False)
             return False
-        self.almacen.agregar_bloque(b)
-        self.avisos.mostrar_mensaje("🗓 Anotado en tu horario", b.describir(), [], COLORES["tranquilo"], 8, False)
+        self.almacen.agregar_bloque(heredar_categoria(b, self.almacen.horario()))       # v3.23
+        self.avisos.mostrar_mensaje("Anotado en tu horario", b.describir(), [], COLORES["tranquilo"], 8, False)
         if por_voz:
             self.voz.decir(f"Listo, anoté {b.titulo} en tu horario.")
         self.panel.bloque_anotado(True)
@@ -785,16 +792,35 @@ class Asistente(QObject):
         self.almacen.borrar_bloque(id_)
         self.refrescar()
 
+    def cambiar_categoria_bloque(self, id_: int, categoria: str):
+        """El selector Trabajo · Clase · Otro de la pestaña Horario (v3.22): cambia el color y la categoría del bloque."""
+        if self.almacen.cambiar_categoria(id_, categoria):
+            self.refrescar()
+
+    def categoria_por_nombre(self, nombre: str, categoria: str, por_voz: bool = False):
+        """«computación gráfica es clase» (v3.24): pone esa categoría a todos los bloques con ese nombre."""
+        bloques = buscar_por_nombre(nombre, self.almacen.horario())
+        for b in bloques:
+            self.almacen.cambiar_categoria(b.id, categoria)
+        if bloques:
+            nombres = list(dict.fromkeys(b.titulo for b in bloques))
+            cuantos = f" ({len(bloques)} bloques)" if len(bloques) > 1 else ""
+            texto = f"{', '.join(nombres)}{cuantos}: ahora es {NOMBRE_CATEGORIA[categoria].lower()}."
+        else:
+            texto = f"No encontré «{nombre}» en tu horario. Revisa cómo se llama en la pestaña Horario."
+        self._responder("Horario", texto, texto, por_voz)
+        self.refrescar()
+
     def borrar_bloques_por_nombre(self, nombre: str, por_voz: bool = False):
         buscado = normalizar(nombre).strip()
         borrados = [b for b in self.almacen.horario() if buscado and buscado in normalizar(b.titulo)]
         for b in borrados:
             self.almacen.borrar_bloque(b.id)
         texto = ("Quité de tu horario: " + ", ".join(b.titulo for b in borrados) + "." if borrados
-                 else f"No encontré «{nombre}» en tu horario. Míralo en el panel, pestaña 🗓 Horario.")
-        self.avisos.mostrar_mensaje("🗓 Horario", texto, [], COLORES["tranquilo"], 8, False)
+                 else f"No encontré «{nombre}» en tu horario. Míralo en el panel, pestaña Horario.")
+        self.avisos.mostrar_mensaje("Horario", texto, [], COLORES["tranquilo"], 8, False)
         if por_voz:
-            self.voz.decir(texto.replace("🗓 ", ""))
+            self.voz.decir(texto)
         self.refrescar()
 
     # ----------------------------------------------------------- excepciones (v3.14)
@@ -805,15 +831,15 @@ class Asistente(QObject):
         bloques = self.almacen.horario()
         if isinstance(e, Excepcion) and e.filtro and bloques and not any(coincide(e.filtro, b.titulo) for b in bloques):
             e = (f"No encontré nada parecido a «{e.titulo.split()[-1]}» en tu horario. Revisa cómo lo llamaste "
-                 "en la pestaña 🗓 Horario, o di «el … tengo libre» para liberar todo el día.")
+                 "en la pestaña Horario, o di «el … tengo libre» para liberar todo el día.")
         if not isinstance(e, Excepcion):
-            self._responder("🏖 Día libre", e, "No entendí la fecha. " + e.split(". ")[0] + ".", por_voz)
+            self._responder("Día libre", e, "No entendí la fecha. " + e.split(". ")[0] + ".", por_voz)
             return False
         e = self.almacen.agregar_excepcion(e)
         afectados = sorted({b.titulo for b in bloques if coincide(e.filtro, b.titulo)})
         que = ("todo tu horario" if not e.filtro else ", ".join(afectados) or "esos bloques")
         dias = "ese día" if e.desde == e.hasta else "esos días"
-        self._responder("🏖 Anotado", f"{e.describir()}\nNo cuento {que} {dias}: tendrás más horas libres.",
+        self._responder("Anotado", f"{e.describir()}\nNo cuento {que} {dias}: tendrás más horas libres.",
                         f"Listo, {dias} no cuento {que}.", por_voz)
         self.refrescar()
         return True
@@ -827,7 +853,7 @@ class Asistente(QObject):
             texto = ("No tienes días libres ni excepciones anotadas. Di, por ejemplo, «el 1 de noviembre no trabajo» "
                      "o «vacaciones del 20 al 30 de diciembre».")
             hablado = "No tienes días libres anotados."
-        self._responder("🏖 Días libres", texto, hablado, por_voz)
+        self._responder("Días libres", texto, hablado, por_voz)
         if not por_voz:
             self.panel.ver_horario()
 
@@ -866,8 +892,8 @@ class Asistente(QObject):
         dia = ahora.date() + timedelta(days=1 if manana else 0)
         palabra = "mañana" if manana else "hoy"
         if not self.almacen.horario() and not self.perfil.actividades:
-            self._responder("💡 Sugerencias", "Para sugerirte algo necesito conocerte un poco: anota tu horario "
-                            "(pestaña 🗓 Horario) y lo que te gusta hacer (pestaña 🙂 Perfil, por ejemplo «actividad: "
+            self._responder("Sugerencias", "Para sugerirte algo necesito conocerte un poco: anota tu horario "
+                            "(pestaña Horario) y lo que te gusta hacer (pestaña Perfil, por ejemplo «actividad: "
                             "gimnasio 1 hora 3 veces por semana en la tarde»).",
                             "Primero cuéntame tu horario y qué te gusta hacer.", por_voz, 12)
             return
@@ -875,15 +901,15 @@ class Asistente(QObject):
         self._ultimo_plan = plan
         texto, hablado = describir_plan(plan, palabra)
         if not self.perfil.actividades:
-            texto += "\nTip: agrega tus actividades en 🙂 Perfil y también te las sugiero."
-        botones = [("📌 Agendar", "agendar_plan"), ("Cerrar", "cerrar")] if plan else []
-        self.avisos.mostrar_mensaje(f"💡 Para {palabra}", texto, botones, COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
+            texto += "\nTip: agrega tus actividades en Perfil y también te las sugiero."
+        botones = [("Agendar", "agendar_plan"), ("Cerrar", "cerrar")] if plan else []
+        self.avisos.mostrar_mensaje(f"Para {palabra}", texto, botones, COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
         if por_voz:
             self.voz.decir(hablado + (" Si quieres, dime «agéndalo»." if plan else ""))
 
     def agendar_plan(self, por_voz: bool = False):
         """
-        «📌 Agendar» / «agéndalo»: el último plan que te mostré pasa a ser tareas con su hora y duración
+        «Agendar» / «agéndalo»: el último plan que te mostré pasa a ser tareas con su hora y duración
         (te aviso a esa hora; al completarlas cuentan para tu meta). Si no te mostré ninguno, el de hoy.
         """
         ahora = datetime.now()
@@ -906,11 +932,11 @@ class Asistente(QObject):
         if agendadas:
             self._cambio_local()
             self.cara.celebrar()
-            self._responder("📌 Agendado", "\n".join(f"• {x}" for x in agendadas) + "\nTe aviso a cada hora. "
+            self._responder("Agendado", "\n".join(f"• {x}" for x in agendadas) + "\nTe aviso a cada hora. "
                             "Si alguna no la haces, mañana la quito sola (no queda vencida).",
                             f"Listo, agendé {len(agendadas)} {'cosa' if len(agendadas) == 1 else 'cosas'}.", por_voz)
         else:
-            self._responder("📌 Agendar", "No hay nada nuevo que agendar.", None, por_voz)
+            self._responder("Agendar", "No hay nada nuevo que agendar.", None, por_voz)
         self.refrescar()
 
     def aceptar_sugerencia(self):
@@ -930,8 +956,8 @@ class Asistente(QObject):
                 self.almacen.marcar_actividad(a.id, hoy)
         self.cara.celebrar()
         self.refrescar()
-        self.avisos.mostrar_mensaje("💪 ¡Vamos!", f"Cuento {s.nombre} como hecho hoy. Si al final no puedes, "
-                                    "desmárcalo en 🙂 Perfil («✓ hoy»).", [], COLORES["feliz"], 10, False)
+        self.avisos.mostrar_mensaje("¡Vamos!", f"Cuento {s.nombre} como hecho hoy. Si al final no puedes, "
+                                    "desmárcalo en Perfil («✓ hoy»).", [], COLORES["feliz"], 10, False)
 
     def rechazar_sugerencia(self):
         """«Ahora no»: se anota. Si lo rechazas seguido en ese momento del día, dejo de sugerirlo ahí."""
@@ -944,13 +970,13 @@ class Asistente(QObject):
         evitar = self.almacen.momentos_a_evitar(hoy - timedelta(days=DIAS_QUE_RECUERDA_RECHAZOS),
                                                 RECHAZOS_PARA_APRENDER)
         if momento in evitar.get(clave(s.nombre), set()):
-            self._responder("💡 Aprendido", f"Ya no te sugiero {s.nombre.lower()} en {NOMBRE_MOMENTO[momento]} "
+            self._responder("Aprendido", f"Ya no te sugiero {s.nombre.lower()} en {NOMBRE_MOMENTO[momento]} "
                             f"(por {DIAS_QUE_RECUERDA_RECHAZOS // 7} semanas). Si cambias de idea, di "
                             "«vuelve a sugerirme todo».", None, False, 12)
 
     def olvidar_rechazos(self, por_voz: bool = False):
         n = self.almacen.olvidar_rechazos()
-        self._responder("💡 Sugerencias", "Listo, olvidé lo que rechazaste: vuelvo a sugerirte todo." if n
+        self._responder("Sugerencias", "Listo, olvidé lo que rechazaste: vuelvo a sugerirte todo." if n
                         else "No había nada rechazado.", None, por_voz)
 
     def _sugerir_al_quedar_libre(self, ahora: datetime):
@@ -958,7 +984,7 @@ class Asistente(QObject):
         Al empezar un hueco libre (saliste del trabajo, terminó una clase) te propone lo que toca.
         Una sola vez por hueco, solo si estás frente a la laptop y no está pasando otra cosa.
         No cuenta el hueco de cuando te despiertas (para eso está el saludo).
-        Si pulsaste «⏰ Más tarde», lo vuelve a proponer pasado MINUTOS_MAS_TARDE (si estás libre)
+        Si pulsaste «Más tarde», lo vuelve a proponer pasado MINUTOS_MAS_TARDE (si estás libre)
         o al empezar tu próximo hueco, lo que llegue primero (v3.17).
         """
         if not SUGERENCIAS_AL_QUEDAR_LIBRE or not self.almacen.horario():
@@ -1004,8 +1030,8 @@ class Asistente(QObject):
         resto = [s for s in plan.sugerencias if s is not primera]
         texto = f"{pregunta} ({primera.motivo})" + (f"\nDespués: {resto[0].describir()}" if resto else "")
         self._sugerencia_ofrecida = primera
-        self.avisos.mostrar_mensaje("💡 Tienes un hueco libre", texto,
-                                    [("✓ Lo hago", "sugerencia_si"), ("⏰ Más tarde", "sugerencia_luego"),
+        self.avisos.mostrar_mensaje("Tienes un hueco libre", texto,
+                                    [("✓ Lo hago", "sugerencia_si"), ("Más tarde", "sugerencia_luego"),
                                      ("Ahora no", "sugerencia_no")], COLORES["tranquilo"], 60, False)
         if not self.silencio and HABLAR_RECORDATORIOS:
             self.voz.decir(hablada)
@@ -1042,14 +1068,14 @@ class Asistente(QObject):
         return s if s is not None and s.inicio.date() == date.today() else None
 
     def posponer_sugerencia(self, ahora: datetime | None = None):
-        """«⏰ Más tarde»: no es un rechazo; te lo vuelvo a proponer luego."""
+        """«Más tarde»: no es un rechazo; te lo vuelvo a proponer luego."""
         s = self._ofrecida_vigente()
         self._sugerencia_ofrecida = None
         if s is None:
             return
         cuando = (ahora or datetime.now()).replace(second=0, microsecond=0) + timedelta(minutes=MINUTOS_MAS_TARDE)
         self.almacen.guardar_ajuste("sugerencia_pospuesta", f"{cuando:%Y-%m-%d %H:%M}|{clave(s.nombre)}")
-        self._responder("⏰ Más tarde", f"Te vuelvo a proponer {s.nombre.lower() if s.clase == 'estudio' else s.nombre} "
+        self._responder("Más tarde", f"Te vuelvo a proponer {s.nombre.lower() if s.clase == 'estudio' else s.nombre} "
                         f"desde las {cuando:%H:%M} si estás libre, o al empezar tu próximo hueco. "
                         "También puedes decirme «más tarde, a las 8».", None, False)
 
@@ -1060,18 +1086,18 @@ class Asistente(QObject):
         pospuesta = self._sugerencia_pospuesta(ahora.date())
         nombre = clave(s.nombre) if s else (pospuesta[1] if pospuesta else None)
         if nombre is None:
-            self._responder("⏰ Más tarde", "No tengo ninguna sugerencia pendiente. Pregúntame «¿qué hago?».",
+            self._responder("Más tarde", "No tengo ninguna sugerencia pendiente. Pregúntame «¿qué hago?».",
                             None, por_voz)
             return
         cuando = proxima_hora(texto, ahora)
         if cuando is None:
-            self._responder("⏰ Más tarde", "No entendí la hora o ya pasó. Prueba: «más tarde, a las 8».", None, por_voz)
+            self._responder("Más tarde", "No entendí la hora o ya pasó. Prueba: «más tarde, a las 8».", None, por_voz)
             return
         self._sugerencia_ofrecida = None
         self.avisos.ocultar_mensaje()
         self.almacen.guardar_ajuste("sugerencia_pospuesta", f"{cuando:%Y-%m-%d %H:%M}|{nombre}|fija")
         que = "estudiar" if nombre == clave("Estudiar") else nombre[:1].upper() + nombre[1:]
-        self._responder("⏰ Anotado", f"Te propongo {que} a las {cuando:%H:%M} (si a esa hora estás libre).",
+        self._responder("Anotado", f"Te propongo {que} a las {cuando:%H:%M} (si a esa hora estás libre).",
                         f"Listo, te lo propongo {hora_hablada(cuando)}.", por_voz)
 
     def _actividades_que_nombra(self, texto: str) -> list[Actividad]:
@@ -1084,8 +1110,8 @@ class Asistente(QObject):
         hoy = date.today()
         encontradas = self._actividades_que_nombra(texto)
         if not encontradas:
-            self._responder("🙂 Actividades", f"«{texto}» no está en tus actividades. Si quieres que lo cuente, "
-                            "agrégala en la pestaña 🙂 Perfil (por ejemplo «actividad: yoga 1 hora 2 veces por semana»).",
+            self._responder("Actividades", f"«{texto}» no está en tus actividades. Si quieres que lo cuente, "
+                            "agrégala en la pestaña Perfil (por ejemplo «actividad: yoga 1 hora 2 veces por semana»).",
                             "Eso no está en tus actividades. Agrégalo en tu perfil.", por_voz, 10)
             return
         for a in encontradas:
@@ -1094,10 +1120,10 @@ class Asistente(QObject):
         lineas = []
         for a in encontradas:
             n = len(hechas.get(a.id, []))
-            lineas.append(f"{a.nombre}: {n} de {a.veces_semana} esta semana" + (" ✅" if n >= a.veces_semana else "")
+            lineas.append(f"{a.nombre}: {n} de {a.veces_semana} esta semana" + (", meta cumplida" if n >= a.veces_semana else "")
                           if a.veces_semana else f"{a.nombre}: anotado hoy")
         self.cara.celebrar()
-        self._responder("💪 ¡Bien!", "\n".join(lineas), "¡Bien! " + ". ".join(lineas) + ".", por_voz)
+        self._responder("¡Bien!", "\n".join(lineas), "¡Bien! " + ". ".join(lineas) + ".", por_voz)
         self.refrescar()
 
     def alternar_actividad_hoy(self, id_: int):
@@ -1116,7 +1142,7 @@ class Asistente(QObject):
         else:
             texto = "\n".join(f"• {b.describir()}" for b in bloques)
             hablado = "Tu horario: " + "; ".join(b.titulo for b in bloques[:5]) + "."
-        self.avisos.mostrar_mensaje("🗓 Tu horario", texto, [], COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
+        self.avisos.mostrar_mensaje("Tu horario", texto, [], COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
         if por_voz:
             self.voz.decir(hablado)
         else:
@@ -1129,7 +1155,7 @@ class Asistente(QObject):
         if not self.almacen.horario():
             texto = ("Para saber cuándo estás libre, primero anota tu horario: «horario: de lunes a viernes "
                      "de 9am a 6pm trabajo».")
-            self.avisos.mostrar_mensaje("🕒 Tiempo libre", texto, [], COLORES["tranquilo"], 10, False)
+            self.avisos.mostrar_mensaje("Tiempo libre", texto, [], COLORES["tranquilo"], 10, False)
             if por_voz:
                 self.voz.decir("Primero anota tu horario, así sé cuándo estás ocupado.")
             return
@@ -1142,7 +1168,7 @@ class Asistente(QObject):
                        f"y dura {hablar_duracion(minutos([(a, b)]))}.")
         else:
             texto = hablado = f"{cuando.capitalize()} no te queda tiempo libre en tu horario."
-        self.avisos.mostrar_mensaje(f"🕒 Libre {cuando}", texto, [], COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
+        self.avisos.mostrar_mensaje(f"Libre {cuando}", texto, [], COLORES["tranquilo"], SEGUNDOS_MENSAJE, False)
         if por_voz:
             self.voz.decir(hablado)
 
@@ -1168,7 +1194,7 @@ class Asistente(QObject):
         if not frase:
             return False
         self._ultima_frase = ahora
-        self.avisos.mostrar_mensaje(f"💬 {NOMBRE_ASISTENTE}", frase, [], COLORES["feliz"], SEGUNDOS_FRASE, False)
+        self.avisos.mostrar_mensaje(f"{NOMBRE_ASISTENTE}", frase, [], COLORES["feliz"], SEGUNDOS_FRASE, False)
         if FRASES_HABLADAS or por_voz:
             self.voz.decir(frase)                    # en modo silencio, decir() no suena
         return True
@@ -1190,12 +1216,12 @@ class Asistente(QObject):
             nueva = guardar_frase_usuario(self.ruta_frases, frase)
         except OSError:
             log.exception("no se pudo guardar la frase")
-            self.avisos.mostrar_mensaje("💬 Frases", "No pude guardar la frase (¿frases.txt está abierto?).",
+            self.avisos.mostrar_mensaje("Frases", "No pude guardar la frase (¿frases.txt está abierto?).",
                                         [], COLORES["alerta"], 8, False)
             return
         texto = (f"Guardada: «{frase.strip()}». Te la diré de vez en cuando." if nueva
-                 else "Esa frase ya la tenía. 😉")
-        self.avisos.mostrar_mensaje("💬 Frases", texto, [], COLORES["feliz"], 8, False)
+                 else "Esa frase ya la tenía.")
+        self.avisos.mostrar_mensaje("Frases", texto, [], COLORES["feliz"], 8, False)
         if por_voz:
             self.voz.decir("Listo, guardé tu frase." if nueva else "Esa frase ya la tenía.")
         if nueva:
@@ -1219,10 +1245,10 @@ class Asistente(QObject):
     def buscar_actualizaciones(self):
         """La búsqueda que pides tú ("busca actualizaciones"): siempre responde algo."""
         if not REPO_ACTUALIZACIONES:
-            self.avisos.mostrar_mensaje("🔄 Versión " + VERSION, "Para buscar versiones nuevas, escribe tu repositorio "
+            self.avisos.mostrar_mensaje("Versión " + VERSION, "Para buscar versiones nuevas, escribe tu repositorio "
                                         "en config.py (REPO_ACTUALIZACIONES).", [], COLORES["tranquilo"], 8, False)
             return
-        self.avisos.mostrar_mensaje("🔄 Actualizaciones", f"Tengo la versión {VERSION}. Buscando una más nueva…",
+        self.avisos.mostrar_mensaje("Actualizaciones", f"Tengo la versión {VERSION}. Buscando una más nueva…",
                                     [], COLORES["tranquilo"], 6, False)
         self.actualizador.buscar(manual=True)
 
@@ -1236,7 +1262,7 @@ class Asistente(QObject):
         self._actualizacion = act
         peso = f" · {act.tamano / 1024 ** 2:.0f} MB" if act.tamano else ""
         novedades = resumen_notas(act.notas)
-        self.avisos.mostrar_mensaje(f"🎁 {NOMBRE_ASISTENTE} {act.version} disponible{peso}",
+        self.avisos.mostrar_mensaje(f"{NOMBRE_ASISTENTE} {act.version} disponible{peso}",
                                     novedades or "Hay una versión nueva.",
                                     [("Actualizar", "actualizar"), ("Ahora no", "cerrar"),
                                      ("Omitir", "omitir_version")], COLORES["feliz"], 45, False)
@@ -1245,7 +1271,7 @@ class Asistente(QObject):
 
     def _al_no_haber_actualizacion(self, texto: str, manual: bool):
         if manual:                                   # las búsquedas automáticas no molestan
-            self.avisos.mostrar_mensaje("🔄 Actualizaciones", texto, [], COLORES["tranquilo"], 8, False)
+            self.avisos.mostrar_mensaje("Actualizaciones", texto, [], COLORES["tranquilo"], 8, False)
             self.voz.decir(texto)
 
     def actualizar_ahora(self):
@@ -1255,7 +1281,7 @@ class Asistente(QObject):
         if not EMPAQUETADO:                          # en desarrollo se actualiza con git pull
             from voz import web
             web.abrir_url(act.url_pagina)
-            self.avisos.mostrar_mensaje("🔄 Modo desarrollo", "Con python main.py se actualiza con «git pull». "
+            self.avisos.mostrar_mensaje("Modo desarrollo", "Con python main.py se actualiza con «git pull». "
                                         "Te abrí la página de la versión.", [], COLORES["tranquilo"], 8, False)
             return
         self.avisos.mostrar_mensaje("⬇ Descargando", f"Bajando {NOMBRE_ASISTENTE} {act.version}. "
@@ -1269,7 +1295,7 @@ class Asistente(QObject):
     def _al_descargar_actualizacion(self, ruta: str):
         """Descargado y verificado: Lancelot se cierra y el instalador lo vuelve a abrir actualizado."""
         version = self._actualizacion.version if self._actualizacion else ""
-        self.avisos.mostrar_mensaje("🔄 Instalando", f"Me cierro unos segundos para instalar la {version} "
+        self.avisos.mostrar_mensaje("Instalando", f"Me cierro unos segundos para instalar la {version} "
                                     "y vuelvo solo. Tus tareas no se tocan.", [], COLORES["feliz"], 5, False)
         self.voz.decir("Me actualizo y vuelvo en un momento.")
         log.info("instalando actualización %s", version)
@@ -1297,7 +1323,7 @@ class Asistente(QObject):
         self.panel.mostrar_actividades_semana(self.resumen_actividades(semanas_atras))
 
     def resumen_actividades(self, semanas_atras: int = 0) -> str:
-        """'💪 Actividades: Gimnasio 2 de 3 · Leer 5 de 7 ✅ · Correr 0' (los mismos 7 días del gráfico)."""
+        """'Actividades: Gimnasio 2 de 3 · Leer 5 de 7 · Correr 0' (los mismos 7 días del gráfico)."""
         if not self.perfil.actividades:
             return ""
         fin = date.today() - timedelta(weeks=semanas_atras)
@@ -1305,9 +1331,9 @@ class Asistente(QObject):
         partes = []
         for a in self.perfil.actividades:
             n = len(hechas.get(a.id, []))
-            partes.append(f"{a.nombre} {n} de {a.veces_semana}" + (" ✅" if n >= a.veces_semana else "")
+            partes.append(f"{a.nombre} {n} de {a.veces_semana}" + (" (meta cumplida)" if n >= a.veces_semana else "")
                           if a.veces_semana else f"{a.nombre} {n}")
-        return "💪 Actividades: " + " · ".join(partes) + "".join(f"\n{x}" for x in self.comentario_agendadas(fin))
+        return "Actividades: " + " · ".join(partes) + "".join(f"\n{x}" for x in self.comentario_agendadas(fin))
 
     def comentario_agendadas(self, fin: date | None = None) -> list[str]:
         """
@@ -1319,8 +1345,8 @@ class Asistente(QObject):
         for nombre, (hechas, descartadas) in self.almacen.balance_sugeridas(fin - timedelta(days=6), fin).items():
             if descartadas >= 2 and hechas < descartadas:
                 total = hechas + descartadas
-                salida.append(f"📌 Agendaste {nombre} {total} veces y lo hiciste {hechas}. Quizá esa hora no te sirve: "
-                              "dime «Ahora no» cuando no te convenga (aprendo el momento) o baja la meta en 🙂 Perfil.")
+                salida.append(f"Agendaste {nombre} {total} veces y lo hiciste {hechas}. Quizá esa hora no te sirve: "
+                              "dime «Ahora no» cuando no te convenga (aprendo el momento) o baja la meta en Perfil.")
         return salida
 
     def respaldar(self):
@@ -1352,11 +1378,11 @@ class Asistente(QObject):
                  "terminar": self.estudio.terminar}[accion]()
         elif accion == "silencio":
             self._poner_silencio(True)
-            mensaje(f"🔕 {NOMBRES_MODO['silencio']}", "Sin sonidos ni notificaciones. Los avisos siguen apareciendo aquí.",
+            mensaje(f"{NOMBRES_MODO['silencio']}", "Sin sonidos ni notificaciones. Los avisos siguen apareciendo aquí.",
                     [], COLORES["dormido"], 6, False)
         elif accion == "sin_silencio":
             self._poner_silencio(False)
-            mensaje("🔔 Sonido activado", "Vuelvo a sonar con los avisos.", [], COLORES["tranquilo"], 5, False)
+            mensaje("Sonido activado", "Vuelvo a sonar con los avisos.", [], COLORES["tranquilo"], 5, False)
         elif accion == "normal":
             self._poner_silencio(False)
             if self.estudio.activo:
@@ -1374,6 +1400,8 @@ class Asistente(QObject):
             self.agregar_bloque(c.texto or "", por_voz)
         elif accion == "horario_borrar":
             self.borrar_bloques_por_nombre(c.texto or "", por_voz)
+        elif accion == "categoria":
+            self.categoria_por_nombre(c.texto or "", c.destino or "otro", por_voz)
         elif accion == "horario_ver":
             self.decir_horario(por_voz)
         elif accion == "sugerir":
@@ -1402,7 +1430,7 @@ class Asistente(QObject):
             if comentarios:
                 texto += "\n" + "\n".join(comentarios)
                 hablado += " Ojo: hay cosas que agendas y casi nunca haces. Te dejé el detalle en pantalla."
-            mensaje("📊 Tu semana", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
+            mensaje("Tu semana", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
             if por_voz:
                 self.voz.decir(hablado)
             else:
@@ -1410,12 +1438,12 @@ class Asistente(QObject):
         elif accion == "vencidas_manana":
             n = self.reprogramar_vencidas()
             if not n:
-                mensaje("↻ Vencidas", "No tienes tareas vencidas. 👌", [], COLORES["tranquilo"], 5, False)
+                mensaje("Vencidas", "No tienes tareas vencidas.", [], COLORES["tranquilo"], 5, False)
             if por_voz:
                 self.voz.decir(f"Listo, pasé {n} a mañana." if n else "No tienes tareas vencidas.")
         elif accion == "resumen":
             texto = self.estudio.resumen_hoy(datetime.now())
-            mensaje("📊 Tu día", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
+            mensaje("Tu día", texto, [], COLORES["estudio"], SEGUNDOS_MENSAJE, False)
             if por_voz:
                 self.voz.decir(texto.replace("Hoy:", "Hoy llevas").replace("pomodoro(s)", "pomodoros")
                                .replace(" · ", ", ").replace(" h ", " horas ").replace(" min", " minutos"))
@@ -1539,25 +1567,25 @@ class Asistente(QObject):
         opciones = [("Mis tareas", self.abrir_panel), None]
         if self.estudio.activo:
             p = self.estudio.pomodoro
-            opciones += [("▶ Seguir" if p.pausado else "⏸ Pausar", comando("seguir" if p.pausado else "pausa")),
-                         ("⏹ Terminar estudio", comando("terminar"))]
+            opciones += [("Seguir" if p.pausado else "Pausar", comando("seguir" if p.pausado else "pausa")),
+                         ("Terminar estudio", comando("terminar"))]
         else:
-            opciones.append((f"📚 {NOMBRES_MODO['estudio']}", comando("estudio")))
+            opciones.append((f"{NOMBRES_MODO['estudio']}", comando("estudio")))
         escucha = self.voz.escucha_activa
         opciones += [
-            ("🔔 Quitar silencio" if self.silencio else f"🔕 {NOMBRES_MODO['silencio']}",
+            ("Quitar silencio" if self.silencio else f"{NOMBRES_MODO['silencio']}",
              comando("sin_silencio" if self.silencio else "silencio")),
-            ("📊 Resumen de hoy", comando("resumen")),
-            ("📈 Mi semana", self.panel.ver_estudio),
+            ("Resumen de hoy", comando("resumen")),
+            ("Mi semana", self.panel.ver_estudio),
             None,
-            ("🎙 Dejar de escuchar" if escucha else f"🎙 Escuchar «{NOMBRE_ASISTENTE}»",
+            ("Dejar de escuchar" if escucha else f"Escuchar «{NOMBRE_ASISTENTE}»",
              lambda: self.voz.poner_escucha(not escucha)),
-            (f"🗣 Hablarle ahora ({ATAJO_HABLAR})", lambda: self.voz.oido.escuchar_una_orden()),
+            (f"Hablarle ahora ({ATAJO_HABLAR})", lambda: self.voz.oido.escuchar_una_orden()),
             None,
             ("Mostrar / ocultar cara", self._alternar_cara),
-            ("📁 Carpeta de datos", self._abrir_carpeta_datos),
-            *([("☁ Sincronizar ahora", self.sincronizar)] if self.nube else []),
-            (f"🔄 Buscar actualizaciones (v{VERSION})", self.buscar_actualizaciones),
+            ("Carpeta de datos", self._abrir_carpeta_datos),
+            *([("Sincronizar ahora", self.sincronizar)] if self.nube else []),
+            (f"Buscar actualizaciones (v{VERSION})", self.buscar_actualizaciones),
             ("Salir", self.salir),
         ]
         for opcion in opciones:
@@ -1581,6 +1609,8 @@ class Asistente(QObject):
         if self.estudio.activo:
             self.estudio.terminar()                  # guarda la sesión antes de cerrar
         self.voz.detener()
+        for reloj in self.findChildren(QTimer):      # ninguno debe dispararse después, con la base ya cerrada
+            reloj.stop()
         self.bandeja.hide()
         log.info("Lancelot cerrado")
         self.app.quit()

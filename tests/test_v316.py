@@ -1,6 +1,6 @@
 """
 v3.16: mejoras de las sugerencias — botones «✓ Lo hago» / «Ahora no» (y aprende de los rechazos),
-«📌 Agendar», margen al despertar y resumen semanal de actividades.
+«Agendar», margen al despertar y resumen semanal de actividades.
 
     python -m unittest tests.test_v316 -v
 """
@@ -104,7 +104,7 @@ class TestAsistenteV316(unittest.TestCase):
     def test_agendar_el_plan(self):
         self.a.agregar_actividad("gimnasio 1 hora 3 veces por semana")
         self.comando("recomiéndame algo para mañana")
-        self.assertIn("📌 Agendar", [b.text() for b in self.a.burbuja.findChildren(type(self.a.panel.boton_enviar))])
+        self.assertIn("Agendar", [b.text() for b in self.a.burbuja.findChildren(type(self.a.panel.boton_enviar))])
         self.comando("agéndalo", por_voz=True)
         [t] = [t for t in self.a.almacen.pendientes() if t.titulo == "Gimnasio"]
         self.assertEqual((t.fecha.date(), t.duracion, t.tipo), (self.manana, 60, "tarea"))
@@ -126,14 +126,14 @@ class TestAsistenteV316(unittest.TestCase):
         self._ofrecer()
         self.a.avisos._al_pulsar_boton("sugerencia_si")
         self.assertEqual(len(self.a.almacen.actividades_hechas(date.today(), date.today())), 1)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "💪 ¡Vamos!")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "¡Vamos!")
         self._ofrecer()
         self.a.avisos._al_pulsar_boton("sugerencia_no")
         self.assertEqual(self.a.almacen.momentos_a_evitar(date.today() - timedelta(days=1)), {})
         self.a.burbuja.ocultar()
         self._ofrecer()
         self.a.avisos._al_pulsar_boton("sugerencia_no")
-        self.assertEqual(self.a.burbuja.cabecera.text(), "💡 Aprendido")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Aprendido")
         self.assertIn("Ya no te sugiero gimnasio en la tarde", self.a.burbuja.titulo.text())
         self.comando("vuelve a sugerirme todo")
         self.assertIn("olvidé lo que rechazaste", self.a.burbuja.titulo.text())
@@ -149,10 +149,10 @@ class TestAsistenteV316(unittest.TestCase):
         self.a.agregar_actividad("leer 30 min")
         for a in self.a.perfil.actividades:
             self.a.almacen.marcar_actividad(a.id, date.today())
-        self.assertEqual(self.a.resumen_actividades(), "💪 Actividades: Gimnasio 1 de 1 ✅ · Leer 1")
-        self.assertEqual(self.a.resumen_actividades(1), "💪 Actividades: Gimnasio 0 de 1 · Leer 0")
+        self.assertEqual(self.a.resumen_actividades(), "Actividades: Gimnasio 1 de 1 (meta cumplida) · Leer 1")
+        self.assertEqual(self.a.resumen_actividades(1), "Actividades: Gimnasio 0 de 1 · Leer 0")
         self.a.mostrar_semana(0)
-        self.assertTrue(self.a.panel.actividades_semana.text().startswith("💪 Actividades:"))
+        self.assertTrue(self.a.panel.actividades_semana.text().startswith("Actividades:"))
 
     def test_hueco_libre_ofrece_botones(self):
         self.modulo.segundos_inactivo = lambda: 0

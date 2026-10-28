@@ -152,7 +152,7 @@ class TestAsistente(unittest.TestCase):
         self.a.ejecutar_comando(self._comando("resumen semanal"))
         self.assertTrue(self.a.panel.viendo_estudio)
         self.assertEqual(self.a.panel.grafico.dias[-1].minutos, 50)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "📊 Tu semana")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Tu semana")
         self.a.panel._cambiar_semana(+1)                            # ◀ semana anterior
         self.assertEqual(self.a.panel.grafico.dias[-1].fecha, ahora.date() - timedelta(weeks=1))
 

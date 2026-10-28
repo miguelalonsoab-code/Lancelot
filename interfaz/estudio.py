@@ -80,7 +80,7 @@ class ModoEstudio(QObject):
         racha = self.almacen.racha(ahora.date())
         texto = f"Hoy: {pomos} pomodoro(s) · {_horas(mins)}"
         if racha >= 2:
-            texto += f" · racha de {racha} días 🔥"
+            texto += f" · racha de {racha} días"
         return texto
 
     # =============================================================== acciones
@@ -103,7 +103,7 @@ class ModoEstudio(QObject):
         racha = self.almacen.racha(ahora.date())
         if racha >= 2:
             texto += "\n" + self.frases.elegir("racha", racha=racha)
-        self.aviso.emit("📚 Modo estudio", texto, [], COLORES["estudio"], 8, False)
+        self.aviso.emit("Modo estudio", texto, [], COLORES["estudio"], 8, False)
         self.cambio.emit()
 
     def pausar(self):
@@ -199,8 +199,8 @@ class ModoEstudio(QObject):
             self.distracciones += 1
             self._ultimo_aviso_distraccion = ahora
             resta = max(1, int(p.restante(ahora).total_seconds() // 60))
-            self.aviso.emit("🤨 ¿Distraído?", self.frases.elegir("distraccion", app=nombre, resta=resta),
-                            [("Vuelvo 💪", "volver"), ("Es para estudiar", "permitir")],
+            self.aviso.emit("¿Distraído?", self.frases.elegir("distraccion", app=nombre, resta=resta),
+                            [("Vuelvo", "volver"), ("Es para estudiar", "permitir")],
                             COLORES["sospecha"], 0, True)
 
     def _limpiar_sospecha(self):

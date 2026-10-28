@@ -104,7 +104,7 @@ class TestAsistenteV320(unittest.TestCase):
         self.sincronizar()
         self.assertEqual([a.nombre for a in self.a.perfil.actividades], ["Yoga"])
         self.assertEqual(self.a.almacen.excepciones(date(2026, 1, 1)), [])
-        self.assertEqual(self.a.burbuja.cabecera.text(), "📱 Desde el celular")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Desde el celular")
         self.assertIn("Actividad: Yoga", self.a.burbuja.titulo.text())
         self.sincronizar()
         self.assertEqual([a["nombre"] for a in self.servidor.pedidos[-1]["contexto"]["actividades"]], ["Yoga"])
@@ -130,9 +130,9 @@ class TestAsistenteV320(unittest.TestCase):
         from PySide6.QtWidgets import QLabel
         textos = [" ".join(l.text() for l in p.lista_agenda.itemWidget(p.lista_agenda.item(i)).findChildren(QLabel))
                   for i in range(p.lista_agenda.count())]
-        self.assertTrue(any("📅 Examen" in t and "Hasta las 21:00" in t for t in textos))
+        self.assertTrue(any("Examen" in t and "Hasta las 21:00" in t for t in textos))
         self.assertEqual(manana.weekday() < 5, any("Trabajo" in t for t in textos))
-        self.assertTrue(p.sugerencias_dia.text().startswith("💡 Te sugiero:"))
+        self.assertTrue(p.sugerencias_dia.text().startswith("Te sugiero:"))
         p.b_agendar_dia.click()
         self.assertTrue(any(self.a.almacen.es_sugerida(t.id) for t in self.a.almacen.pendientes()))
 

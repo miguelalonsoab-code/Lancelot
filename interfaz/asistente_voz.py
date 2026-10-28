@@ -67,7 +67,7 @@ class ControladorVoz:
         self._escuchar_al_terminar = False           # abrir el micrófono cuando termine de hablar
         self.escuchando_orden = False                # True mientras espera lo que vas a decir
         self.escucha_activa = False                  # escucha continua ("Lancelot…") encendida
-        self.estado = f"🎙 Pulsa {ATAJO_HABLAR} y habla, o activa la escucha para llamarme por mi nombre."
+        self.estado = f"Pulsa {ATAJO_HABLAR} y habla, o activa la escucha para llamarme por mi nombre."
 
         # Apps: menú Inicio + Steam + escritorio (en segundo plano) + apodos guardados
         self.catalogo = CatalogoApps(APPS_EXTRA)
@@ -103,7 +103,7 @@ class ControladorVoz:
             self.habla.decir(texto)
 
     def responder(self, texto_burbuja: str, texto_voz: str | None = None):
-        self.a.avisos.mostrar_mensaje(f"🗣 {NOMBRE_ASISTENTE}", texto_burbuja, [], COLORES["escuchando"], 8, False)
+        self.a.avisos.mostrar_mensaje(f"{NOMBRE_ASISTENTE}", texto_burbuja, [], COLORES["escuchando"], 8, False)
         self.decir(texto_voz or texto_burbuja)
 
     # ======================================================= lo que dijiste
@@ -161,7 +161,7 @@ class ControladorVoz:
     def _continuar_dialogo(self, paso: Paso):
         """Hace lo que diga el diálogo: preguntar de nuevo, crear la tarea, cancelar o rendirse."""
         if paso.tipo == "preguntar":
-            self.a.avisos.mostrar_mensaje(f"🗣 {NOMBRE_ASISTENTE}", paso.texto,
+            self.a.avisos.mostrar_mensaje(f"{NOMBRE_ASISTENTE}", paso.texto,
                                           [("Cancelar", "cancelar_dialogo")], COLORES["escuchando"], 0, False)
             self._escuchar_respuesta(paso.texto)
             return
@@ -173,7 +173,7 @@ class ControladorVoz:
             if paso.clase == "evento":
                 avisos = describir_avisos(paso.avisos).replace("avisa ", "")
                 extra = f" Te aviso {avisos} y ese día." if avisos else ""
-                self.responder(f"📅 Evento: «{paso.titulo}», {describir_fecha(paso.fecha, ahora)} "
+                self.responder(f"Evento: «{paso.titulo}», {describir_fecha(paso.fecha, ahora)} "
                                f"({describir_faltan(paso.fecha, ahora)}).{extra}",
                                f"Listo, anoté el evento {paso.titulo}, {fecha_hablada(paso.fecha, ahora)}.{extra}")
             else:
@@ -297,18 +297,18 @@ class ControladorVoz:
             texto = voz = "No tienes nada más para hoy."
         if vencidas:
             n = len(vencidas)
-            texto += f"\n⚠ Y {n} vencida{'s' if n > 1 else ''}. Di «vencidas» para escucharlas."
+            texto += f"\nY {n} vencida{'s' if n > 1 else ''}. Di «vencidas» para escucharlas."
             voz += f" Además tienes {n} vencida{'s' if n > 1 else ''}."
         pronto = [t for t in pendientes if t.es_evento and 1 <= (t.fecha.date() - ahora.date()).days <= 7]
         if pronto:
-            texto += "\n📅 Se acerca: " + ", ".join(f"{t.titulo} ({describir_faltan(t.fecha, ahora)})" for t in pronto[:3])
+            texto += "\nSe acerca: " + ", ".join(f"{t.titulo} ({describir_faltan(t.fecha, ahora)})" for t in pronto[:3])
             voz += " Se acerca " + " y ".join(f"{t.titulo}, {describir_faltan(t.fecha, ahora)}" for t in pronto[:2]) + "."
         self.responder(texto, voz)
 
     def _decir_vencidas(self):
         vencidas = self.a.almacen.vencidas(datetime.now())
         if not vencidas:
-            self.responder("No tienes tareas vencidas. 👌", "No tienes tareas vencidas.")
+            self.responder("No tienes tareas vencidas.", "No tienes tareas vencidas.")
             return
         n = len(vencidas)
         lineas = "\n".join(f"• {t.titulo} ({describir_fecha(t.fecha).replace('atrasada · ', '')})"
@@ -325,12 +325,12 @@ class ControladorVoz:
         self.a.almacen.guardar_ajuste("escucha", "1" if activo else "0")
         if avisar:
             if activo:
-                self.a.avisos.mostrar_mensaje("🎙 Escucha activada",
+                self.a.avisos.mostrar_mensaje("Escucha activada",
                                               f"Di «{NOMBRE_ASISTENTE}» y lo que necesites. "
                                               "Todo se procesa en tu laptop; nada sale a internet.",
                                               [], COLORES["escuchando"], 8, False)
             else:
-                self.a.avisos.mostrar_mensaje("🎙 Escucha desactivada",
+                self.a.avisos.mostrar_mensaje("Escucha desactivada",
                                               f"Ya no te escucho. Puedes hablarme con {ATAJO_HABLAR}.",
                                               [], COLORES["dormido"], 6, False)
         self.a.actualizar_estado()
@@ -355,25 +355,25 @@ class ControladorVoz:
         if tipo == "descargando":
             self.estado = f"⬇ Descargando el modelo de voz (39 MB, solo la primera vez)… {detalle}"
             if detalle == "0 %":
-                avisos.mostrar_mensaje("🎙 Preparando la voz", "Descargo el modelo de voz (39 MB). "
+                avisos.mostrar_mensaje("Preparando la voz", "Descargo el modelo de voz (39 MB). "
                                        "Es solo la primera vez; tarda un poco.", [], COLORES["escuchando"], 10, False)
         elif tipo == "preparando":
-            self.estado = "⏳ " + detalle
+            self.estado = detalle
         elif tipo == "listo":
             log.info("reconocimiento de voz listo")
-            self.estado = (f"🎙 Di «{NOMBRE_ASISTENTE}…»" if self.escucha_activa else "🎙 Voz lista.") + \
+            self.estado = (f"Di «{NOMBRE_ASISTENTE}…»" if self.escucha_activa else "Voz lista.") + \
                           f" También puedes pulsar {ATAJO_HABLAR}."
         elif tipo == "error":
             log.error("voz: %s", detalle)
-            self.estado = "⚠ " + detalle
+            self.estado = detalle
             self.escucha_activa = False
             self.a.cara.microfono = False
-            avisos.mostrar_mensaje("🎙 Problema con la voz", detalle, [], COLORES["alerta"], 15, False)
+            avisos.mostrar_mensaje("Problema con la voz", detalle, [], COLORES["alerta"], 15, False)
         elif tipo == "sin_orden":
             if self.dialogo:                  # no respondió la pregunta: no perder la tarea
                 self._continuar_dialogo(Paso("rendirse", "No te escuché. Te dejé la tarea en el panel."))
             else:
-                avisos.mostrar_mensaje(f"🗣 {NOMBRE_ASISTENTE}", "No te escuché. Inténtalo de nuevo.",
+                avisos.mostrar_mensaje(f"{NOMBRE_ASISTENTE}", "No te escuché. Inténtalo de nuevo.",
                                        [], COLORES["dormido"], 4, False)
         self.a.actualizar_estado()
 

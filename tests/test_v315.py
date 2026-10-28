@@ -59,7 +59,7 @@ class TestRecomendador(unittest.TestCase):
         p = plan(SABADO, hechas={1: 3, 3: 1}, hoy={3}, estudio=120)
         self.assertEqual(resumen(p), ["19:00 Leer"])        # gimnasio 3/3, correr ya hoy, estudio al día
         p = plan(SABADO, hechas={1: 3, 3: 2}, estudio=150, actividades=(GIMNASIO, CORRER))
-        self.assertEqual(describir_plan(p)[0], "Hoy no tengo nada que sugerirte: vas al día. 👌")
+        self.assertEqual(describir_plan(p)[0], "Hoy no tengo nada que sugerirte: vas al día.")
 
     def test_sin_huecos(self):
         p = recomendar(JUEVES, [], [GIMNASIO], {}, set(), 0, 60)
@@ -143,7 +143,7 @@ class TestAsistenteV315(unittest.TestCase):
     def test_sugerir_y_contar_actividad(self):
         self.a.agregar_actividad("gimnasio 1 hora 3 veces por semana")
         self.comando("recomiéndame algo para mañana")
-        self.assertEqual(self.a.burbuja.cabecera.text(), "💡 Para mañana")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Para mañana")
         self.assertIn("Gimnasio (llevas 0 de 3 esta semana)", self.a.burbuja.titulo.text())
         self.comando("ya fui al gimnasio", por_voz=True)
         self.assertEqual(self.a.burbuja.titulo.text(), "Gimnasio: 1 de 3 esta semana")
@@ -174,7 +174,7 @@ class TestAsistenteV315(unittest.TestCase):
         self.a.almacen.agregar_bloque(Bloque(todos, time(9), time(17), "Trabajo"))
         salida = datetime.combine(dia, time(17, 5))
         self.a._sugerir_al_quedar_libre(salida)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "💡 Tienes un hueco libre")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Tienes un hueco libre")
         texto = self.a.burbuja.titulo.text()
         self.assertTrue(texto.startswith("Estás libre hasta las "), texto)
         self.assertIn("¿Qué tal ", texto)
@@ -193,8 +193,8 @@ class TestAsistenteV315(unittest.TestCase):
         self.a.saludar(forzado=True)
         texto = self.a.burbuja.titulo.text()
         if self.a.plan_del_dia(date.today()):                                 # si a esta hora queda hueco
-            self.assertIn("💡 Te sugiero:", texto)
-            self.assertTrue(self.a.panel.sugerencias_hoy.text().startswith("💡 Te sugiero:"))
+            self.assertIn("Te sugiero:", texto)
+            self.assertTrue(self.a.panel.sugerencias_hoy.text().startswith("Te sugiero:"))
 
 
 if __name__ == "__main__":

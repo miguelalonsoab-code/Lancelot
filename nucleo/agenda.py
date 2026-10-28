@@ -28,6 +28,7 @@ class Item:
     tarea: Tarea | None = None
     liberado: bool = False            # bloque que ese día no va (por un día libre)
     sugerida: bool = False            # tarea agendada desde una sugerencia (💡)
+    categoria: str = ""               # solo en bloques: trabajo | clase | otro (v3.22)
 
 
 def tareas_del_dia(tareas: list[Tarea], dia: date, maximo: int = 400) -> list[tuple[Tarea, datetime]]:
@@ -58,9 +59,9 @@ def agenda_del_dia(dia: date, bloques: list[Bloque], excepciones: list[Excepcion
         if dia.weekday() not in b.dias:
             continue
         libre = any(e.desde <= dia <= e.hasta and coincide(e.filtro, b.titulo) for e in excepciones)
-        detalle = "No va (día libre)" if libre else (f"🚌 {b.traslado} min antes y después" if b.traslado else "")
+        detalle = "No va (día libre)" if libre else (f"Traslado: {b.traslado} min antes y después" if b.traslado else "")
         items.append(Item("bloque", datetime.combine(dia, b.inicio), b.titulo, datetime.combine(dia, b.fin), detalle,
-                          liberado=libre))
+                          liberado=libre, categoria=b.categoria))
     for t, f in tareas_del_dia(tareas, dia):
         items.append(Item("evento" if t.es_evento else "tarea", f, t.titulo,
                           f + timedelta(minutes=t.duracion) if t.duracion else None, tarea=t,

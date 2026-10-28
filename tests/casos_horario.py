@@ -12,7 +12,7 @@ from datetime import date, datetime, time
 from nucleo.contexto import actividad_de_dict, bloque_de_dict, excepcion_de_dict
 from nucleo.horario import (choque, describir_dias, describir_libre, duracion_minutos, hablar_duracion, huecos,
                             interpretar_excepcion)
-from nucleo.horario import Bloque, interpretar_bloque
+from nucleo.horario import ICONO_CATEGORIA, Bloque, inferir_categoria, interpretar_bloque
 from nucleo.perfil import interpretar_actividad, leer_hora
 from nucleo.recomendador import describir_plan, recomendar
 
@@ -90,6 +90,17 @@ BLOQUES = [
     "miércoles de 7:30 pm a 10:40 pm Computación Gráfica", "viernes de 9:10 pm a 10:40 pm Computación Gráfica",
     "sábados de 2:30 pm a 7:20 pm Interacción Humano Computador", "de viernes a lunes de 6 a 7 correr",
     "Tengo los jueves de 18:00 a 20:00 reunión de grupo", "de lunes a viernes de 9 a 6 trabajo con 30 minutos de traslado",
+    # v3.22: la categoría (trabajo | clase | otro) sale del título
+    "martes y jueves de 7 a 10 de la noche Curso de Python", "lunes de 8 a 12 Universidad", "Clase de trabajo social los lunes de 9 a 11",
+    "los viernes de 3 a 5 Trabajo en la universidad", "sábados de 9 a 11 Taller de robótica", "de lunes a viernes de 8 a 5 chamba",
+    "miércoles de 5 a 6 de la tarde Seminario de tesis", "lunes de 3 a 4 Clasificar fotos", "jueves de 7 a 9 oficina",
+    "domingos de 10 a 12 Misa", "martes de 7 a 9 de la noche Laboratorio de física", "lunes a viernes de 6 a 2 turno de mañana",
+]
+CATEGORIAS = [   # títulos sueltos (v3.22): inferir_categoria / inferirCategoria
+    "Trabajo en Sanna", "Clase de redes", "Inglés", "UPN", "Curso de Python", "Clasificar fotos", "Clase de trabajo social",
+    "Trabajo en la universidad", "Ocupado", "TURNO NOCHE", "Reunión de grupo", "Universidad", "Taller de robótica",
+    "Laboratorio", "Seminario de tesis", "Oficina", "Chamba", "Gimnasio", "", "trabajar desde casa", "Educación física",
+    "Computación Gráfica", "Clases particulares",
 ]
 HORAS = [("a las 6:30", "despertar"), ("las 11 de la noche", "dormir"), ("11pm", "dormir"), ("a las 11", "dormir"),
          ("a las 12", "dormir"), ("6", "despertar"), ("7am", "dormir"), ("a las 1 de la mañana", "dormir"),
@@ -159,7 +170,9 @@ def calcular_horario() -> dict:
         b = interpretar_bloque(texto)
         bloques.append({"texto": texto, "resultado": b if not isinstance(b, Bloque) else {
             "dias": list(b.dias), "inicio": f"{b.inicio:%H:%M}", "fin": f"{b.fin:%H:%M}", "titulo": b.titulo,
-            "traslado": b.traslado}})
+            "traslado": b.traslado, "categoria": b.categoria}})
+    categorias = [{"titulo": t, "categoria": inferir_categoria(t)} for t in CATEGORIAS]
     horas = [{"texto": t, "para": p, "hora": (lambda h: h and f"{h:%H:%M}")(leer_hora(t, p))} for t, p in HORAS]
     return {"excepciones": excepciones, "huecos": salida_huecos, "choques": choques, "planes": planes,
-            "textos": textos, "actividades": actividades, "bloques": bloques, "horas": horas}
+            "textos": textos, "actividades": actividades, "bloques": bloques, "horas": horas,
+            "categorias": categorias, "iconos": ICONO_CATEGORIA}

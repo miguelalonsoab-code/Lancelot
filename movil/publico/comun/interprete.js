@@ -28,7 +28,7 @@ export const REPETICIONES = {
   semanal: "Cada semana", mensual: "Cada mes", anual: "Cada año",
 };
 
-export const TIPOS = { tarea: "Tarea", evento: "📅 Evento" };
+export const TIPOS = { tarea: "Tarea", evento: "Evento" };
 
 /** Palabras que convierten algo en EVENTO (cosas que pasan un día, no algo que "haces"). */
 const PALABRAS_EVENTO = ["aniversario", "cumpleanos", "cumple", "boda", "matrimonio", "bautizo", "graduacion",

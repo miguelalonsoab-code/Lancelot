@@ -124,13 +124,13 @@ class TestAsistenteHorario(unittest.TestCase):
         self.comando("tiempo libre")
         self.assertIn("primero anota tu horario", self.a.burbuja.titulo.text())
         self.comando("horario: de lunes a viernes de 9am a 6pm Trabajo", por_voz=True)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "🗓 Anotado en tu horario")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Anotado en tu horario")
         self.assertEqual(self.dichos, ["Listo, anoté Trabajo en tu horario."])
         self.comando("estoy ocupado martes y jueves de 7 a 10 de la noche clase de Redes")
         self.comando("mi horario")
         self.assertIn("mar y jue 19:00–22:00 · Clase de Redes", self.a.burbuja.titulo.text())
         self.comando("¿cuándo estoy libre mañana?", por_voz=True)
-        self.assertTrue(self.a.burbuja.cabecera.text().startswith("🕒 Libre mañana"))
+        self.assertTrue(self.a.burbuja.cabecera.text().startswith("Libre mañana"))
         self.assertTrue(self.dichos[0].startswith("Mañana tienes"))
         self.comando("borra el horario de trabajo")
         self.assertEqual([b.titulo for b in self.a.almacen.horario()], ["Clase de Redes"])
@@ -141,13 +141,13 @@ class TestAsistenteHorario(unittest.TestCase):
         p._al_agregar_bloque()
         self.assertEqual(p.entrada_bloque.text(), "")
         self.assertEqual(p.lista_horario.count(), 1)
-        self.assertTrue(p.libre_hoy.text().startswith("🕒 Libre hoy:"))
+        self.assertTrue(p.libre_hoy.text().startswith("Libre hoy:"))
         p.entrada_bloque.setText("gimnasio de 7 a 8")                                 # faltan los días
         p._al_agregar_bloque()
         self.assertEqual(p.entrada_bloque.text(), "gimnasio de 7 a 8")                # no se borra: hay que corregir
         self.assertIn("¿Qué días?", self.a.burbuja.titulo.text())
         self.a.saludar(forzado=True)
-        self.assertIn("🕒 Libre hoy:", self.a.burbuja.titulo.text())
+        self.assertIn("Libre hoy:", self.a.burbuja.titulo.text())
 
 
 if __name__ == "__main__":

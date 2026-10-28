@@ -1,6 +1,6 @@
 """
 v3.18: «más tarde, a las 8», comentario honesto en la semana si agendas y no haces, y lo agendado desde
-una sugerencia no aparece en vencidas (sale con 💡 en próximas tareas hasta que se quita solo).
+una sugerencia no aparece en vencidas (sale con en próximas tareas hasta que se quita solo).
 
     python -m unittest tests.test_v318 -v
 """
@@ -125,7 +125,7 @@ class TestAsistenteV318(unittest.TestCase):
         from nucleo.comandos import interpretar_comando
         self.dichos.clear()
         self.a.ejecutar_comando(interpretar_comando("resumen semanal"), por_voz=True)
-        self.assertIn("📌 Agendaste Gimnasio", self.a.burbuja.titulo.text())
+        self.assertIn("Agendaste Gimnasio", self.a.burbuja.titulo.text())
         self.assertTrue(self.dichos[0].endswith("Te dejé el detalle en pantalla."))
 
     def test_sugerida_pasada_no_sale_en_vencidas(self):
@@ -136,8 +136,8 @@ class TestAsistenteV318(unittest.TestCase):
         lista = self.a.panel.lista
         filas = [" ".join(l.text() for l in lista.itemWidget(lista.item(i)).findChildren(QLabel))
                  for i in range(lista.count())]
-        self.assertTrue(filas[0].startswith("⚠ TAREAS VENCIDAS · 0"))
-        self.assertTrue(any("💡 Gimnasio" in f and "mañana se quita sola" in f for f in filas))
+        self.assertTrue(filas[0].startswith("TAREAS VENCIDAS · 0"))
+        self.assertTrue(any("Gimnasio" in f and "mañana se quita sola" in f for f in filas))
 
 
 if __name__ == "__main__":

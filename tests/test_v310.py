@@ -154,7 +154,7 @@ class TestSaludoYDialogo(unittest.TestCase):
         pendientes = [Tarea(1, "Aniversario", datetime(2026, 10, 10, 9, 0), "anual", "pendiente", False, "evento", "7,1"),
                       Tarea(2, "Viaje", datetime(2026, 12, 1, 9, 0), None, "pendiente", False, "evento", "7,1")]
         s = armar_saludo(datetime(2026, 10, 7, 8, 0), pendientes, 0, "Miguel")
-        self.assertIn("📅 Se acerca: Aniversario (faltan 3 días)", s.texto)
+        self.assertIn("Se acerca: Aniversario (faltan 3 días)", s.texto)
         self.assertNotIn("Viaje", s.texto)
         self.assertIn("Se acerca Aniversario, faltan 3 días.", s.hablado)
 
@@ -223,7 +223,7 @@ class TestAsistenteV310(unittest.TestCase):
     def test_frase_al_dejar_el_mouse_solo_si_esta_libre(self):
         self.assertTrue((Path(self.tmp.name) / "frases.txt").exists())   # el archivo para tus frases
         self.a.cara.reposo.emit()
-        self.assertEqual(self.a.burbuja.cabecera.text(), "💬 Lancelot")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Lancelot")
         self.assertIn(self.a.burbuja.titulo.text(), REFLEXIONES)
         self.a.burbuja.ocultar()
         self.a.cara.reposo.emit()                                   # muy seguido: no insiste
@@ -240,7 +240,7 @@ class TestAsistenteV310(unittest.TestCase):
         self.assertEqual(self.dichos[-1], "Listo, guardé tu frase.")
         self.assertIn("Hoy toca brillar, Miguel", leer_frases_usuario(Path(self.tmp.name) / "frases.txt"))
         self.a.ejecutar_comando(interpretar_comando("dime una frase"))
-        self.assertEqual(self.a.burbuja.cabecera.text(), "💬 Lancelot")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Lancelot")
         self.assertIn("Hoy toca brillar, Miguel", self.a.bolsa_frases.frases)   # ya está en la bolsa
 
     def test_aviso_anticipado_en_la_burbuja(self):
@@ -248,7 +248,7 @@ class TestAsistenteV310(unittest.TestCase):
         t = self.a.almacen.agregar("Aniversario", ahora + timedelta(days=7), "anual", "evento", "7,1")
         self.a.almacen.por_avisar_antes = lambda *_: [(self.a.almacen.obtener(t.id), 7)]
         self.a.revisar()
-        self.assertEqual(self.a.burbuja.cabecera.text(), "📅 Se acerca")
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Se acerca")
         self.assertIn("Aniversario: falta 1 semana", self.a.burbuja.titulo.text())
         self.assertTrue(any("se acerca Aniversario" in d for d in self.dichos))
 
@@ -256,7 +256,7 @@ class TestAsistenteV310(unittest.TestCase):
         self.a.voz.procesar_orden("el 15 de diciembre es mi aniversario")
         [t] = self.a.almacen.pendientes()
         self.assertEqual((t.titulo, t.tipo, t.repeticion, t.anticipacion), ("Mi aniversario", "evento", "anual", "7,1"))
-        self.assertIn("📅 Evento", self.a.burbuja.titulo.text())
+        self.assertIn("Evento", self.a.burbuja.titulo.text())
 
     def test_panel_selector_tarea_evento(self):
         p = self.a.panel

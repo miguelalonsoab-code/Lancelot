@@ -83,9 +83,9 @@ class TestSaludo(unittest.TestCase):
         self.assertTrue(debe_saludar(AHORA, None, 6))                       # primera vez
 
     def test_momento(self):
-        self.assertEqual(momento_del_dia(8)[0], "Buenos días")
-        self.assertEqual(momento_del_dia(15)[0], "Buenas tardes")
-        self.assertEqual(momento_del_dia(21)[0], "Buenas noches")
+        self.assertEqual(momento_del_dia(8), "Buenos días")
+        self.assertEqual(momento_del_dia(15), "Buenas tardes")
+        self.assertEqual(momento_del_dia(21), "Buenas noches")
 
     def test_saludo_completo(self):
         pendientes = [tarea(1, "Pagar la luz", datetime(2026, 10, 9, 20, 0)),     # vencida
@@ -93,16 +93,16 @@ class TestSaludo(unittest.TestCase):
                       tarea(3, "Clase de redes", datetime(2026, 10, 10, 18, 0)),
                       tarea(4, "Examen", datetime(2026, 10, 12, 8, 0))]           # otro día: no sale
         s = armar_saludo(AHORA, pendientes, racha=4, nombre="Miguel")
-        self.assertEqual(s.titulo, "☀️ Buenos días, Miguel")
+        self.assertEqual(s.titulo, "Buenos días, Miguel")
         self.assertEqual(s.texto, "Hoy tienes 2 pendientes:\n• 14:30 Llamar al banco\n• 18:00 Clase de redes\n"
-                                  "⚠ 1 vencida sin resolver\n🔥 Racha de estudio: 4 días. ¡Que no se corte!")
+                                  "1 vencida sin resolver\nRacha de estudio: 4 días. ¡Que no se corte!")
         self.assertEqual(s.hablado, "Buenos días, Miguel. Hoy tienes 2 pendientes. La primera es Llamar al banco, "
                                     "a las 2 y media de la tarde. Además tienes una tarea vencida. "
                                     "Llevas 4 días seguidos estudiando. ¡Que no se corte!")
 
     def test_saludo_dia_libre(self):
         s = armar_saludo(datetime(2026, 10, 10, 20, 0), [], racha=1, nombre="Miguel")
-        self.assertEqual((s.titulo, s.texto), ("🌙 Buenas noches, Miguel", "Hoy no tienes nada agendado."))
+        self.assertEqual((s.titulo, s.texto), ("Buenas noches, Miguel", "Hoy no tienes nada agendado."))
 
 
 class TestSemana(unittest.TestCase):

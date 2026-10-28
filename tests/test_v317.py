@@ -1,5 +1,5 @@
 """
-v3.17: «⏰ Más tarde», ver y borrar lo aprendido uno por uno, y las tareas agendadas desde una sugerencia
+v3.17: «Más tarde», ver y borrar lo aprendido uno por uno, y las tareas agendadas desde una sugerencia
 que no se hicieron se descartan solas al día siguiente.
 
     python -m unittest tests.test_v317 -v
@@ -102,11 +102,11 @@ class TestAsistenteV317(unittest.TestCase):
 
     def test_mas_tarde_vuelve_a_proponer_lo_mismo(self):
         self.a._sugerir_al_quedar_libre(self.en(17, 5))
-        self.assertEqual(self.botones(), ["✓ Lo hago", "⏰ Más tarde", "Ahora no"])
+        self.assertEqual(self.botones(), ["✓ Lo hago", "Más tarde", "Ahora no"])
         ofrecida = self.a._sugerencia_ofrecida.nombre
         self.a.burbuja.ocultar()
-        self.a.posponer_sugerencia(ahora=self.en(17, 6))      # = botón «⏰ Más tarde» (sin depender de la hora real)
-        self.assertEqual(self.a.burbuja.cabecera.text(), "⏰ Más tarde")
+        self.a.posponer_sugerencia(ahora=self.en(17, 6))      # = botón «Más tarde» (sin depender de la hora real)
+        self.assertEqual(self.a.burbuja.cabecera.text(), "Más tarde")
         self.assertEqual(self.a.almacen.momentos_a_evitar(self.hoy - timedelta(days=30), 1), {})   # no es rechazo
         pospuesta = self.a._sugerencia_pospuesta(self.hoy)
         self.assertEqual(pospuesta[1], ofrecida.lower())
@@ -133,7 +133,7 @@ class TestAsistenteV317(unittest.TestCase):
         self.a.refrescar()
         lista = self.a.panel.lista_horario
         textos = [lista.item(i).text() for i in range(lista.count())]
-        self.assertIn("💡 NO TE SUGIERO · 2", textos)
+        self.assertIn("NO TE SUGIERO · 2", textos)
         self.a.panel.aprendido_borrar_pedido.emit("gimnasio", "tarde")
         self.assertEqual(self.a._aprendido(), [("leer", "noche")])
 

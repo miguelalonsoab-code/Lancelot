@@ -2322,6 +2322,124 @@
   {
    "texto": "quiero hacer ejercicio mañana",
    "comando": null
+  },
+  {
+   "texto": "Computación Gráfica es clase",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "computacion grafica",
+    "destino": "clase",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "computación gráfica es una clase",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "computacion grafica",
+    "destino": "clase",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "marca inglés como otro",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "ingles",
+    "destino": "otro",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "pon Trabajo en Sanna como trabajo",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "trabajo en sanna",
+    "destino": "trabajo",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "la categoría de IHC es curso",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "ihc",
+    "destino": "clase",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "categoría de inglés: otra cosa",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "ingles",
+    "destino": "otro",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "cambia el bloque de redes como clase",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "redes",
+    "destino": "clase",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "Interacción Humano Computador es un curso",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "interaccion humano computador",
+    "destino": "clase",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "la chamba es trabajo",
+   "comando": {
+    "accion": "categoria",
+    "minutos": null,
+    "texto": "la chamba",
+    "destino": "trabajo",
+    "navegador": null
+   }
+  },
+  {
+   "texto": "esto es otro tema",
+   "comando": null
+  },
+  {
+   "texto": "hoy es clase de redes",
+   "comando": null
+  },
+  {
+   "texto": "mañana es trabajo",
+   "comando": null
+  },
+  {
+   "texto": "esto es trabajo",
+   "comando": null
+  },
+  {
+   "texto": "inglés es otro",
+   "comando": null
+  },
+  {
+   "texto": "mañana 8pm clase de redes",
+   "comando": null
+  },
+  {
+   "texto": "marca la tarea como hecha",
+   "comando": null
   }
  ],
  "avisos_previos": [
@@ -3594,7 +3712,7 @@
     "ahora": null,
     "sugerencias": [],
     "sin_lugar": [],
-    "texto": "Hoy no tengo nada que sugerirte: vas al día. 👌",
+    "texto": "Hoy no tengo nada que sugerirte: vas al día.",
     "hablado": "Hoy no tengo nada que sugerirte: vas al día."
    },
    {
@@ -4083,7 +4201,8 @@
      "inicio": "09:00",
      "fin": "18:00",
      "titulo": "Trabajo",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "trabajo"
     }
    },
    {
@@ -4096,7 +4215,8 @@
      "inicio": "19:00",
      "fin": "22:00",
      "titulo": "Clase de redes",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "clase"
     }
    },
    {
@@ -4108,7 +4228,8 @@
      "inicio": "08:00",
      "fin": "12:00",
      "titulo": "Inglés",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4122,7 +4243,8 @@
      "inicio": "14:00",
      "fin": "16:00",
      "titulo": "Gimnasio",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4140,7 +4262,8 @@
      "inicio": "13:00",
      "fin": "14:00",
      "titulo": "Almuerzo",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4153,7 +4276,8 @@
      "inicio": "10:00",
      "fin": "13:00",
      "titulo": "Fútbol",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4169,7 +4293,8 @@
      "inicio": "08:30",
      "fin": "17:30",
      "titulo": "Trabajo en Sanna",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "trabajo"
     }
    },
    {
@@ -4181,7 +4306,8 @@
      "inicio": "18:00",
      "fin": "20:00",
      "titulo": "Taller",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "clase"
     }
    },
    {
@@ -4193,7 +4319,8 @@
      "inicio": "22:00",
      "fin": "23:59",
      "titulo": "Turno",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "trabajo"
     }
    },
    {
@@ -4205,7 +4332,8 @@
      "inicio": "09:00",
      "fin": "11:00",
      "titulo": "Ocupado",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4233,7 +4361,8 @@
      "inicio": "08:30",
      "fin": "17:30",
      "titulo": "Trabajo",
-     "traslado": 45
+     "traslado": 45,
+     "categoria": "trabajo"
     }
    },
    {
@@ -4245,7 +4374,8 @@
      "inicio": "19:00",
      "fin": "22:00",
      "titulo": "Clases",
-     "traslado": 60
+     "traslado": 60,
+     "categoria": "clase"
     }
    },
    {
@@ -4257,7 +4387,8 @@
      "inicio": "19:30",
      "fin": "22:40",
      "titulo": "Computación Gráfica",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4269,7 +4400,8 @@
      "inicio": "21:10",
      "fin": "22:40",
      "titulo": "Computación Gráfica",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4281,7 +4413,8 @@
      "inicio": "14:30",
      "fin": "19:20",
      "titulo": "Interacción Humano Computador",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4296,7 +4429,8 @@
      "inicio": "18:00",
      "fin": "19:00",
      "titulo": "Correr",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4308,7 +4442,8 @@
      "inicio": "18:00",
      "fin": "20:00",
      "titulo": "Reunión de grupo",
-     "traslado": 0
+     "traslado": 0,
+     "categoria": "otro"
     }
    },
    {
@@ -4324,8 +4459,161 @@
      "inicio": "09:00",
      "fin": "18:00",
      "titulo": "Trabajo",
-     "traslado": 30
+     "traslado": 30,
+     "categoria": "trabajo"
     }
+   },
+   {
+    "texto": "martes y jueves de 7 a 10 de la noche Curso de Python",
+    "resultado": {
+     "dias": [
+      1,
+      3
+     ],
+     "inicio": "19:00",
+     "fin": "22:00",
+     "titulo": "Curso de Python",
+     "traslado": 0,
+     "categoria": "clase"
+    }
+   },
+   {
+    "texto": "lunes de 8 a 12 Universidad",
+    "resultado": {
+     "dias": [
+      0
+     ],
+     "inicio": "08:00",
+     "fin": "12:00",
+     "titulo": "Universidad",
+     "traslado": 0,
+     "categoria": "clase"
+    }
+   },
+   {
+    "texto": "Clase de trabajo social los lunes de 9 a 11",
+    "resultado": {
+     "dias": [
+      0
+     ],
+     "inicio": "09:00",
+     "fin": "11:00",
+     "titulo": "Clase de trabajo social",
+     "traslado": 0,
+     "categoria": "clase"
+    }
+   },
+   {
+    "texto": "los viernes de 3 a 5 Trabajo en la universidad",
+    "resultado": {
+     "dias": [
+      4
+     ],
+     "inicio": "15:00",
+     "fin": "17:00",
+     "titulo": "Trabajo en la universidad",
+     "traslado": 0,
+     "categoria": "trabajo"
+    }
+   },
+   {
+    "texto": "sábados de 9 a 11 Taller de robótica",
+    "resultado": {
+     "dias": [
+      5
+     ],
+     "inicio": "09:00",
+     "fin": "11:00",
+     "titulo": "Taller de robótica",
+     "traslado": 0,
+     "categoria": "clase"
+    }
+   },
+   {
+    "texto": "de lunes a viernes de 8 a 5 chamba",
+    "resultado": {
+     "dias": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "inicio": "08:00",
+     "fin": "17:00",
+     "titulo": "Chamba",
+     "traslado": 0,
+     "categoria": "trabajo"
+    }
+   },
+   {
+    "texto": "miércoles de 5 a 6 de la tarde Seminario de tesis",
+    "resultado": {
+     "dias": [
+      2
+     ],
+     "inicio": "17:00",
+     "fin": "18:00",
+     "titulo": "Seminario de tesis",
+     "traslado": 0,
+     "categoria": "clase"
+    }
+   },
+   {
+    "texto": "lunes de 3 a 4 Clasificar fotos",
+    "resultado": {
+     "dias": [
+      0
+     ],
+     "inicio": "15:00",
+     "fin": "16:00",
+     "titulo": "Clasificar fotos",
+     "traslado": 0,
+     "categoria": "otro"
+    }
+   },
+   {
+    "texto": "jueves de 7 a 9 oficina",
+    "resultado": {
+     "dias": [
+      3
+     ],
+     "inicio": "19:00",
+     "fin": "21:00",
+     "titulo": "Oficina",
+     "traslado": 0,
+     "categoria": "trabajo"
+    }
+   },
+   {
+    "texto": "domingos de 10 a 12 Misa",
+    "resultado": {
+     "dias": [
+      6
+     ],
+     "inicio": "10:00",
+     "fin": "12:00",
+     "titulo": "Misa",
+     "traslado": 0,
+     "categoria": "otro"
+    }
+   },
+   {
+    "texto": "martes de 7 a 9 de la noche Laboratorio de física",
+    "resultado": {
+     "dias": [
+      1
+     ],
+     "inicio": "19:00",
+     "fin": "21:00",
+     "titulo": "Laboratorio de física",
+     "traslado": 0,
+     "categoria": "clase"
+    }
+   },
+   {
+    "texto": "lunes a viernes de 6 a 2 turno de mañana",
+    "resultado": "Ese bloque termina pasada la medianoche. Anótalo en dos partes, por ejemplo: «lunes de 10pm a 12am turno» y «martes de 12am a 6am turno»."
    }
   ],
   "horas": [
@@ -4383,6 +4671,637 @@
     "texto": "25",
     "para": "dormir",
     "hora": null
+   }
+  ],
+  "categorias": [
+   {
+    "titulo": "Trabajo en Sanna",
+    "categoria": "trabajo"
+   },
+   {
+    "titulo": "Clase de redes",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Inglés",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "UPN",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Curso de Python",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Clasificar fotos",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "Clase de trabajo social",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Trabajo en la universidad",
+    "categoria": "trabajo"
+   },
+   {
+    "titulo": "Ocupado",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "TURNO NOCHE",
+    "categoria": "trabajo"
+   },
+   {
+    "titulo": "Reunión de grupo",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "Universidad",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Taller de robótica",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Laboratorio",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Seminario de tesis",
+    "categoria": "clase"
+   },
+   {
+    "titulo": "Oficina",
+    "categoria": "trabajo"
+   },
+   {
+    "titulo": "Chamba",
+    "categoria": "trabajo"
+   },
+   {
+    "titulo": "Gimnasio",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "trabajar desde casa",
+    "categoria": "trabajo"
+   },
+   {
+    "titulo": "Educación física",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "Computación Gráfica",
+    "categoria": "otro"
+   },
+   {
+    "titulo": "Clases particulares",
+    "categoria": "clase"
+   }
+  ],
+  "iconos": {
+   "trabajo": "maletin",
+   "clase": "birrete",
+   "otro": "etiqueta"
+  }
+ },
+ "silabas": {
+  "palabras": [
+   {
+    "palabra": "computación",
+    "silabas": [
+     "com",
+     "pu",
+     "ta",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "interacción",
+    "silabas": [
+     "in",
+     "te",
+     "rac",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "humano",
+    "silabas": [
+     "hu",
+     "ma",
+     "no"
+    ]
+   },
+   {
+    "palabra": "computador",
+    "silabas": [
+     "com",
+     "pu",
+     "ta",
+     "dor"
+    ]
+   },
+   {
+    "palabra": "gráfica",
+    "silabas": [
+     "grá",
+     "fi",
+     "ca"
+    ]
+   },
+   {
+    "palabra": "trabajo",
+    "silabas": [
+     "tra",
+     "ba",
+     "jo"
+    ]
+   },
+   {
+    "palabra": "sanna",
+    "silabas": [
+     "san",
+     "na"
+    ]
+   },
+   {
+    "palabra": "universidad",
+    "silabas": [
+     "u",
+     "ni",
+     "ver",
+     "si",
+     "dad"
+    ]
+   },
+   {
+    "palabra": "inglés",
+    "silabas": [
+     "in",
+     "glés"
+    ]
+   },
+   {
+    "palabra": "construcción",
+    "silabas": [
+     "cons",
+     "truc",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "laboratorio",
+    "silabas": [
+     "la",
+     "bo",
+     "ra",
+     "to",
+     "rio"
+    ]
+   },
+   {
+    "palabra": "química",
+    "silabas": [
+     "quí",
+     "mi",
+     "ca"
+    ]
+   },
+   {
+    "palabra": "guitarra",
+    "silabas": [
+     "gui",
+     "ta",
+     "rra"
+    ]
+   },
+   {
+    "palabra": "reunión",
+    "silabas": [
+     "reu",
+     "nión"
+    ]
+   },
+   {
+    "palabra": "país",
+    "silabas": [
+     "pa",
+     "ís"
+    ]
+   },
+   {
+    "palabra": "biología",
+    "silabas": [
+     "bio",
+     "lo",
+     "gí",
+     "a"
+    ]
+   },
+   {
+    "palabra": "transporte",
+    "silabas": [
+     "trans",
+     "por",
+     "te"
+    ]
+   },
+   {
+    "palabra": "inscripción",
+    "silabas": [
+     "ins",
+     "crip",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "perspectiva",
+    "silabas": [
+     "pers",
+     "pec",
+     "ti",
+     "va"
+    ]
+   },
+   {
+    "palabra": "extra",
+    "silabas": [
+     "ex",
+     "tra"
+    ]
+   },
+   {
+    "palabra": "ahorro",
+    "silabas": [
+     "a",
+     "ho",
+     "rro"
+    ]
+   },
+   {
+    "palabra": "leer",
+    "silabas": [
+     "le",
+     "er"
+    ]
+   },
+   {
+    "palabra": "chocolate",
+    "silabas": [
+     "cho",
+     "co",
+     "la",
+     "te"
+    ]
+   },
+   {
+    "palabra": "llave",
+    "silabas": [
+     "lla",
+     "ve"
+    ]
+   },
+   {
+    "palabra": "programación",
+    "silabas": [
+     "pro",
+     "gra",
+     "ma",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "seminario",
+    "silabas": [
+     "se",
+     "mi",
+     "na",
+     "rio"
+    ]
+   },
+   {
+    "palabra": "taller",
+    "silabas": [
+     "ta",
+     "ller"
+    ]
+   },
+   {
+    "palabra": "oficina",
+    "silabas": [
+     "o",
+     "fi",
+     "ci",
+     "na"
+    ]
+   },
+   {
+    "palabra": "clasificar",
+    "silabas": [
+     "cla",
+     "si",
+     "fi",
+     "car"
+    ]
+   },
+   {
+    "palabra": "matemática",
+    "silabas": [
+     "ma",
+     "te",
+     "má",
+     "ti",
+     "ca"
+    ]
+   },
+   {
+    "palabra": "física",
+    "silabas": [
+     "fí",
+     "si",
+     "ca"
+    ]
+   },
+   {
+    "palabra": "cuidado",
+    "silabas": [
+     "cui",
+     "da",
+     "do"
+    ]
+   },
+   {
+    "palabra": "ciudad",
+    "silabas": [
+     "ciu",
+     "dad"
+    ]
+   },
+   {
+    "palabra": "averiguéis",
+    "silabas": [
+     "a",
+     "ve",
+     "ri",
+     "guéis"
+    ]
+   },
+   {
+    "palabra": "pingüino",
+    "silabas": [
+     "pin",
+     "güi",
+     "no"
+    ]
+   },
+   {
+    "palabra": "hoy",
+    "silabas": [
+     "hoy"
+    ]
+   },
+   {
+    "palabra": "muy",
+    "silabas": [
+     "muy"
+    ]
+   },
+   {
+    "palabra": "leyes",
+    "silabas": [
+     "le",
+     "yes"
+    ]
+   },
+   {
+    "palabra": "Computación",
+    "silabas": [
+     "Com",
+     "pu",
+     "ta",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "observar",
+    "silabas": [
+     "ob",
+     "ser",
+     "var"
+    ]
+   },
+   {
+    "palabra": "obstrucción",
+    "silabas": [
+     "obs",
+     "truc",
+     "ción"
+    ]
+   },
+   {
+    "palabra": "atlántico",
+    "silabas": [
+     "at",
+     "lán",
+     "ti",
+     "co"
+    ]
+   },
+   {
+    "palabra": "aéreo",
+    "silabas": [
+     "a",
+     "é",
+     "re",
+     "o"
+    ]
+   },
+   {
+    "palabra": "examen",
+    "silabas": [
+     "e",
+     "xa",
+     "men"
+    ]
+   },
+   {
+    "palabra": "Sanna",
+    "silabas": [
+     "San",
+     "na"
+    ]
+   },
+   {
+    "palabra": "gimnasio",
+    "silabas": [
+     "gim",
+     "na",
+     "sio"
+    ]
+   },
+   {
+    "palabra": "pseudo",
+    "silabas": [
+     "pseu",
+     "do"
+    ]
+   },
+   {
+    "palabra": "psicología",
+    "silabas": [
+     "psi",
+     "co",
+     "lo",
+     "gí",
+     "a"
+    ]
+   },
+   {
+    "palabra": "redes",
+    "silabas": [
+     "re",
+     "des"
+    ]
+   },
+   {
+    "palabra": "Robótica",
+    "silabas": [
+     "Ro",
+     "bó",
+     "ti",
+     "ca"
+    ]
+   },
+   {
+    "palabra": "UPN",
+    "silabas": [
+     "UPN"
+    ]
+   },
+   {
+    "palabra": "y",
+    "silabas": [
+     "y"
+    ]
+   },
+   {
+    "palabra": "a",
+    "silabas": [
+     "a"
+    ]
+   },
+   {
+    "palabra": "Guerra",
+    "silabas": [
+     "Gue",
+     "rra"
+    ]
+   },
+   {
+    "palabra": "QUESO",
+    "silabas": [
+     "QUE",
+     "SO"
+    ]
+   },
+   {
+    "palabra": "ÑANDÚ",
+    "silabas": [
+     "ÑAN",
+     "DÚ"
+    ]
+   },
+   {
+    "palabra": "rey",
+    "silabas": [
+     "rey"
+    ]
+   },
+   {
+    "palabra": "brrr",
+    "silabas": [
+     "brrr"
+    ]
+   },
+   {
+    "palabra": "hielo",
+    "silabas": [
+     "hie",
+     "lo"
+    ]
+   },
+   {
+    "palabra": "ahí",
+    "silabas": [
+     "a",
+     "hí"
+    ]
+   },
+   {
+    "palabra": "creer",
+    "silabas": [
+     "cre",
+     "er"
+    ]
+   },
+   {
+    "palabra": "maíz",
+    "silabas": [
+     "ma",
+     "íz"
+    ]
+   },
+   {
+    "palabra": "vehículo",
+    "silabas": [
+     "ve",
+     "hí",
+     "cu",
+     "lo"
+    ]
+   }
+  ],
+  "guiones": [
+   {
+    "texto": "Interacción Humano Computador",
+    "resultado": "In-te-rac-ción Hu-ma-no Com-pu-ta-dor"
+   },
+   {
+    "texto": "Trabajo en Sanna",
+    "resultado": "Tra-ba-jo en San-na"
+   },
+   {
+    "texto": "Computación Gráfica 2",
+    "resultado": "Com-pu-ta-ción Grá-fi-ca 2"
+   },
+   {
+    "texto": "Taller: robótica (UPN)",
+    "resultado": "Ta-ller: ro-bó-ti-ca (UPN)"
+   },
+   {
+    "texto": "Universidad",
+    "resultado": "Uni-ver-si-dad"
+   },
+   {
+    "texto": "",
+    "resultado": ""
+   },
+   {
+    "texto": "Clase de redes y comunicaciones",
+    "resultado": "Cla-se de re-des y co-mu-ni-ca-cio-nes"
+   },
+   {
+    "texto": "Reunión de grupo",
+    "resultado": "Reu-nión de gru-po"
    }
   ]
  },

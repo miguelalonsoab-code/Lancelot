@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time as hora, timedelta
 from pathlib import Path
 
-from nucleo.horario import Bloque, Excepcion
+from nucleo.horario import CATEGORIAS, Bloque, Excepcion, inferir_categoria
 from nucleo.perfil import Actividad, Perfil
 from nucleo.planificador import HORA_AVISO_PREVIO, aviso_previo_pendiente, siguiente_ocurrencia
 
@@ -141,7 +141,8 @@ class Almacen:
                 inicio  TEXT NOT NULL,                 -- 'HH:MM'
                 fin     TEXT NOT NULL,
                 titulo  TEXT NOT NULL,
-                traslado INTEGER NOT NULL DEFAULT 0    -- minutos de viaje antes y después (v3.13)
+                traslado INTEGER NOT NULL DEFAULT 0,   -- minutos de viaje antes y después (v3.13)
+                categoria TEXT NOT NULL DEFAULT 'otro' -- 'trabajo' | 'clase' | 'otro' (v3.22)
             );
 
             -- Excepciones al horario (v3.14): "el 1 de noviembre no trabajo", "vacaciones del 20 al 30 de diciembre"
@@ -199,6 +200,11 @@ class Almacen:
         self._migrar_para_sincronizar()
         if "traslado" not in {f["name"] for f in self.con.execute("PRAGMA table_info(horario)")}:
             self.con.execute("ALTER TABLE horario ADD COLUMN traslado INTEGER NOT NULL DEFAULT 0")   # v3.13
+        if "categoria" not in {f["name"] for f in self.con.execute("PRAGMA table_info(horario)")}:   # v3.22
+            self.con.execute("ALTER TABLE horario ADD COLUMN categoria TEXT NOT NULL DEFAULT 'otro'")
+            for f in self.con.execute("SELECT id, titulo FROM horario").fetchall():     # los bloques que ya tenías
+                if (categoria := inferir_categoria(f["titulo"])) != "otro":
+                    self.con.execute("UPDATE horario SET categoria = ? WHERE id = ?", (categoria, f["id"]))
         self.con.commit()
 
     def _migrar_para_sincronizar(self):
@@ -479,11 +485,19 @@ class Almacen:
 
     # --------------------------------------------------------------- horario
     def agregar_bloque(self, b: "Bloque") -> "Bloque":
-        cur = self.con.execute("INSERT INTO horario (dias, inicio, fin, titulo, traslado) VALUES (?, ?, ?, ?, ?)",
-                               (",".join(map(str, b.dias)), f"{b.inicio:%H:%M}", f"{b.fin:%H:%M}", b.titulo,
-                                b.traslado))
+        cur = self.con.execute(
+            "INSERT INTO horario (dias, inicio, fin, titulo, traslado, categoria) VALUES (?, ?, ?, ?, ?, ?)",
+            (",".join(map(str, b.dias)), f"{b.inicio:%H:%M}", f"{b.fin:%H:%M}", b.titulo, b.traslado, b.categoria))
         self.con.commit()
-        return Bloque(b.dias, b.inicio, b.fin, b.titulo, cur.lastrowid, b.traslado)
+        return Bloque(b.dias, b.inicio, b.fin, b.titulo, cur.lastrowid, b.traslado, b.categoria)
+
+    def cambiar_categoria(self, id_: int, categoria: str) -> bool:
+        """Pone la categoría de un bloque (v3.22). False si no existe o la categoría no es válida."""
+        if categoria not in CATEGORIAS:
+            return False
+        cur = self.con.execute("UPDATE horario SET categoria = ? WHERE id = ?", (categoria, id_))
+        self.con.commit()
+        return cur.rowcount > 0
 
     def cambiar_traslado(self, id_: int, minutos: int):
         self.con.execute("UPDATE horario SET traslado = ? WHERE id = ?", (max(0, int(minutos)), id_))
@@ -492,7 +506,7 @@ class Almacen:
     def horario(self) -> list["Bloque"]:
         """Tus bloques fijos, ordenados por primer día y hora."""
         bloques = [Bloque(tuple(int(d) for d in f["dias"].split(",")), hora.fromisoformat(f["inicio"]),
-                          hora.fromisoformat(f["fin"]), f["titulo"], f["id"], f["traslado"])
+                          hora.fromisoformat(f["fin"]), f["titulo"], f["id"], f["traslado"], f["categoria"])
                    for f in self.con.execute("SELECT * FROM horario").fetchall()]
         return sorted(bloques, key=lambda b: (min(b.dias), b.inicio))
 

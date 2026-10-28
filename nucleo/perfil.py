@@ -116,13 +116,13 @@ def interpretar_actividad(texto: str) -> Actividad | str:
 # --------------------------------------------------------------------------- resumen
 def describir_perfil(p: Perfil, bloques: list | None = None) -> tuple[str, str]:
     """(texto para la burbuja, texto para la voz) de "¿qué sabes de mí?"."""
-    lineas = [f"😴 Duermes de {p.dormir:%H:%M} a {p.despertar:%H:%M}",
-              f"📚 Meta de estudio: {duracion_minutos(p.meta_estudio)} al día"]
+    lineas = [f"Duermes de {p.dormir:%H:%M} a {p.despertar:%H:%M}",
+              f"Meta de estudio: {duracion_minutos(p.meta_estudio)} al día"]
     if bloques:
-        lineas.append("🗓 Horario:")
+        lineas.append("Horario:")
         lineas += [f"  • {b.describir()}" for b in bloques]
     if p.actividades:
-        lineas.append("🏃 Actividades:")
+        lineas.append("Actividades:")
         lineas += [f"  • {a.describir()}" for a in p.actividades]
     if not bloques and not p.actividades:
         lineas.append("Cuéntame más: tu horario («horario: …») y lo que te gusta hacer («actividad: …»).")

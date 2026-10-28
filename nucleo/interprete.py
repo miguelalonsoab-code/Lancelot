@@ -61,7 +61,7 @@ REPETICIONES = {
     "anual": "Cada año",
 }
 
-TIPOS = {"tarea": "Tarea", "evento": "📅 Evento"}
+TIPOS = {"tarea": "Tarea", "evento": "Evento"}
 
 # Palabras que convierten algo en EVENTO: cosas que pasan un día (no algo que "haces")
 PALABRAS_EVENTO = ("aniversario", "cumpleanos", "cumple", "boda", "matrimonio", "bautizo", "graduacion",

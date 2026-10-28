@@ -9,7 +9,8 @@ la laptop sube una foto de todo eso en cada sincronización, solo cuando cambió
       "version": 1,
       "perfil":      {"despertar": "06:00", "dormir": "23:00", "meta_estudio": 100, "minutos_para_arrancar": 30,
                       "avisar_huecos": true},
-      "horario":     [{"dias": [0,1,2,3,4], "inicio": "08:30", "fin": "17:30", "titulo": "Trabajo", "traslado": 45}],
+      "horario":     [{"id": 1, "dias": [0,1,2,3,4], "inicio": "08:30", "fin": "17:30", "titulo": "Trabajo", "traslado": 45,
+                      "categoria": "trabajo"}],       # categoria: trabajo | clase | otro (v3.22)
       "excepciones": [{"desde": "2026-11-01", "hasta": "2026-11-01", "filtro": "traba", "titulo": "No trabajo"}],
       "actividades": [{"id": 1, "nombre": "Gimnasio", "minutos": 60, "veces_semana": 3, "momento": "tarde"}],
       "hechas":      {"1": ["2026-10-20"]},          # últimos 14 días
@@ -28,7 +29,7 @@ import hashlib
 import json
 from datetime import date, time
 
-from nucleo.horario import Bloque, Excepcion
+from nucleo.horario import Bloque, Excepcion, inferir_categoria
 from nucleo.perfil import Actividad
 
 VERSION_CONTEXTO = 1
@@ -36,12 +37,13 @@ VERSION_CONTEXTO = 1
 
 def bloque_a_dict(b: Bloque) -> dict:
     return {"id": b.id, "dias": list(b.dias), "inicio": f"{b.inicio:%H:%M}", "fin": f"{b.fin:%H:%M}",
-            "titulo": b.titulo, "traslado": b.traslado}
+            "titulo": b.titulo, "traslado": b.traslado, "categoria": b.categoria}
 
 
 def bloque_de_dict(d: dict) -> Bloque:
+    # Un bloque que viene sin categoría (un contexto o una acción de antes de la v3.22) se clasifica por su título
     return Bloque(tuple(d["dias"]), time.fromisoformat(d["inicio"]), time.fromisoformat(d["fin"]), d["titulo"],
-                  d.get("id"), d.get("traslado", 0))
+                  d.get("id"), d.get("traslado", 0), d.get("categoria") or inferir_categoria(d["titulo"]))
 
 
 def excepcion_a_dict(e: Excepcion) -> dict:

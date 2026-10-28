@@ -165,6 +165,8 @@ def argumentos_pyinstaller(icono: Path) -> list[str]:
         "--workpath", str(BUILD / "trabajo"),
         "--specpath", str(BUILD),
         "--paths", str(RAIZ),
+        # v3.24: las fuentes del tema Zafiro (Manrope y JetBrains Mono, con su licencia OFL)
+        "--add-data", f"{RAIZ / 'interfaz' / 'fuentes'}{os.pathsep}interfaz/fuentes",
     ]
     # Cosas que algunas librerías mencionan pero Lancelot no usa (p. ej. piper.train es para
     # ENTRENAR voces y arrastra torch, scipy, pandas...). Dejarlas fuera ahorra cientos de MB.

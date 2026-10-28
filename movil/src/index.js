@@ -21,7 +21,7 @@ import { huecos, isoDia } from "../publico/comun/horario.js";
 import { combinar, horasLibres, planDelDia } from "../publico/contexto.js";
 import { accionValida, autorizado, firmarAccion } from "./seguridad.js";
 
-const VERSION_SERVIDOR = "1.6";   // (el archivo principal de un Worker solo puede exportar "default")
+const VERSION_SERVIDOR = "1.8";   // (el archivo principal de un Worker solo puede exportar "default")
 
 export default {
   async fetch(request, env) {
@@ -315,11 +315,21 @@ function validarAccion(a) {
   if (tipo === "bloque") {                     // v3.21: horario fijo desde el celular
     const dias = Array.isArray(d.dias) ? [...new Set(d.dias)] : [];
     const titulo = String(d.titulo ?? "").trim().slice(0, 80);
+    // v3.22: categoría opcional (un celular sin actualizar no la manda: la laptop la deduce del título)
+    if (d.categoria !== undefined && !["trabajo", "clase", "otro"].includes(d.categoria)) throw new ErrorPedido("Bloque inválido");
     if (!dias.length || dias.some((x) => !Number.isInteger(x) || x < 0 || x > 6) || !esHora(d.inicio) || !esHora(d.fin) ||
         d.inicio >= d.fin || !titulo || !Number.isInteger(d.traslado ?? 0) || (d.traslado ?? 0) < 0 || (d.traslado ?? 0) > 240) {
       throw new ErrorPedido("Bloque inválido");
     }
-    return { tipo, datos: { dias: dias.sort((x, y) => x - y), inicio: d.inicio, fin: d.fin, titulo, traslado: d.traslado ?? 0 } };
+    const datos = { dias: dias.sort((x, y) => x - y), inicio: d.inicio, fin: d.fin, titulo, traslado: d.traslado ?? 0 };
+    if (d.categoria !== undefined) datos.categoria = d.categoria;
+    return { tipo, datos };
+  }
+  if (tipo === "categoria_bloque") {           // v3.23: Trabajo · Clase · Otro desde el celular
+    if (!Number.isInteger(d.id) || d.id <= 0 || !["trabajo", "clase", "otro"].includes(d.categoria)) {
+      throw new ErrorPedido("Acción inválida");
+    }
+    return { tipo, datos: { id: d.id, categoria: d.categoria } };
   }
   if (tipo === "quitar_bloque") {
     if (!Number.isInteger(d.id) || d.id <= 0) throw new ErrorPedido("Acción inválida");

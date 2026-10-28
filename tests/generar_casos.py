@@ -23,6 +23,18 @@ from nucleo.frases import REFLEXIONES             # noqa: E402
 from nucleo.interprete import describir_avisos, describir_faltan, interpretar   # noqa: E402
 from nucleo.planificador import aviso_previo_pendiente, siguiente_ocurrencia       # noqa: E402
 from tests.casos_horario import calcular_horario                                   # noqa: E402
+from nucleo.silabas import con_guiones, silabas                                   # noqa: E402
+
+# v3.24: separación en sílabas (el celular debe partir igual que la laptop)
+PALABRAS = ["computación", "interacción", "humano", "computador", "gráfica", "trabajo", "sanna", "universidad", "inglés",
+            "construcción", "laboratorio", "química", "guitarra", "reunión", "país", "biología", "transporte",
+            "inscripción", "perspectiva", "extra", "ahorro", "leer", "chocolate", "llave", "programación", "seminario",
+            "taller", "oficina", "clasificar", "matemática", "física", "cuidado", "ciudad", "averiguéis", "pingüino",
+            "hoy", "muy", "leyes", "Computación", "observar", "obstrucción", "atlántico", "aéreo", "examen", "Sanna",
+            "gimnasio", "pseudo", "psicología", "redes", "Robótica", "UPN", "y", "a", "Guerra", "QUESO", "ÑANDÚ", "rey",
+            "brrr", "hielo", "ahí", "creer", "maíz", "vehículo"]
+TEXTOS_GUIONES = ["Interacción Humano Computador", "Trabajo en Sanna", "Computación Gráfica 2", "Taller: robótica (UPN)",
+                  "Universidad", "", "Clase de redes y comunicaciones", "Reunión de grupo"]
 
 RUTA = RAIZ / "tests" / "casos_interprete.json"
 AHORAS = [datetime(2026, 10, 7, 6, 30),      # miércoles temprano
@@ -107,6 +119,12 @@ COMANDOS = [
     "¿Qué sabes de mí?", "me despierto a las 6:30", "Me duermo a las 11 de la noche", "meta de estudio 120 minutos",
     "Actividad: Gimnasio 1 hora 3 veces por semana en la tarde", "me gusta leer 30 min todos los días",
     "mis actividades", "borra la actividad gimnasio", "al trabajo tardo 45 minutos", "quiero hacer ejercicio mañana",
+    # v3.24: categoría de un bloque
+    "Computación Gráfica es clase", "computación gráfica es una clase", "marca inglés como otro",
+    "pon Trabajo en Sanna como trabajo", "la categoría de IHC es curso", "categoría de inglés: otra cosa",
+    "cambia el bloque de redes como clase", "Interacción Humano Computador es un curso", "la chamba es trabajo",
+    "esto es otro tema", "hoy es clase de redes", "mañana es trabajo", "esto es trabajo", "inglés es otro",
+    "mañana 8pm clase de redes", "marca la tarea como hecha",
 ]
 
 
@@ -136,6 +154,8 @@ def calcular() -> dict:
             "casos": casos, "comandos": comandos, "avisos_previos": avisos, "faltan": faltan,
             "textos_avisos": {str(k): v for k, v in textos_avisos.items()}, "repeticiones": repeticiones,
             "vocabulario": VOCABULARIO, "reflexiones": REFLEXIONES, "horario": calcular_horario(),
+            "silabas": {"palabras": [{"palabra": w, "silabas": silabas(w)} for w in PALABRAS],
+                        "guiones": [{"texto": t, "resultado": con_guiones(t, "-")} for t in TEXTOS_GUIONES]},
             "con_vocabulario": [{"texto": t, "tipo": interpretar(t, AHORAS[0], VOCABULARIO).tipo,
                                  "sin_vocabulario": interpretar(t, AHORAS[0], {}).tipo} for t in CON_VOCABULARIO]}
 

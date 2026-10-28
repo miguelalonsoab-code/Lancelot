@@ -1,4 +1,4 @@
-# Lancelot — asistente de escritorio · v3.21
+# Lancelot — asistente de escritorio · v3.24
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
@@ -9,6 +9,46 @@ te muestra una burbuja y Windows lanza una notificación.
   Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
   con botones **✓ Hecho** y **+10 min**.
 - Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
+
+## Novedades v3.24: tema Zafiro completo, guiones en español, categoría por voz y nombres en la semana
+- **Tema Zafiro** (sistema de diseño de Lancelot) en la laptop y en el celular: fondo azul marino, pestañas en
+  píldora, botones con iconos de línea y letras **Manrope** (texto) y **JetBrains Mono** (horas y fechas), que
+  vienen dentro del programa y de la app (licencia SIL OFL, `interfaz/fuentes/` y `movil/publico/fuentes/`).
+- Sin emoji en la interfaz ni en los mensajes de Lancelot. Se quedan solo en las **notificaciones del sistema**
+  (Android solo muestra texto ahí). La cara mantiene sus colores de ánimo; el resto usa los del tema.
+- Los nombres largos de la semana se parten **por sílabas con guion** («Com-pu-ta-ción»), con un separador en
+  español propio (`nucleo/silabas.py` y `movil/publico/comun/silabas.js`, mismos resultados en las dos).
+- **Categoría por texto o voz**: «computación gráfica es clase», «marca inglés como otro», «la categoría de IHC
+  es curso». Cambia todos los bloques con ese nombre (laptop y celular).
+- En la vista **Semana**, las tareas y eventos también muestran su nombre si el rectángulo tiene alto.
+- Arreglado (venía de la v3.20): en el celular el botón Mes/Semana elegido no se veía marcado.
+- App del celular 1.9 (`npm run configurar` para publicarla). El servidor no cambia.
+
+## Novedades v3.23: el horario con el sistema de diseño de Lancelot
+- 🎨 Colores nuevos para las categorías: **trabajo** azul medio, **clase** lavanda (texto oscuro encima) y
+  **otro** gris pizarra. Se distinguen por claridad, no solo por tono (pensado para daltonismo), y ya no hay
+  naranja: en el sistema de diseño el naranja significa «vencida».
+- Iconos de línea (maletín, birrete, etiqueta) en lugar de emoji, en la laptop y en el celular.
+- En la pestaña **Horario** (laptop) y en «Horario, días libres y actividades» (celular), cada bloque tiene el
+  selector **Trabajo · Clase · Otro**. **Desde el celular ya puedes cambiar la categoría**: la laptop la guarda.
+- Un bloque nuevo con el **mismo nombre** que uno que ya tienes toma su categoría: marcas «Computación Gráfica»
+  como clase una vez y los demás días salen bien.
+- Semana: leyenda con las categorías en la laptop; tareas y eventos van con borde (sin relleno) para no
+  confundirse con los bloques; en el celular el nombre del bloque va en 11 px y se parte con guion.
+- Servidor 1.8 (acción `categoria_bloque`). Sin migración de la nube: `npm run configurar` para publicarlo.
+
+## Novedades v3.22: categorías en el horario (trabajo, clase, otro), con colores y nombres en el calendario
+- 🎨 Cada bloque de tu horario ahora tiene una **categoría**: 💼 trabajo (azul), 🎓 clase (naranja) o 📌 otro (gris).
+  Lancelot la deduce del nombre al anotarlo («trabajo en Sanna», «oficina», «turno» → trabajo; «clase de redes»,
+  «curso», «universidad», «taller», «laboratorio» → clase; el resto, otro). Tus bloques de antes se clasifican solos.
+- 🗓 En la **semana** de la laptop y del celular cada bloque lleva su color **y su nombre adentro**
+  (rayado y tachado si ese día no va). En la agenda del día el bloque también muestra su categoría.
+- ✏️ Si Lancelot se equivocó, en la pestaña **Horario** de la laptop toca el botón 💼/🎓/📌 de la fila:
+  da la vuelta trabajo → clase → otro. El cambio llega al celular en la siguiente sincronización.
+- Servidor 1.7: el bloque que anotas desde el celular manda su categoría. Los celulares sin actualizar
+  siguen funcionando (la laptop la deduce). **No hace falta migración de la nube**; vuelve a ejecutar
+  `npm run configurar` para publicar el servidor nuevo.
+- 🧹 `salir()` ahora detiene los relojes (antes podían dispararse con la base ya cerrada; solo se notaba en las pruebas).
 
 ## Novedades v3.21: botones en el aviso de hueco libre, horario editable desde el celular y semana en la laptop
 - 💡 La notificación «Tienes un hueco libre» trae **✓ Lo hago** (la actividad cuenta como hecha hoy) y

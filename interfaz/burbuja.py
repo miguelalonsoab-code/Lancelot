@@ -12,24 +12,25 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from config import COLORES, MINUTOS_POSPONER, NOMBRE_ASISTENTE
+from interfaz.tema import ZAFIRO, familia
 from nucleo.almacen import Tarea
 
 ESTILO_BASE = """
 #tarjeta {{
-    background: {fondo};
+    background: {superficie};
     border: 1px solid {color};
     border-radius: 14px;
 }}
-QLabel {{ color: #e8ebef; font-family: 'Segoe UI'; background: transparent; }}
-#cabecera {{ color: {color}; font-size: 11px; font-weight: 600; }}
+QLabel {{ color: {tinta}; font-family: {familia}; background: transparent; }}
+#cabecera {{ color: {color}; font-size: 12px; font-weight: 700; }}
 #titulo {{ font-size: 14px; font-weight: 600; }}
-#extra {{ color: #8b93a1; font-size: 11px; }}
+#extra {{ color: {tinta_suave}; font-size: 12px; }}
 QPushButton {{
-    background: #232731; color: #e8ebef; border: none; border-radius: 8px;
-    padding: 6px 10px; font-family: 'Segoe UI'; font-size: 12px;
+    background: transparent; color: {tinta}; border: 1px solid {linea_fuerte}; border-radius: 14px;
+    padding: 6px 12px; font-family: {familia}; font-size: 12px; font-weight: 600;
 }}
-QPushButton:hover {{ background: #2e3340; }}
-#principal {{ background: {color}; color: #0b0d12; font-weight: 600; }}
+QPushButton:hover {{ background: {superficie_alta}; }}
+#principal {{ background: {acento}; color: {sobre_acento}; border: none; font-weight: 700; }}
 """
 
 
@@ -72,8 +73,8 @@ class Burbuja(QWidget):
     def mostrar_tarea(self, tarea: Tarea, junto_a: QRect, en_cola: int):
         self.tipo, self.tarea_id = "tarea", tarea.id
         self._auto_ocultar.stop()
-        cabecera = (f"📅 Hoy · {tarea.fecha:%H:%M}" if tarea.es_evento
-                    else f"⏰ {NOMBRE_ASISTENTE} · {tarea.fecha:%H:%M}")
+        cabecera = (f"Hoy · {tarea.fecha:%H:%M}" if tarea.es_evento
+                    else f"{NOMBRE_ASISTENTE} · {tarea.fecha:%H:%M}")
         self._pintar(COLORES["evento"] if tarea.es_evento else COLORES["alerta"], cabecera, tarea.titulo,
                      f"+{en_cola} aviso(s) más esperando" if en_cola else "")
         self._poner_botones([
@@ -105,7 +106,8 @@ class Burbuja(QWidget):
 
     # ------------------------------------------------------------ privados
     def _pintar(self, color: str, cabecera: str, titulo: str, extra: str):
-        self.setStyleSheet(ESTILO_BASE.format(color=color, fondo=COLORES["fondo_bisel"]))
+        # v3.24: tema Zafiro; el borde y la cabecera siguen siendo del color del ánimo de la cara
+        self.setStyleSheet(ESTILO_BASE.format(color=color, familia=familia(), **ZAFIRO))
         self.cabecera.setText(cabecera)
         # Textos largos o de varias líneas (saludo, agenda): más ancha, para que no quede una columna flaca
         self.titulo.setMinimumWidth(250 if len(titulo) > 60 or "\n" in titulo else 0)

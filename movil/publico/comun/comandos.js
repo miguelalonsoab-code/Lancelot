@@ -13,9 +13,15 @@ export const ACCIONES_CELULAR = new Set(["agenda", "vencidas", "vencidas_manana"
   // v3.20
   "actividad", "actividades", "borrar_actividad",
   // v3.21: horario fijo y perfil
-  "horario_agregar", "horario_borrar", "despertar", "dormir", "meta_estudio", "perfil"]);
+  "horario_agregar", "horario_borrar", "despertar", "dormir", "meta_estudio", "perfil",
+  // v3.24
+  "categoria"]);
 
 const PREFIJO = "(?:ponte en |pon(?:er)? |activa(?:r)? (?:el )?|entra(?:r)? (?:en|al) |modo )?";
+const CATEGORIA = "(clases?|curso|trabajo|chamba|otro|otra cosa)";
+/** Cómo se dice cada categoría (v3.24) -> su nombre interno. Igual que SINONIMOS_CATEGORIA en Python. */
+export const SINONIMOS_CATEGORIA = { clase: "clase", clases: "clase", curso: "clase", trabajo: "trabajo", chamba: "trabajo",
+  otro: "otro", "otra cosa": "otro" };
 
 // [patrón, acción, qué capturan los grupos]
 const REGLAS = [
@@ -56,6 +62,11 @@ const REGLAS = [
   [String.raw`^(?:horario|ocupado|estoy ocupado|mi horario(?: es)?|agrega(?:r)? (?:a mi |al |en mi )?horario|anota en (?:mi|el) horario)\s*:?\s+(.+)$`,
     "horario_agregar", "original"],
   ["^(?:borra|borrar|elimina|quita) (?:el |del )?(?:bloque|horario) (?:de |del )?(.+)$", "horario_borrar", "texto"],
+  // Categoría de un bloque (v3.24): "computación gráfica es clase", "marca inglés como otro"
+  ["^(?:marca|marcar|pon|poner|cambia|cambiar|deja|dejar|clasifica|clasificar|anota|anotar) (?:el bloque |el horario )?(?:de )?(.+?) como (?:una |un |de )?" +
+    CATEGORIA + "$", "categoria", "categoria"],
+  ["^(?:la )?categoria (?:de |del )?(.+?)(?: es|:)? (?:una |un )?" + CATEGORIA + "$", "categoria", "categoria"],
+  ["^(?!(?:hoy|manana|esto|eso|que|cual) )(.+?) es (?:una |un |mi )?(clases?|curso|trabajo|chamba)$", "categoria", "categoria"],
   // Excepciones al horario (v3.14)
   ["^(?:mis dias libres|dias libres|mis excepciones|excepciones|mis vacaciones|mis feriados)$", "excepciones", null],
   ["^(?!(?:que|cuanto|cuando|cual|cuales) )((?:vacaciones|feriado|dia libre) .+|" +
@@ -100,6 +111,8 @@ export function interpretarComando(texto) {
     } else if (captura === "original") {
       const inicio = m.index + m[0].length - m[1].length;            // el grupo llega hasta el final
       c.texto = limpiar(original.slice(inicio));
+    } else if (captura === "categoria") {
+      c.texto = m[1].replace(/^[ ,.:]+|[ ,.:]+$/g, ""); c.destino = SINONIMOS_CATEGORIA[m[2]];
     } else if (captura === "dos_textos") {
       c.texto = m[1].replace(/^[ ,.]+|[ ,.]+$/g, ""); c.destino = limpiar(m[2]);
     }

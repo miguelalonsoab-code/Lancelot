@@ -129,7 +129,7 @@ export class Cara {
     // Número de tareas de hoy
     if (this.contador > 0 && !["dormido", "feliz", "escuchando"].includes(estado)) {
       c.fillStyle = color;
-      c.font = `800 ${Math.max(9, 9 * e)}px Nunito, sans-serif`;
+      c.font = `800 ${Math.max(9, 9 * e)}px Manrope, sans-serif`;
       c.textAlign = "center";
       c.textBaseline = "middle";
       c.fillText(this.contador < 10 ? String(this.contador) : "9+", cx, cy + rp * 0.62);
@@ -137,7 +137,7 @@ export class Cara {
   }
 
   _zetas(c, cx, cy, rp, e) {
-    c.font = `800 ${11 * e}px Nunito, sans-serif`;
+    c.font = `800 ${11 * e}px Manrope, sans-serif`;
     for (let i = 0; i < 3; i++) {
       const fase = ((this.quieta ? 0.4 : this.t * 0.35) + i / 3) % 1;
       c.fillStyle = conAlfa(COLORES.ojos, 0.8 * Math.sin(Math.PI * fase));

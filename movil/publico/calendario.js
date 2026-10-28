@@ -14,11 +14,15 @@
  * Solo pinta: los datos y las acciones vienen de app.js (parámetro 'h').
  */
 import { DIAS, MESES, conHora, crear, diasEntre, diaSemana, hhmm, sumarDias } from "./comun/fechas.js";
-import { describirExcepcion, duracion, isoDia, lunesDe } from "./comun/horario.js";
+import { ICONO_CATEGORIA, NOMBRE_CATEGORIA, describirExcepcion, duracion, isoDia, lunesDe } from "./comun/horario.js";
 import { describirSugerencia } from "./comun/recomendador.js";
 import { agendaDelDia, marcasDelMes, planDelDia } from "./contexto.js";
+import { icono } from "./iconos.js";
+import { conGuiones } from "./comun/silabas.js";
 
 const INICIALES = ["L", "M", "M", "J", "V", "S", "D"];
+const ALTO_SEMANA = 380;               // px de la columna (igual que .sem-col en estilos.css)
+const ALTO_MINIMO_NOMBRE = 15;         // como en interfaz/semana_cal.py: menos alto que esto, sin nombre
 const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
@@ -28,7 +32,7 @@ const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 export function pintarCalendario(contenedor, h) {
   const { el } = h;
   const modos = el("div", { class: "cal-modos", role: "group", "aria-label": "Ver por" },
-    ["mes", "semana"].map((m) => el("button", { "aria-pressed": h.modo === m, onclick: () => h.cambiarModo(m) },
+    ["mes", "semana"].map((m) => el("button", { "aria-pressed": String(h.modo === m), onclick: () => h.cambiarModo(m) },
       m === "mes" ? "Mes" : "Semana")));
   contenedor.replaceChildren(modos, ...(h.modo === "semana" ? vistaSemana(h) : vistaMes(h)), agenda(h));
 }
@@ -36,7 +40,8 @@ export function pintarCalendario(contenedor, h) {
 // ------------------------------------------------------------ semana (v3.20)
 /**
  * 7 columnas (lunes a domingo) con el día de arriba a abajo, de que despiertas a que duermes:
- * gris = tu horario, verde suave = libre, turquesa = tareas, lila = eventos. Tocar un día = su agenda abajo.
+ * tu horario con el color de su categoría (azul trabajo, naranja clase, gris otro) y su nombre adentro (v3.22),
+ * verde suave = libre, turquesa = tareas, lila = eventos. Tocar un día = su agenda abajo.
  */
 function vistaSemana(h) {
   const { el, ctx, tareas, ahora, dia } = h;
@@ -48,7 +53,8 @@ function vistaSemana(h) {
   const pos = (f, fin) => {
     const a = Math.max(desde, f.getUTCHours() * 60 + f.getUTCMinutes());
     const b = Math.min(hasta, fin ? (fin.getUTCDate() !== f.getUTCDate() ? 24 * 60 : fin.getUTCHours() * 60 + fin.getUTCMinutes()) : a + 30);
-    return b <= a ? null : { top: `${((a - desde) / (hasta - desde)) * 100}%`, height: `${((b - a) / (hasta - desde)) * 100}%` };
+    return b <= a ? null : { top: `${((a - desde) / (hasta - desde)) * 100}%`, height: `${((b - a) / (hasta - desde)) * 100}%`,
+      px: ((b - a) / (hasta - desde)) * ALTO_SEMANA };
   };
   // La política de seguridad (CSP) no deja usar style="…" en el HTML: la posición se pone por JavaScript (CSSOM)
   const ubicar = (n, estilo) => { Object.assign(n.style, estilo); return n; };
@@ -58,8 +64,16 @@ function vistaSemana(h) {
     const dd = d;
     const piezas = agendaDelDia(ctx, tareas, d, null)
       .filter((x) => x.tipo !== "excepcion")
-      .map((x) => { const estilo = pos(x.inicio, x.fin); return estilo && ubicar(el("i", { class: `sem-${x.tipo}`,
-        "data-liberado": x.liberado, title: `${hhmm(x.inicio)} ${x.titulo}` }), estilo); });
+      .map((x) => {
+        const lugar = pos(x.inicio, x.fin);
+        if (!lugar) return null;
+        const { px, ...estilo } = lugar;
+        // v3.24: tareas y eventos también llevan su nombre, si el rectángulo tiene alto para una línea
+        const conNombre = x.tipo === "bloque" || ((x.tipo === "tarea" || x.tipo === "evento") && px >= ALTO_MINIMO_NOMBRE);
+        // Los bloques llevan su nombre adentro (si el rectángulo es muy bajo, el CSS lo corta); las tareas, solo el título al tocar
+        return ubicar(el("i", { class: `sem-${x.tipo}`, "data-liberado": x.liberado, "data-cat": x.categoria,
+          title: `${hhmm(x.inicio)} ${x.titulo}` }, conNombre ? conGuiones(x.titulo) : null), estilo);
+      });
     const libre = ctx.excepciones.some((e) => e.desde <= isoDia(d) && isoDia(d) <= e.hasta);
     columnas.push(el("button", { class: "sem-col", "data-hoy": isoDia(d) === isoDia(hoy), "data-elegido": isoDia(d) === isoDia(dia),
       "data-libre": libre, onclick: () => h.elegirDia(dd), "aria-label": `${capital(DIAS[i])} ${d.getUTCDate()}` },
@@ -78,8 +92,9 @@ function vistaSemana(h) {
       el("h3", {}, rango),
       el("button", { class: "b-mes", "aria-label": "Semana siguiente", onclick: () => h.cambiarSemana(1) }, "›")),
     el("div", { class: "sem" }, el("div", { class: "sem-horas", "aria-hidden": "true" }, horas), columnas),
-    el("p", { class: "sem-leyenda" }, el("i", { class: "sem-bloque" }), "horario ", el("i", { class: "sem-libre" }), "libre ",
-      el("i", { class: "sem-tarea" }), "tareas ", el("i", { class: "sem-evento" }), "eventos"),
+    el("p", { class: "sem-leyenda" },
+      ...["trabajo", "clase", "otro"].flatMap((c) => [el("i", { class: "sem-bloque", "data-cat": c }), `${NOMBRE_CATEGORIA[c].toLowerCase()} `]),
+      el("i", { class: "sem-libre" }), "libre ", el("i", { class: "sem-tarea" }), "tareas ", el("i", { class: "sem-evento" }), "eventos"),
   ];
 }
 
@@ -133,33 +148,39 @@ function agenda(h) {
     const plan = planDelDia(ctx, tareas, dia, ahora);
     if (plan.sugerencias.length) {
       partes.push(el("div", { class: "sugerencias" },
-        el("h4", {}, "💡 Te sugiero"),
+        el("h4", {}, "te sugiero"),
         plan.sugerencias.map((s) => el("div", { class: "sug" },
           el("span", {}, describirSugerencia(s)),
           dias === 0 && s.clase === "actividad" && s.actividad_id !== null && el("button", { class: "b-mini", onclick: () => h.hecha(s),
-            "aria-label": `Ya hice ${s.nombre}` }, "✓"))),
-        el("button", { class: "b-secundario", onclick: () => h.agendar(plan, dia) }, "📌 Agendar como tareas")));
+            "aria-label": `Ya hice ${s.nombre}` }, icono("check", 18)))),
+        el("button", { class: "b-secundario", onclick: () => h.agendar(plan, dia) }, "Agendar como tareas")));
     } else if (plan.sin_lugar.length) {
       partes.push(el("p", { class: "nota" }, `No entra: ${plan.sin_lugar.join(", ")}.`));
     }
   }
-  partes.push(el("button", { class: "enlace mis-cosas", onclick: h.misCosas }, "🗓 Horario, 🏖 días libres y 🏃 actividades"));
+  partes.push(el("button", { class: "enlace mis-cosas", onclick: h.misCosas }, icono("calendario", 16), "Horario, días libres y actividades"));
   return el("section", { class: "agenda" }, partes);
 }
 
 function fila(el, i, h) {
-  const hora = i.tipo === "excepcion" ? "🏖" : hhmm(i.inicio) + (i.fin && i.tipo !== "tarea" && i.tipo !== "evento" ? `–${hhmm(i.fin)}` : "");
+  const hora = i.tipo === "excepcion" ? "Todo el día" : hhmm(i.inicio) + (i.fin && i.tipo !== "tarea" && i.tipo !== "evento" ? `–${hhmm(i.fin)}` : "");
   let titulo = i.titulo, detalle = i.detalle || "";
-  if (i.tipo === "libre") { titulo = `🕒 Libre · ${duracion(i.inicio, i.fin)}`; }
-  if (i.tipo === "evento") titulo = `📅 ${i.titulo}`;
-  if (i.sugerida) titulo = `💡 ${i.titulo}`;
+  if (i.tipo === "libre") titulo = `Libre · ${duracion(i.inicio, i.fin)}`;
+  // v3.24: iconos de línea en vez de emoji (reloj = libre, calendario = evento, bombilla = sugerida)
+  const dibujo = i.tipo === "libre" ? "reloj" : i.sugerida ? "bombilla" : i.tipo === "evento" ? "calendario" : null;
   if ((i.tipo === "tarea" || i.tipo === "evento") && i.fin) detalle = `Hasta las ${hhmm(i.fin)}`;
   if (i.tipo === "excepcion" && i.pendiente) detalle += " · se guarda cuando la laptop sincronice";
+  // v3.23: el bloque dice su categoría con cuadradito de color + icono + palabra (nunca solo con color)
+  const categoria = i.tipo === "bloque" && i.categoria
+    ? el("span", { class: "ag-det ag-cat", "data-cat": i.categoria }, el("i", { class: "cat-punto" }), icono(ICONO_CATEGORIA[i.categoria], 14),
+      NOMBRE_CATEGORIA[i.categoria] + (detalle ? ` · ${detalle}` : ""))
+    : null;
   const contenido = [el("span", { class: "ag-hora" }, hora),
-    el("span", { class: "ag-que" }, el("span", { class: "ag-tit" }, titulo), detalle && el("span", { class: "ag-det" }, detalle))];
+    el("span", { class: "ag-que" }, el("span", { class: "ag-tit" }, dibujo && icono(dibujo, 16), titulo),
+      categoria || (detalle && el("span", { class: "ag-det" }, detalle)))];
   return i.tarea
     ? el("button", { class: "ag-fila", "data-tipo": i.tipo, onclick: () => h.tocarTarea(i.tarea) }, contenido)
-    : el("div", { class: "ag-fila", "data-tipo": i.tipo, "data-liberado": i.liberado }, contenido);
+    : el("div", { class: "ag-fila", "data-tipo": i.tipo, "data-liberado": i.liberado, "data-cat": i.categoria }, contenido);
 }
 
 export { describirExcepcion };

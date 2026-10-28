@@ -25,7 +25,7 @@ class Comando:
     #                           frase | guardar_frase | horario_ver | horario_agregar | horario_borrar | libre
     #                           excepcion | excepciones
     #                           perfil | despertar | dormir | meta_estudio | actividad | actividades
-    #                           borrar_actividad | traslado
+    #                           borrar_actividad | traslado | categoria (v3.24: texto = bloque, destino = categoría)
     minutos: int | None = None
     texto: str | None = None  # p. ej. el nombre de la app en "abre spotify", o el apodo
     destino: str | None = None  # a qué app apunta un apodo nuevo, o dónde buscar (youtube, google)
@@ -33,6 +33,10 @@ class Comando:
 
 
 _PREFIJO = r"(?:ponte en |pon(?:er)? |activa(?:r)? (?:el )?|entra(?:r)? (?:en|al) |modo )?"
+_CATEGORIA = r"(clases?|curso|trabajo|chamba|otro|otra cosa)"
+# Cómo se dice cada categoría (v3.24) -> su nombre interno (nucleo/horario.CATEGORIAS)
+SINONIMOS_CATEGORIA = {"clase": "clase", "clases": "clase", "curso": "clase", "trabajo": "trabajo", "chamba": "trabajo",
+                       "otro": "otro", "otra cosa": "otro"}
 
 # (patrón, acción, qué capturan los grupos: None | "minutos" | "texto" | "dos_textos" |
 #  "sitio_navegador" | "busqueda")
@@ -94,6 +98,14 @@ REGLAS = [
     (r"^(?:horario|ocupado|estoy ocupado|mi horario(?: es)?|agrega(?:r)? (?:a mi |al |en mi )?horario|"
      r"anota en (?:mi|el) horario)\s*:?\s+(.+)$", "horario_agregar", "original"),
     (r"^(?:borra|borrar|elimina|quita) (?:el |del )?(?:bloque|horario) (?:de |del )?(.+)$", "horario_borrar", "texto"),
+    # Categoría de un bloque (v3.24): "computación gráfica es clase", "marca inglés como otro",
+    # "la categoría de trabajo en sanna es trabajo". La forma «X es …» solo acepta clase/curso/trabajo
+    # (no «otro»): «esto es otro tema» no debe tomarse como un comando.
+    (r"^(?:marca|marcar|pon|poner|cambia|cambiar|deja|dejar|clasifica|clasificar|anota|anotar) "
+     r"(?:el bloque |el horario )?(?:de )?(.+?) como (?:una |un |de )?" + _CATEGORIA + r"$", "categoria", "categoria"),
+    (r"^(?:la )?categoria (?:de |del )?(.+?)(?: es|:)? (?:una |un )?" + _CATEGORIA + r"$", "categoria", "categoria"),
+    (r"^(?!(?:hoy|manana|esto|eso|que|cual) )(.+?) es (?:una |un |mi )?(clases?|curso|trabajo|chamba)$",
+     "categoria", "categoria"),
     # Excepciones al horario (v3.14): "el 1 de noviembre no trabajo", "vacaciones del 20 al 30 de diciembre"
     (r"^(?:mis dias libres|dias libres|mis excepciones|excepciones|mis vacaciones|mis feriados)$", "excepciones", None),
     (r"^(?!(?:que|cuanto|cuando|cual|cuales) )((?:vacaciones|feriado|dia libre) .+|"
@@ -142,6 +154,8 @@ def interpretar_comando(texto: str) -> Comando | None:
             return Comando(accion, texto=m.group(1).strip(" ."), navegador=navegador)
         if captura == "busqueda":
             return Comando(accion, texto=m.group(1).strip(" ."), destino=m.group(2), navegador=m.group(3))
+        if captura == "categoria":
+            return Comando(accion, texto=m.group(1).strip(" ,.:"), destino=SINONIMOS_CATEGORIA[m.group(2)])
         if captura == "dos_textos":
             apodo = m.group(1).strip(" ,.")
             return Comando(accion, texto=apodo, destino=m.group(2).strip(" ."))

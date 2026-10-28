@@ -9,7 +9,7 @@
  * horas_libres() de interfaz/app.py usando la misma lógica de comun/horario.js y comun/recomendador.js.
  */
 import { conHora, desdeTexto, soloFecha, sumarDias, sumarMinutos } from "./comun/fechas.js";
-import { coincide, deIsoDia, huecos, isoDia, lunesDe, raiz } from "./comun/horario.js";
+import { categoriaDe, coincide, deIsoDia, huecos, isoDia, lunesDe, raiz } from "./comun/horario.js";
 import { normalizar } from "./comun/interprete.js";
 import { siguienteOcurrencia } from "./comun/planificador.js";
 import { recomendar } from "./comun/recomendador.js";
@@ -33,6 +33,9 @@ export function combinar(contexto, acciones = []) {
     if (a.tipo === "quitar_actividad") actividades = actividades.filter((x) => x.id !== a.datos.id);
     if (a.tipo === "quitar_bloque") horario = horario.filter((x) => x.id !== a.datos.id);
     if (a.tipo === "bloque") horario.push({ ...a.datos, id: null, pendiente: true });
+    if (a.tipo === "categoria_bloque") {               // v3.23: se ve al instante, aunque la laptop aún no la guardó
+      horario = horario.map((x) => (x.id === a.datos.id ? { ...x, categoria: a.datos.categoria, categoriaPendiente: true } : x));
+    }
     if (a.tipo === "perfil") perfil = { ...perfil, ...a.datos, pendiente: true };
     if (a.tipo === "actividad" && !actividades.some((x) => normalizar(x.nombre) === normalizar(a.datos.nombre))) {
       actividades.push({ ...a.datos, id: null, pendiente: true });
@@ -131,8 +134,8 @@ export function agendaDelDia(ctx, tareas, dia, ahora) {
   for (const b of ctx.horario.filter((x) => x.dias.includes(dow))) {
     const libre = ctx.excepciones.some((e) => e.desde <= d && d <= e.hasta && coincide(e.filtro, b.titulo));
     const [h1, m1] = b.inicio.split(":").map(Number), [h2, m2] = b.fin.split(":").map(Number);
-    items.push({ tipo: "bloque", inicio: conHora(dia, h1, m1), fin: conHora(dia, h2, m2), titulo: b.titulo, liberado: libre,
-                 detalle: libre ? "No va (día libre)" : b.traslado ? `🚌 ${b.traslado} min antes y después` : "" });
+    items.push({ tipo: "bloque", inicio: conHora(dia, h1, m1), fin: conHora(dia, h2, m2), titulo: b.titulo, liberado: libre, categoria: categoriaDe(b),
+                 detalle: libre ? "No va (día libre)" : b.traslado ? `Traslado: ${b.traslado} min antes y después` : "" });
   }
   for (const t of tareasDelDia(tareas, dia)) {
     items.push({ tipo: t.tipo === "evento" ? "evento" : "tarea", inicio: t.ocurrencia,
