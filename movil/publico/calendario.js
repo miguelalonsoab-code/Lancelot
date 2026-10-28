@@ -143,7 +143,7 @@ function agenda(h) {
       partes.push(el("p", { class: "nota" }, `No entra: ${plan.sin_lugar.join(", ")}.`));
     }
   }
-  partes.push(el("button", { class: "enlace mis-cosas", onclick: h.misCosas }, "🏖 Días libres y 🏃 actividades"));
+  partes.push(el("button", { class: "enlace mis-cosas", onclick: h.misCosas }, "🗓 Horario, 🏖 días libres y 🏃 actividades"));
   return el("section", { class: "agenda" }, partes);
 }
 

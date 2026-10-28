@@ -4,36 +4,14 @@
  *
  *   "gimnasio 1 hora 3 veces por semana en la tarde" -> { nombre: "Gimnasio", minutos: 60, veces_semana: 3, momento: "tarde" }
  */
-import { duracionMinutos } from "./horario.js";
+import { duracionMinutos, leerDuracion } from "./horario.js";
 import { normalizar } from "./interprete.js";
 
 export const MOMENTOS = { manana: "en la mañana", tarde: "en la tarde", noche: "en la noche" };
 const NUMEROS = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7 };
-const NUM = String.raw`(\d{1,3}|una?|dos|tres|cuatro|media)`;
-const PATRON_DURACION = new RegExp(
-  String.raw`\b(?:${NUM} ?(?:h|hr|hrs|horas?)(?: y (\d{1,2}|media|cuarto)(?: ?(?:min|mins|minutos))?` +
-  String.raw`| ?(\d{1,2}) ?(?:min|mins|minutos))?` +
-  String.raw`|(\d{1,3}) ?(?:m|min|mins|minutos)` +
-  String.raw`|(media hora|hora y media|una hora y media))\b`);
 const VECES = /\b(\d|una|dos|tres|cuatro|cinco|seis|siete) (?:veces|vez) (?:por|a la|cada|en la) semana\b|\b(todos los dias|diario|diariamente|cada dia)\b/;
 const MOMENTO = /\b(?:en|por|de) la (manana|tarde|noche)\b|\b(?:(?:en|por|de) )?(?:las )?(mananas|tardes|noches)\b/;
 const RELLENO = /^(?:(?:hacer|ir al?|ir a la|practicar|el|la|los|las|de|un|una)\s+)+/i;
-
-/** '45 min' -> 45 · '1 hora y media' -> 90. Devuelve [minutos, [inicio, fin]] o null. */
-export function leerDuracion(texto) {
-  const m = PATRON_DURACION.exec(texto);
-  if (!m) return null;
-  const [, horas, extra1, extraMin, soloMin, frase] = m;
-  const extra = extra1 || extraMin;
-  let minutos;
-  if (frase) minutos = frase === "media hora" ? 30 : 90;
-  else if (soloMin) minutos = Number(soloMin);
-  else {
-    const h = horas === "media" ? 0.5 : /^\d+$/.test(horas) ? Number(horas) : NUMEROS[horas];
-    minutos = Math.trunc(h * 60) + ({ media: 30, cuarto: 15 }[extra] || Number(extra || 0));
-  }
-  return minutos > 0 && minutos <= 1440 ? [minutos, [m.index, m.index + m[0].length]] : null;
-}
 
 /** "gimnasio 1 hora 3 veces por semana en la tarde" -> actividad (sin id), o el texto de lo que falta. */
 export function interpretarActividad(texto) {
@@ -70,4 +48,26 @@ export function describirActividad(a) {
   }
   partes.push(MOMENTOS[a.momento] || "cuando puedas");
   return partes.join(" · ");
+}
+
+export { leerDuracion };
+
+// ------------------------------------------------------------ horas de sueño (v3.21)
+const HORA = /\b(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|a\.m\.|p\.m\.))?(?: (?:de|en|por) la (manana|tarde|noche))?/;
+
+/**
+ * Igual que leer_hora() de nucleo/perfil.py: 'a las 6:30' -> "06:30" · 'las 11 de la noche' -> "23:00".
+ * para = "despertar" | "dormir": sin am/pm, "me duermo a las 11" es 23:00 y "me despierto a las 6" es 06:00.
+ */
+export function leerHora(texto, para) {
+  const m = HORA.exec(normalizar(texto));
+  if (!m) return null;
+  let h = Number(m[1]);
+  const mi = Number(m[2] || 0), ampm = (m[3] || "").replace(/\./g, ""), momento = m[4];
+  if (h > 23 || mi > 59) return null;
+  if (ampm === "pm" || momento === "tarde" || momento === "noche") h = h < 12 ? h + 12 : h;
+  else if (ampm === "am" || momento === "manana") h = h === 12 ? 0 : h;
+  else if (para === "dormir" && h >= 7 && h <= 11) h += 12;
+  else if (para === "dormir" && h === 12) h = 0;
+  return `${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}`;
 }

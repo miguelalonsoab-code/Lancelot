@@ -35,7 +35,7 @@ before(async () => {
   const jwk = await crypto.subtle.exportKey("jwk", par.privateKey);
   const publica = b64url(await crypto.subtle.exportKey("raw", par.publicKey));
   writeFileSync(join(carpeta, ".dev.vars"),
-    `CLAVE=${CLAVE}\nVAPID_PUBLICA=${publica}\nVAPID_PRIVADA=${jwk.d}\nPERMITIR_PUSH_LOCAL=1\n`);
+    `CLAVE=${CLAVE}\nVAPID_PUBLICA=${publica}\nVAPID_PRIVADA=${jwk.d}\nPERMITIR_PUSH_LOCAL=1\nMINUTOS_MAS_TARDE=0\n`);
 
   const r = spawnSync("npx", ["wrangler", "d1", "migrations", "apply", "lancelot", "--local", "--persist-to", carpeta],
     { encoding: "utf8", shell: process.platform === "win32", env: { ...process.env, CI: "1" } });
@@ -78,7 +78,7 @@ const ahora = () => ahoraEn("America/Lima");
 test("sin clave no se puede leer nada", async () => {
   assert.equal((await api("/api/tareas", { clave: "otra" })).estado, 401);
   const estado = await api("/api/estado", { clave: "" });
-  assert.deepEqual(estado.datos, { ok: true, version: "1.5", configurado: true });
+  assert.deepEqual(estado.datos, { ok: true, version: "1.6", configurado: true });
 });
 
 test("agregar con texto libre, preguntar lo que falta y listar", async () => {
@@ -457,6 +457,29 @@ test("v3.20: aviso de hueco libre en el celular (una vez, y no si la laptop ya l
   await reloj();
   assert.equal(recibidas.filter((n) => n.datos.tipo === "hueco").length, 1, "una sola vez por hueco");
 
+  // v3.21: los botones de la notificación (sin la clave: con la firma que trae)
+  const n = huecos[0].datos;
+  assert.equal(n.que, "9");
+  const boton = (accion, extra = {}) => fetch(BASE + "/api/accion", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: n.id, fecha: n.que, accion, firma: n.firmas[accion], nombre: n.nombre, ...extra }) });
+  assert.equal((await boton("lo_hago", { fecha: "1" })).status, 403, "la firma no sirve para otra actividad");
+  assert.equal((await boton("luego", { firma: n.firmas.lo_hago })).status, 403, "ni para otro botón");
+  const hecho = await (await boton("lo_hago")).json();
+  assert.equal(hecho.mensaje, "💪 ¡Vamos! Cuento Caminar como hecho hoy.");
+  const acciones = (await api("/api/contexto")).datos.acciones;
+  assert.deepEqual(acciones.at(-1).datos, { actividad_id: 9, dia: aTexto(now).slice(0, 10) });
+  const luego = await (await boton("luego")).json();
+  assert.match(luego.mensaje, /^⏰ Te lo vuelvo a proponer desde las \d\d:\d\d/);
+  recibidas = [];
+  await reloj();                                           // MINUTOS_MAS_TARDE=0 en las pruebas: ya toca
+  const otra = recibidas.filter((x) => x.datos.tipo === "hueco");
+  assert.equal(otra.length, 1);
+  assert.equal(otra[0].datos.titulo, "⏰ Lo dejaste para más tarde");
+  assert.match(otra[0].datos.cuerpo, /^¿Ahora sí, Caminar\? Estás libre hasta las 23:59\.$/);
+  await reloj();
+  assert.equal(recibidas.filter((x) => x.datos.tipo === "hueco").length, 1, "lo pospuesto se repite una sola vez");
+  await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [], acciones_ok: acciones.map((a) => a.id) } });
+
   await sync({ desde: 0, cambios: [], contexto: { ...base, perfil: { ...base.perfil, avisar_huecos: false } } });
 });
 
@@ -470,8 +493,18 @@ test("v3.20: acciones para quitar días libres y editar actividades", async () =
     ["quitar_actividad", { id: "3" }], ["quitar_excepcion", { desde: "ayer", hasta: "2026-11-01", filtro: "" }]]) {
     assert.equal((await pedir(tipo, datos)).estado, 400, JSON.stringify(datos));
   }
+  // v3.21: horario fijo y perfil
+  assert.equal((await pedir("bloque", { dias: [2, 2], inicio: "19:30", fin: "22:40", titulo: "Computación Gráfica", traslado: 0 })).estado, 201);
+  assert.equal((await pedir("perfil", { dormir: "23:30" })).estado, 201);
+  for (const [tipo, datos] of [["bloque", { dias: [7], inicio: "08:00", fin: "09:00", titulo: "X" }],
+    ["bloque", { dias: [1], inicio: "10:00", fin: "09:00", titulo: "X" }], ["bloque", { dias: [1], inicio: "8:00", fin: "09:00", titulo: "X" }],
+    ["bloque", { dias: [1], inicio: "08:00", fin: "09:00", titulo: "" }], ["quitar_bloque", { id: 0 }], ["perfil", {}],
+    ["perfil", { dormir: "25:00" }], ["perfil", { meta_estudio: 5000 }]]) {
+    assert.equal((await pedir(tipo, datos)).estado, 400, JSON.stringify(datos));
+  }
   const r = await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [] } });
-  const nuevas = r.datos.acciones.slice(-3);
+  assert.deepEqual(r.datos.acciones.at(-2).datos, { dias: [2], inicio: "19:30", fin: "22:40", titulo: "Computación Gráfica", traslado: 0 });
+  const nuevas = r.datos.acciones.slice(-5, -2);
   assert.deepEqual(nuevas.map((a) => a.tipo), ["actividad", "quitar_actividad", "quitar_excepcion"]);
   assert.deepEqual(nuevas[0].datos, { nombre: "Yoga", minutos: 45, veces_semana: 2, momento: "tarde" });
   await api("/api/sync", { metodo: "POST", cuerpo: { desde: 0, cambios: [], acciones_ok: r.datos.acciones.map((a) => a.id) } });

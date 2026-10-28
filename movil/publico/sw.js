@@ -7,7 +7,7 @@
  *
  * La copia guardada se renueva sola cada vez que abres la app con internet.
  */
-const VERSION = "lancelot-1.5";
+const VERSION = "lancelot-1.6";
 const ARCHIVOS = [
   "/", "/index.html", "/estilos.css", "/app.js", "/cara.js", "/manifest.webmanifest",
   "/comun/fechas.js", "/comun/interprete.js", "/comun/comandos.js", "/comun/planificador.js", "/comun/frases.js",
@@ -63,6 +63,11 @@ self.addEventListener("push", (e) => {
       data: datos,
       actions: [{ action: "hecho", title: "✓ Hecho" }, { action: "posponer", title: "+10 min" }],
     });
+  } else if (datos.tipo === "hueco") {      // v3.21: sugerencia al quedar libre, con botones
+    aviso = self.registration.showNotification(datos.titulo, {
+      ...comun, body: datos.cuerpo || "", data: datos, tag: "hueco", renotify: true,
+      actions: [{ action: "lo_hago", title: "✓ Lo hago" }, { action: "luego", title: "⏰ Más tarde" }],
+    });
   } else {
     aviso = self.registration.showNotification(datos.titulo || "Lancelot", {
       ...comun, body: datos.cuerpo || "", data: datos,
@@ -75,18 +80,28 @@ self.addEventListener("push", (e) => {
 self.addEventListener("notificationclick", (e) => {
   const datos = e.notification.data || {};
   e.notification.close();
-  if (datos.tipo === "tarea" && (e.action === "hecho" || e.action === "posponer")) {
-    // El botón usa la firma que trajo la notificación: solo sirve para esta tarea y esta acción
+  const deTarea = datos.tipo === "tarea" && (e.action === "hecho" || e.action === "posponer");
+  const deHueco = datos.tipo === "hueco" && (e.action === "lo_hago" || e.action === "luego");
+  if (deTarea || deHueco) {
+    // El botón usa la firma que trajo la notificación: solo sirve para esto y esta acción
     e.waitUntil(fetch("/api/accion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: datos.id, fecha: datos.fecha, accion: e.action, firma: datos.firmas?.[e.action] }),
+      body: JSON.stringify({ id: datos.id, fecha: deHueco ? datos.que : datos.fecha, accion: e.action,
+                             firma: datos.firmas?.[e.action], nombre: datos.nombre }),
     }).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);    // p. ej. cambiaste la clave: la firma vieja ya no vale
       return r.json();
-    }).then((r) => avisarALaApp({ tipo: "actualizar", mensaje: r.mensaje }))
+    }).then(async (r) => {
+      await avisarALaApp({ tipo: "actualizar", mensaje: r.mensaje });
+      // Sin la app abierta, la respuesta se ve como una notificación cortita
+      if (deHueco && !(await self.clients.matchAll({ type: "window" })).length && r.mensaje) {
+        await self.registration.showNotification("Lancelot", { body: r.mensaje, tag: "hueco",
+          icon: "/iconos/icono-192.png", badge: "/iconos/insignia-96.png" });
+      }
+    })
       .catch(() => self.registration.showNotification("No pude hacerlo desde aquí", {
-        body: `Abre Lancelot para marcar «${datos.titulo}».`, icon: "/iconos/icono-192.png", badge: "/iconos/insignia-96.png",
+        body: deHueco ? "Abre Lancelot y escríbelo ahí." : `Abre Lancelot para marcar «${datos.titulo}».`, icon: "/iconos/icono-192.png", badge: "/iconos/insignia-96.png",
       })));
     return;
   }

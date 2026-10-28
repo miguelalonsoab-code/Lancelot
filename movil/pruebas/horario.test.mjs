@@ -58,3 +58,14 @@ for (const c of horario.actividades) {
     if (c.descripcion) assert.equal(describirActividad(a), c.descripcion);
   });
 }
+
+// v3.21: horario y horas de sueño escritos en el celular
+import { interpretarBloque } from "../publico/comun/horario.js";
+import { leerHora } from "../publico/comun/perfil.js";
+
+for (const c of horario.bloques) {
+  test(`bloque · ${c.texto}`, () => assert.deepEqual(interpretarBloque(c.texto), c.resultado));
+}
+for (const c of horario.horas) {
+  test(`hora · ${c.texto} (${c.para})`, () => assert.equal(leerHora(c.texto, c.para), c.hora));
+}

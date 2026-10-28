@@ -11,7 +11,9 @@ export const ACCIONES_CELULAR = new Set(["agenda", "vencidas", "vencidas_manana"
   // v3.19: con el contexto que sube la laptop
   "sugerir", "agendar_plan", "actividad_hecha", "excepcion", "excepciones", "libre", "horario_ver",
   // v3.20
-  "actividad", "actividades", "borrar_actividad"]);
+  "actividad", "actividades", "borrar_actividad",
+  // v3.21: horario fijo y perfil
+  "horario_agregar", "horario_borrar", "despertar", "dormir", "meta_estudio", "perfil"]);
 
 const PREFIJO = "(?:ponte en |pon(?:er)? |activa(?:r)? (?:el )?|entra(?:r)? (?:en|al) |modo )?";
 

@@ -457,6 +457,24 @@ class Asistente(QObject):
                         self.almacen.borrar_actividad(quitada.id)
                         self._recargar_perfil()
                         avisos.append(f"Quitada la actividad: {quitada.nombre}")
+                elif tipo == "bloque":
+                    b = contexto.bloque_de_dict({**d, "id": None})
+                    if not any((x.dias, x.inicio, x.fin, x.titulo) == (b.dias, b.inicio, b.fin, b.titulo)
+                               for x in self.almacen.horario()):
+                        self.almacen.agregar_bloque(b)
+                        avisos.append(f"Horario: {b.describir()}")
+                elif tipo == "quitar_bloque":
+                    quitado = next((x for x in self.almacen.horario() if x.id == d["id"]), None)
+                    if quitado:
+                        self.almacen.borrar_bloque(quitado.id)
+                        avisos.append(f"Quitado del horario: {quitado.titulo}")
+                elif tipo == "perfil":
+                    self.almacen.guardar_perfil(hora.fromisoformat(d["despertar"]) if "despertar" in d else None,
+                                                hora.fromisoformat(d["dormir"]) if "dormir" in d else None,
+                                                d.get("meta_estudio"))
+                    self._recargar_perfil()
+                    avisos.append(f"Perfil: despiertas {self.perfil.despertar:%H:%M}, duermes {self.perfil.dormir:%H:%M}, "
+                                  f"meta {duracion_minutos(self.perfil.meta_estudio)}")
                 elif tipo == "sugerida":
                     local = self.almacen.id_por_uuid(d["tarea"])
                     if local is None:
@@ -702,6 +720,15 @@ class Asistente(QObject):
                                 self.almacen.ids_sugeridas())
         plan = self.plan_del_dia(dia, ahora) if dias >= 0 else Plan([], [])
         self.panel.mostrar_calendario(marcas, titulo, agenda, plan.sugerencias, plan.sin_lugar)
+        if self.panel.modo_semana:                   # v3.21: las 7 columnas de la semana del día elegido
+            lunes = dia - timedelta(days=dia.weekday())
+            semana = []
+            for i in range(7):
+                d = lunes + timedelta(days=i)
+                libres_d = self.horas_libres(d, datetime.combine(d, hora(0))) if self.almacen.horario() else []
+                semana.append((d, agenda_del_dia(d, self.almacen.horario(), self.almacen.excepciones(d), pendientes,
+                                                 libres_d, self.almacen.ids_sugeridas())))
+            self.panel.mostrar_semana_cal(semana, self.perfil.despertar, self.perfil.dormir, ahora.date())
 
     def _agendar_dia(self, dia: date):
         self._ultimo_plan = self.plan_del_dia(dia)

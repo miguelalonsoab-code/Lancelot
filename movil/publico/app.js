@@ -20,17 +20,17 @@ import {
 import { avisosPrevios, describirAvisos, describirRango, interpretar as interpretarBase, REPETICIONES, TIPOS }
   from "./comun/interprete.js";
 import { BolsaFrases, REFLEXIONES } from "./comun/frases.js";
-import { coincide, describirBloque, describirExcepcion, describirLibre, hablarDuracion, interpretarExcepcion, isoDia,
-  lunesDe, minutos } from "./comun/horario.js";
+import { coincide, describirBloque, describirExcepcion, describirLibre, duracionMinutos, hablarDuracion, interpretarBloque,
+  interpretarExcepcion, isoDia, leerDuracion, lunesDe, minutos } from "./comun/horario.js";
 import { opcionesReprogramar } from "./comun/planificador.js";
-import { describirActividad, interpretarActividad } from "./comun/perfil.js";
+import { describirActividad, interpretarActividad, leerHora } from "./comun/perfil.js";
 import { describirPlan } from "./comun/recomendador.js";
 import { pintarCalendario } from "./calendario.js";
 import { actividadesQueNombra, combinar, esSugerida, hechasEntre, horasLibres, planDelDia } from "./contexto.js";
 
 const ZONA = "America/Lima";
 const NOMBRE = "Miguel";
-const VERSION_APP = "1.5";
+const VERSION_APP = "1.6";
 
 const $ = (id) => document.getElementById(id);
 const ahora = () => ahoraEn(ZONA);
@@ -424,6 +424,10 @@ function vistaPrevia(texto) {
   if (c && !estado.espera) {
     vista.dataset.tipo = "comando";
     vista.textContent = ACCIONES_CELULAR.has(c.accion) ? "Pregunta para Lancelot (Enter)" : "Eso es un comando de la laptop";
+    if (c.accion === "horario_agregar") {
+      const b = interpretarBloque(c.texto || "");
+      vista.textContent = typeof b === "string" ? b : `🗓 Horario: ${describirBloque(b)}`;
+    }
     if (c.accion === "excepcion") {                  // se ve antes de enviar qué día y qué se libera
       const e = interpretarExcepcion(c.texto || "", soloFecha(ahora()));
       vista.textContent = typeof e === "string" ? e : `🏖 Día libre: ${describirExcepcion(e)}` +
@@ -516,7 +520,8 @@ async function comando(c) {
   }
   if (c.accion === "vencidas_manana") return todasAManana();
   if (["sugerir", "agendar_plan", "actividad_hecha", "excepcion", "excepciones", "libre", "horario_ver",
-       "actividad", "actividades", "borrar_actividad"].includes(c.accion)) {
+       "actividad", "actividades", "borrar_actividad", "horario_agregar", "horario_borrar", "despertar", "dormir",
+       "meta_estudio", "perfil"].includes(c.accion)) {
     return comandoDelHorario(c, now);
   }
   decir("Eso lo hago en la laptop. Aquí anoto tareas, te digo tu agenda, tus horas libres y qué hacer, " +
@@ -541,7 +546,24 @@ async function comandoDelHorario(c, now) {
     return decir(libres.length ? `${cuando} tienes ${hablarDuracion(minutos(libres))} libre: ${describirLibre(libres)}.`
       : `${cuando} no te queda tiempo libre en tu horario.`);
   }
-  if (c.accion === "excepciones" || c.accion === "actividades") return mostrarMisCosas();
+  if (c.accion === "excepciones" || c.accion === "actividades" || c.accion === "perfil") return mostrarMisCosas();
+  if (c.accion === "horario_agregar") return agregarBloque(c.texto || "");
+  if (c.accion === "horario_borrar") {
+    const buscado = normalizarSimple(c.texto || "");
+    const b = x.horario.find((y) => buscado && normalizarSimple(y.titulo).includes(buscado));
+    return b ? quitarBloque(b) : decir(`No encontré «${c.texto}» en tu horario.`);
+  }
+  if (c.accion === "despertar" || c.accion === "dormir") {
+    const h = leerHora(c.texto || "", c.accion);
+    if (!h) return decir("No entendí la hora. Por ejemplo: «me despierto a las 6:30».");
+    return guardarPerfil({ [c.accion]: h });
+  }
+  if (c.accion === "meta_estudio") {
+    const d = leerDuracion(normalizarSimple(c.texto || ""));
+    const meta = d ? d[0] : Number((/\d+/.exec(c.texto || "") || [])[0]);
+    if (!meta) return decir("No entendí. Por ejemplo: «meta de estudio 120 minutos».");
+    return guardarPerfil({ meta_estudio: meta });
+  }
   if (c.accion === "actividad") return agregarActividad(c.texto || "");
   if (c.accion === "borrar_actividad") {
     const buscado = normalizarSimple(c.texto || "");
@@ -598,6 +620,32 @@ async function quitarActividad(a) {
   return null;
 }
 
+async function agregarBloque(texto) {
+  const b = interpretarBloque(texto);
+  if (typeof b === "string") { decir(b); return false; }
+  if (!(await accion("bloque", b))) return false;
+  cara.celebrar();
+  decir(`🗓 Anotado en tu horario: ${describirBloque(b)}. Ya lo cuento (la laptop lo guarda al sincronizar).`);
+  pintar();
+  return true;
+}
+
+async function quitarBloque(b) {
+  if (b.id == null) return decir("Ese bloque todavía no llegó a la laptop: espera a que sincronice y quítalo.");
+  if (!(await accion("quitar_bloque", { id: b.id }))) return null;
+  decir(`Quité ${b.titulo} de tu horario.`);
+  pintar();
+  if (hojaAbierta) mostrarMisCosas();
+  return null;
+}
+
+async function guardarPerfil(datos) {
+  if (!(await accion("perfil", datos))) return;
+  const p = ctx().perfil;
+  decir(`🙂 Guardado: despiertas ${p.despertar}, duermes ${p.dormir}, meta de estudio ${duracionMinutos(p.meta_estudio)}.`);
+  pintar();
+}
+
 async function quitarExcepcion(e) {
   if (!(await accion("quitar_excepcion", { desde: e.desde, hasta: e.hasta, filtro: e.filtro }))) return;
   decir(`Quité: ${describirExcepcion(e)}.`);
@@ -618,7 +666,31 @@ function mostrarMisCosas() {
     alQuitar && el("button", { class: "b-mini quitar", onclick: alQuitar, "aria-label": aria }, "✕"));
   const hoy = soloFecha(ahora());
   const [semana] = hechasEntre(x, lunesDe(hoy), hoy);
-  abrirHoja("Días libres y actividades",
+  const nuevoBloque = el("input", { type: "text", maxlength: 160, placeholder: "martes y jueves de 7 a 10 de la noche clase",
+    "aria-label": "Nuevo bloque del horario", enterkeyhint: "done" });
+  const agregarB = async () => { if (nuevoBloque.value.trim() && (await agregarBloque(nuevoBloque.value.trim()))) mostrarMisCosas(); };
+  nuevoBloque.addEventListener("keydown", (e) => { if (e.key === "Enter") agregarB(); });
+  const despertar = el("input", { type: "time", value: x.perfil.despertar, "aria-label": "Me despierto" });
+  const dormir = el("input", { type: "time", value: x.perfil.dormir, "aria-label": "Me duermo" });
+  const meta = el("input", { type: "number", min: 0, max: 600, step: 10, value: x.perfil.meta_estudio, "aria-label": "Meta de estudio (min)" });
+  abrirHoja("Tu horario y tu perfil",
+    el("h3", { class: "mi-sec" }, "🗓 Horario fijo"),
+    x.horario.length ? x.horario.map((b) => filaQuitar(describirBloque(b), b.pendiente ? "esperando a la laptop" : null,
+      b.id == null ? null : () => quitarBloque(b), `Quitar ${b.titulo}`))
+      : el("p", { class: "sub" }, "Vacío. Agrega tu trabajo y tus clases."),
+    el("div", { class: "fila" }, nuevoBloque, el("button", { class: "b-secundario", onclick: agregarB }, "Agregar al horario")),
+    el("h3", { class: "mi-sec" }, "😴 Sueño y 📚 meta"),
+    el("div", { class: "perfil-campos" },
+      el("label", {}, "Me despierto", despertar), el("label", {}, "Me duermo", dormir), el("label", {}, "Meta (min/día)", meta)),
+    el("button", { class: "b-secundario", onclick: async () => {
+      const datos = {};
+      if (despertar.value && despertar.value !== x.perfil.despertar) datos.despertar = despertar.value;
+      if (dormir.value && dormir.value !== x.perfil.dormir) datos.dormir = dormir.value;
+      if (meta.value !== "" && Number(meta.value) !== x.perfil.meta_estudio) datos.meta_estudio = Math.round(Number(meta.value));
+      if (!Object.keys(datos).length) return decir("No cambiaste nada.");
+      await guardarPerfil(datos);
+      mostrarMisCosas();
+    } }, "Guardar sueño y meta"),
     el("h3", { class: "mi-sec" }, "🏖 Días libres"),
     x.excepciones.length ? x.excepciones.map((e) => filaQuitar(describirExcepcion(e),
       e.pendiente ? "esperando a la laptop" : e.filtro ? "solo ese bloque" : "todo el horario",
@@ -629,7 +701,7 @@ function mostrarMisCosas() {
       a.pendiente ? "esperando a la laptop" : a.veces_semana ? `esta semana: ${semana[a.id] || 0} de ${a.veces_semana}` : null,
       a.pendiente ? null : () => quitarActividad(a), `Quitar ${a.nombre}`)),
     el("div", { class: "fila" }, campo, el("button", { class: "b-principal", onclick: agregar }, "Agregar actividad")),
-    el("p", { class: "sub" }, "Tu horario fijo y tus horas de sueño se cambian en la laptop."));
+    el("p", { class: "sub" }, "Lo que cambias aquí se ve al instante y la laptop lo guarda al sincronizar."));
 }
 
 async function marcarHecha(a) {

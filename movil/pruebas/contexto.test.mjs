@@ -86,3 +86,16 @@ test("v3.20: quitar días libres y agregar/quitar actividades desde el celular",
   const p = planDelDia(ctx, [], deIsoDia("2026-10-24"), f("2026-10-24 05:00"));
   assert.ok(p.sugerencias.some((s) => s.nombre === "Yoga"));
 });
+
+test("v3.21: horario fijo y perfil cambiados desde el celular", () => {
+  const conIds = { ...LAPTOP, horario: LAPTOP.horario.map((b) => ({ ...b, id: 5 })) };
+  const ctx = combinar(conIds, [
+    { id: 1, tipo: "bloque", datos: { dias: [2], inicio: "19:30", fin: "22:40", titulo: "Computación Gráfica", traslado: 0 } },
+    { id: 2, tipo: "quitar_bloque", datos: { id: 5 } },
+    { id: 3, tipo: "perfil", datos: { dormir: "23:30", meta_estudio: 60 } }]);
+  assert.deepEqual(ctx.horario.map((b) => [b.titulo, b.id, b.pendiente]), [["Computación Gráfica", null, true]]);
+  assert.deepEqual([ctx.perfil.despertar, ctx.perfil.dormir, ctx.perfil.meta_estudio], ["06:00", "23:30", 60]);
+  // Sin el trabajo, el miércoles queda libre hasta la clase
+  const txt = (l) => l.map(([a, b]) => `${aTexto(a).slice(11)}-${aTexto(b).slice(11)}`);
+  assert.deepEqual(txt(horasLibres(ctx, [], deIsoDia("2026-10-28"), null)), ["06:00-19:30", "22:40-23:30"]);
+});

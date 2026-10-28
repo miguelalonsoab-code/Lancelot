@@ -1,4 +1,4 @@
-# Lancelot — asistente de escritorio · v3.20
+# Lancelot — asistente de escritorio · v3.21
 
 Una carita flotante en tu escritorio que te recuerda tus pendientes y te acompaña a estudiar.
 Escribes "mañana 8pm pagar la luz" y a esa hora la cara se pone en alerta,
@@ -9,6 +9,16 @@ te muestra una burbuja y Windows lanza una notificación.
   Anotas tareas escribiendo como en la laptop y te llegan **notificaciones aunque la laptop esté apagada**,
   con botones **✓ Hecho** y **+10 min**.
 - Instalación paso a paso en **[movil/LEEME.md](movil/LEEME.md)** (necesita Node.js y tu cuenta de Cloudflare).
+
+## Novedades v3.21: botones en el aviso de hueco libre, horario editable desde el celular y semana en la laptop
+- 💡 La notificación «Tienes un hueco libre» trae **✓ Lo hago** (la actividad cuenta como hecha hoy) y
+  **⏰ Más tarde** (te lo vuelve a proponer en 1 hora, si estás libre; si no, cuando quedes libre ese día).
+- 🗓 Desde el celular ahora también cambias tu **horario fijo** («horario: miércoles de 7:30 pm a 10:40 pm
+  Computación Gráfica», «borra el horario de trabajo») y tu **sueño y meta** («me duermo a las 11:30»,
+  «meta de estudio 90 minutos»), o en Calendario → «Horario, días libres y actividades». La laptop lo aplica.
+- 📅 En la pestaña Calendario de la laptop: botones **Mes / Semana**. La semana se dibuja en 7 columnas
+  (gris = horario, rayado = no va, verde = libre, turquesa = tareas, lila = eventos); clic en un día = su agenda.
+- Servidor 1.6. Opcional en `vars` de wrangler.jsonc: `MINUTOS_MAS_TARDE` (60 por defecto).
 
 ## Novedades v3.20: calendario en la laptop, semana en el celular y más control desde el celular
 - 📅 **Laptop**: pestaña **Calendario** con el mes (en negrita los días con tareas, lila con eventos, verde

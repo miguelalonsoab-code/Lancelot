@@ -24,11 +24,16 @@ export function combinar(contexto, acciones = []) {
   const hechas = Object.fromEntries(Object.entries(c.hechas).map(([k, v]) => [k, [...v]]));
   let excepciones = [...c.excepciones];
   let actividades = [...c.actividades];
+  let horario = [...c.horario];
+  let perfil = { ...c.perfil };
   const sugeridas = new Set(c.sugeridas);
   const mismaExc = (x, e) => x.desde === e.desde && x.hasta === e.hasta && x.filtro === e.filtro;
   for (const a of acciones) {                        // en orden: «agregar y después quitar» queda quitado
     if (a.tipo === "quitar_excepcion") excepciones = excepciones.filter((x) => !mismaExc(x, a.datos));
     if (a.tipo === "quitar_actividad") actividades = actividades.filter((x) => x.id !== a.datos.id);
+    if (a.tipo === "quitar_bloque") horario = horario.filter((x) => x.id !== a.datos.id);
+    if (a.tipo === "bloque") horario.push({ ...a.datos, id: null, pendiente: true });
+    if (a.tipo === "perfil") perfil = { ...perfil, ...a.datos, pendiente: true };
     if (a.tipo === "actividad" && !actividades.some((x) => normalizar(x.nombre) === normalizar(a.datos.nombre))) {
       actividades.push({ ...a.datos, id: null, pendiente: true });
     }
@@ -45,7 +50,8 @@ export function combinar(contexto, acciones = []) {
     }
   }
   excepciones.sort((x, y) => (x.desde < y.desde ? -1 : x.desde > y.desde ? 1 : 0));
-  return { ...c, hechas, excepciones, actividades, sugeridas, conocido: Boolean(contexto) };
+  horario.sort((x, y) => Math.min(...x.dias) - Math.min(...y.dias) || (x.inicio < y.inicio ? -1 : x.inicio > y.inicio ? 1 : 0));
+  return { ...c, hechas, excepciones, actividades, horario, perfil, sugeridas, conocido: Boolean(contexto) };
 }
 
 /** Las veces que hiciste cada actividad entre dos días (incluidos): { id: n } y el Set de las de 'dia'. */

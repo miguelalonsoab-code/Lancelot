@@ -26,6 +26,112 @@ export const isoDia = (f) => f.toISOString().slice(0, 10);
 export const deIsoDia = (t) => { const [a, m, d] = t.split("-").map(Number); return crear(a, m, d); };
 const enDia = (dia, texto) => conHora(dia, ...hm(texto));
 
+// ------------------------------------------------------------ duraciones y bloques (v3.21)
+const NUMEROS = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4 };
+const NUM = String.raw`(\d{1,3}|una?|dos|tres|cuatro|media)`;
+const PATRON_DURACION = new RegExp(
+  String.raw`\b(?:${NUM} ?(?:h|hr|hrs|horas?)(?: y (\d{1,2}|media|cuarto)(?: ?(?:min|mins|minutos))?` +
+  String.raw`| ?(\d{1,2}) ?(?:min|mins|minutos))?` +
+  String.raw`|(\d{1,3}) ?(?:m|min|mins|minutos)` +
+  String.raw`|(media hora|hora y media|una hora y media))\b`);
+/** '45 min' -> 45 · '1 hora y media' -> 90. Devuelve [minutos, [inicio, fin]] o null. */
+export function leerDuracion(texto) {
+  const m = PATRON_DURACION.exec(texto);
+  if (!m) return null;
+  const [, horas, extra1, extraMin, soloMin, frase] = m;
+  const extra = extra1 || extraMin;
+  let minutos;
+  if (frase) minutos = frase === "media hora" ? 30 : 90;
+  else if (soloMin) minutos = Number(soloMin);
+  else {
+    const h = horas === "media" ? 0.5 : /^\d+$/.test(horas) ? Number(horas) : NUMEROS[horas];
+    minutos = Math.trunc(h * 60) + ({ media: 30, cuarto: 15 }[extra] || Number(extra || 0));
+  }
+  return minutos > 0 && minutos <= 1440 ? [minutos, [m.index, m.index + m[0].length]] : null;
+}
+
+const PATRON_TRASLADO = /(?:,\s*|\s)(?:(?:con\s+)?(?:traslado|viaje|transporte)(?: de)?\s+([^,]+?)|con\s+([^,]+?)\s+de\s+(?:traslado|viaje|transporte))(?:\s+de ida y vuelta)?(?=,|$)/g;
+
+function leerTraslado(texto) {
+  for (const m of texto.matchAll(PATRON_TRASLADO)) {
+    const d = leerDuracion(m[1] || m[2]);
+    if (d) return [d[0], [m.index, m.index + m[0].length]];
+  }
+  return null;
+}
+
+const P_DIA = "(?:lunes|martes|miercoles|jueves|viernes|sabados?|domingos?)";
+const PATRON_DIAS = new RegExp(String.raw`(?:\b(?:todos los dias|cada dia|diario)\b|\b(?:fines? de semana)\b` +
+  String.raw`|\b(?:de )?${P_DIA} a ${P_DIA}\b|\b(?:(?:los|cada|el) )?${P_DIA}(?:(?:, ?| y | e )(?:los )?${P_DIA})*\b)`, "g");
+const indice = (nombre) => DIAS.indexOf(nombre === "sabados" || nombre === "domingos" ? nombre.slice(0, -1) : nombre);
+
+function leerDias(texto) {
+  if (/todos los dias|cada dia|diario/.test(texto)) return [0, 1, 2, 3, 4, 5, 6];
+  if (/fines? de semana/.test(texto)) return [5, 6];
+  const m = new RegExp(`(${P_DIA}) a (${P_DIA})`).exec(texto);
+  if (m) {
+    const a = indice(m[1]), b = indice(m[2]);
+    const r = [];
+    if (a <= b) for (let i = a; i <= b; i++) r.push(i);
+    else { for (let i = a; i < 7; i++) r.push(i); for (let i = 0; i <= b; i++) r.push(i); }
+    return r;
+  }
+  const dias = [...new Set((texto.match(new RegExp(P_DIA, "g")) || []).map(indice))].sort((x, y) => x - y);
+  return dias.length ? dias : null;
+}
+
+const H = String.raw`(\d{1,2})(?::(\d{2}))?(?:\s?(am|pm|a\.m\.|p\.m\.))?`;
+const PATRON_RANGO = new RegExp(String.raw`\b(?:de |desde )?(?:las? )?${H}\s?(?:a|-|–|hasta)\s?(?:las? )?${H}` +
+  String.raw`(?: (?:de|en|por) la (manana|tarde|noche))?(?: ?(?:hrs|horas|h)\b)?`);
+const ajustar = (h, ampm) => (ampm === "pm" && h < 12 ? h + 12 : ampm === "am" && h === 12 ? 0 : h);
+
+function leerRango(texto) {
+  const m = PATRON_RANGO.exec(texto);
+  if (!m) return null;
+  let h1 = Number(m[1]), m1 = Number(m[2] || 0), h2 = Number(m[4]), m2 = Number(m[5] || 0);
+  const ap1 = (m[3] || "").replace(/\./g, ""), ap2 = (m[6] || "").replace(/\./g, ""), momento = m[7];
+  if (h1 > 23 || h2 > 24 || m1 > 59 || m2 > 59) return null;
+  const tarde = ap2 === "pm" || momento === "tarde" || momento === "noche";
+  h2 = ajustar(h2, ap2 || (tarde ? "pm" : ""));
+  if (h2 === 0 && m2 === 0) h2 = 24;
+  if (ap1) h1 = ajustar(h1, ap1);
+  else if (h1 < 12 && ((tarde && h1 + 12 < h2) || (!ap2 && !momento && h1 >= 1 && h1 <= 7))) h1 += 12;
+  if (!ap2 && !momento && h2 < 12 && h2 <= h1) h2 += 12;
+  if (!(h1 * 60 + m1 < h2 * 60 + m2 && h2 * 60 + m2 <= 24 * 60)) return "medianoche";
+  const dd = (n) => String(n).padStart(2, "0");
+  return [`${dd(h1)}:${dd(m1)}`, h2 === 24 ? "23:59" : `${dd(h2)}:${dd(m2)}`, [m.index, m.index + m[0].length]];
+}
+
+/** "de lunes a viernes de 9am a 6pm trabajo" -> bloque (sin id), o el texto que explica qué falta. */
+export function interpretarBloque(texto) {
+  let t = normalizar(texto);
+  let traslado = 0;
+  const tr = leerTraslado(t);
+  if (tr) {
+    const [a, b] = tr[1];
+    traslado = tr[0];
+    t = t.slice(0, a) + " ".repeat(b - a) + t.slice(b);
+    texto = texto.slice(0, a) + " ".repeat(b - a) + texto.slice(b);
+  }
+  const rango = leerRango(t);
+  if (rango === "medianoche") {
+    return "Ese bloque termina pasada la medianoche. Anótalo en dos partes, por ejemplo: " +
+      "«lunes de 10pm a 12am turno» y «martes de 12am a 6am turno».";
+  }
+  if (rango === null) return "No entendí las horas. Escribe, por ejemplo: «de lunes a viernes de 9am a 6pm trabajo».";
+  const [inicio, fin, [a, b]] = rango;
+  const resto = t.slice(0, a) + " ".repeat(b - a) + t.slice(b);
+  const dias = leerDias(resto);
+  if (!dias) return "¿Qué días? Por ejemplo: «de lunes a viernes», «martes y jueves» o «sábados».";
+  const tramos = [[a, b], ...[...resto.matchAll(PATRON_DIAS)].map((x) => [x.index, x.index + x[0].length])];
+  let titulo = texto;
+  for (const [i, f] of tramos.sort((x, y) => y[0] - x[0] || y[1] - x[1])) titulo = titulo.slice(0, i) + " " + titulo.slice(f);
+  const limpiar = (s) => s.replace(/^[ ,.;:-]+|[ ,.;:-]+$/g, "");
+  titulo = limpiar(titulo.replace(/\s+/g, " "));
+  titulo = limpiar(titulo.replace(/^(?:(?:tengo|hay|de|el|los|y)\s+)+/i, "")) || "Ocupado";
+  return { dias, inicio, fin, titulo: titulo.charAt(0).toUpperCase() + titulo.slice(1, 80), traslado };
+}
+
 // ------------------------------------------------------------ textos
 /** 90 -> '1 h 30 min' */
 export function duracionMinutos(minutos) {

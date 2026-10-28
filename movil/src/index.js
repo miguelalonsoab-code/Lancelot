@@ -21,7 +21,7 @@ import { huecos, isoDia } from "../publico/comun/horario.js";
 import { combinar, horasLibres, planDelDia } from "../publico/contexto.js";
 import { accionValida, autorizado, firmarAccion } from "./seguridad.js";
 
-const VERSION_SERVIDOR = "1.5";   // (el archivo principal de un Worker solo puede exportar "default")
+const VERSION_SERVIDOR = "1.6";   // (el archivo principal de un Worker solo puede exportar "default")
 
 export default {
   async fetch(request, env) {
@@ -265,6 +265,7 @@ async function guardarPreferencias(p, almacen) {
 
 // ------------------------------------------------------------ contexto y acciones (v3.19)
 const DIA = /^\d{4}-\d{2}-\d{2}$/;
+const esHora = (x) => typeof x === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(x);
 const esDia = (x) => typeof x === "string" && DIA.test(x) && Boolean(desdeTexto(`${x} 00:00`));
 
 /** El contexto de la laptop: se guarda tal cual, pero solo si tiene la forma esperada y un tamaño razonable. */
@@ -311,6 +312,30 @@ function validarAccion(a) {
     if (!Number.isInteger(d.id) || d.id <= 0) throw new ErrorPedido("Acción inválida");
     return { tipo, datos: { id: d.id } };
   }
+  if (tipo === "bloque") {                     // v3.21: horario fijo desde el celular
+    const dias = Array.isArray(d.dias) ? [...new Set(d.dias)] : [];
+    const titulo = String(d.titulo ?? "").trim().slice(0, 80);
+    if (!dias.length || dias.some((x) => !Number.isInteger(x) || x < 0 || x > 6) || !esHora(d.inicio) || !esHora(d.fin) ||
+        d.inicio >= d.fin || !titulo || !Number.isInteger(d.traslado ?? 0) || (d.traslado ?? 0) < 0 || (d.traslado ?? 0) > 240) {
+      throw new ErrorPedido("Bloque inválido");
+    }
+    return { tipo, datos: { dias: dias.sort((x, y) => x - y), inicio: d.inicio, fin: d.fin, titulo, traslado: d.traslado ?? 0 } };
+  }
+  if (tipo === "quitar_bloque") {
+    if (!Number.isInteger(d.id) || d.id <= 0) throw new ErrorPedido("Acción inválida");
+    return { tipo, datos: { id: d.id } };
+  }
+  if (tipo === "perfil") {
+    const datos = {};
+    if (d.despertar !== undefined) datos.despertar = d.despertar;
+    if (d.dormir !== undefined) datos.dormir = d.dormir;
+    if (d.meta_estudio !== undefined) datos.meta_estudio = d.meta_estudio;
+    if (!Object.keys(datos).length || [datos.despertar, datos.dormir].some((h) => h !== undefined && !esHora(h)) ||
+        (datos.meta_estudio !== undefined && (!Number.isInteger(datos.meta_estudio) || datos.meta_estudio < 0 || datos.meta_estudio > 1440))) {
+      throw new ErrorPedido("Perfil inválido");
+    }
+    return { tipo, datos };
+  }
   if (tipo === "sugerida") {
     const tarea = String(d.tarea ?? "");
     const actividad = d.actividad_id ?? null;
@@ -340,11 +365,12 @@ function validarCambio(c) {
 }
 
 // ------------------------------------------------------------ notificaciones
-async function accionDeNotificacion({ id, fecha, accion, firma }, env) {
-  if (!["hecho", "posponer"].includes(accion) || !(await accionValida(env, id, fecha, accion, firma))) {
+async function accionDeNotificacion({ id, fecha, accion, firma, nombre }, env) {
+  if (!["hecho", "posponer", "lo_hago", "luego"].includes(accion) || !(await accionValida(env, id, fecha, accion, firma))) {
     return json({ error: "Firma inválida" }, 403);
   }
   const almacen = new Almacen(env.DB);
+  if (accion === "lo_hago" || accion === "luego") return accionDeSugerencia(almacen, env, id, fecha, accion, nombre);
   const tarea = await almacen.obtener(id);
   if (!tarea || tarea.estado !== "pendiente" || tarea.fecha !== fecha) {
     return json({ ok: true, mensaje: "Esa tarea ya estaba resuelta." });      // botón de una notificación vieja
@@ -356,6 +382,22 @@ async function accionDeNotificacion({ id, fecha, accion, firma }, env) {
   }
   await almacen.posponer(id, 10, ahora);
   return json({ ok: true, mensaje: `+10 min: ${tarea.titulo}` });
+}
+
+/** Botones de la notificación de hueco libre. id = cuándo empezó el hueco; que = "estudio" o id de actividad. */
+async function accionDeSugerencia(almacen, env, id, que, accion, nombre) {
+  const ahora = ahoraDe(env);
+  const quien = String(nombre || "").slice(0, 60) || (que === "estudio" ? "Estudiar" : "tu actividad");
+  if (accion === "luego") {
+    const cuando = aTexto(sumarMinutos(ahora, minutosMasTarde(env)));
+    await almacen.guardarAjuste("hueco_pospuesto", { cuando, que });
+    return json({ ok: true, mensaje: `⏰ Te lo vuelvo a proponer desde las ${cuando.slice(11)} si estás libre.` });
+  }
+  if (que === "estudio") return json({ ok: true, mensaje: "📚 ¡A estudiar! Abre el modo estudio en la laptop y cuenta." });
+  const actividad = Number(que);
+  if (!Number.isInteger(actividad) || actividad <= 0) return json({ error: "Acción inválida" }, 400);
+  await almacen.agregarAccion("hecha", { actividad_id: actividad, dia: isoDia(ahora) });
+  return json({ ok: true, mensaje: `💪 ¡Vamos! Cuento ${quien} como hecho hoy.` });
 }
 
 const vapidDe = (env) => ({ publica: env.VAPID_PUBLICA, privada: env.VAPID_PRIVADA,
@@ -429,6 +471,8 @@ async function avisarVencidas(env) {
 // ------------------------------------------------------------ hueco libre (v3.20)
 const MINUTOS_GRACIA_HUECO = 5;      // si la laptop te lo ofreció (estabas frente a ella), aquí no se repite
 const MINUTOS_PARA_SUGERIR = 20;     // si el hueco empezó hace más, ya no se avisa
+// «⏰ Más tarde» en la notificación (v3.21). Opcional en "vars" de wrangler.jsonc: MINUTOS_MAS_TARDE.
+const minutosMasTarde = (env) => (/^\d{1,3}$/.test(env.MINUTOS_MAS_TARDE || "") ? Number(env.MINUTOS_MAS_TARDE) : 60);
 
 /**
  * Al empezar un hueco libre (saliste del trabajo, terminó una clase) te propone qué hacer, con la misma
@@ -442,6 +486,7 @@ async function avisarHueco(env, almacen, ahora, firmas) {
   const ctx = combinar(base, await almacen.acciones());
   const dia = conHora(ahora, 0, 0);
   const tareas = await almacen.pendientes();
+  if (await avisarPospuesto(env, almacen, ctx, tareas, dia, ahora, firmas)) return;
   const despertar = conHora(dia, ...ctx.perfil.despertar.split(":").map(Number));
   const inicio = huecos(dia, ctx.horario, ctx.perfil.despertar, ctx.perfil.dormir, null, 30, ctx.excepciones,
     tareas.filter((t) => t.duracion && t.fecha.startsWith(isoDia(dia)))
@@ -457,8 +502,45 @@ async function avisarHueco(env, almacen, ahora, firmas) {
   if (!s || s.inicio > sumarMinutos(ahora, 30)) return;
   const hasta = horasLibres(ctx, tareas, dia, ahora, 1).find(([a, b]) => a <= s.inicio && s.inicio < b)?.[1] || s.fin;
   const que = s.clase === "estudio" ? "estudiar" : s.nombre;
-  await enviarATodos(env, almacen, {
-    tipo: "hueco", id: clave, titulo: "💡 Tienes un hueco libre",
-    cuerpo: `Hasta las ${hhmm(hasta)}. ¿Qué tal ${que}? (${s.motivo})`,
+  await enviarSugerencia(env, almacen, clave, s, "💡 Tienes un hueco libre",
+    `Hasta las ${hhmm(hasta)}. ¿Qué tal ${que}? (${s.motivo})`, firmas);
+}
+
+/** La notificación con «✓ Lo hago» y «⏰ Más tarde» (v3.21). Cada botón lleva su firma (ver seguridad.js). */
+async function enviarSugerencia(env, almacen, clave, s, titulo, cuerpo, firmas) {
+  const que = claveSugerencia(s);
+  return enviarATodos(env, almacen, {
+    tipo: "hueco", id: clave, que, nombre: s.nombre, titulo, cuerpo,
+    firmas: { lo_hago: await firmarAccion(env, clave, que, "lo_hago"), luego: await firmarAccion(env, clave, que, "luego") },
   }, firmas);
+}
+
+/** "estudio" o el id de la actividad: es lo que firma el botón (no se puede cambiar por otra cosa). */
+const claveSugerencia = (s) => (s.clase === "estudio" || s.actividad_id === null ? "estudio" : String(s.actividad_id));
+
+/**
+ * «⏰ Más tarde» en la notificación: pasada MINUTOS_MAS_TARDE se vuelve a proponer lo mismo, si estás libre.
+ * Si en ese momento estás ocupado, espera a que quedes libre (ese mismo día). Devuelve true si avisó.
+ */
+async function avisarPospuesto(env, almacen, ctx, tareas, dia, ahora, firmas) {
+  const p = await almacen.leerAjuste("hueco_pospuesto");
+  if (!p?.cuando) return false;
+  if (p.cuando.slice(0, 10) !== isoDia(dia)) { await almacen.guardarAjuste("hueco_pospuesto", null); return false; }
+  if (aTexto(ahora) < p.cuando) return false;
+  const libre = horasLibres(ctx, tareas, dia, ahora, 1).find(([a, b]) => a <= ahora && ahora < b);
+  if (!libre) return false;                                   // sigues ocupado: se intenta el minuto siguiente
+  await almacen.guardarAjuste("hueco_pospuesto", null);
+  const plan = planDelDia(ctx, tareas, dia, ahora);
+  const s = plan.sugerencias.find((x) => claveSugerencia(x) === p.que) || sugerenciaDe(ctx, p.que, ahora);
+  if (!s) return false;
+  const que = s.clase === "estudio" ? "estudiar" : s.nombre;
+  await enviarSugerencia(env, almacen, aTexto(ahora), s, "⏰ Lo dejaste para más tarde",
+    `¿Ahora sí, ${que}? Estás libre hasta las ${hhmm(libre[1])}.`, firmas);
+  return true;
+}
+
+function sugerenciaDe(ctx, que, ahora) {
+  if (que === "estudio") return { nombre: "Estudiar", clase: "estudio", actividad_id: null, inicio: ahora };
+  const a = ctx.actividades.find((x) => String(x.id) === que);
+  return a ? { nombre: a.nombre, clase: "actividad", actividad_id: a.id, inicio: ahora } : null;
 }

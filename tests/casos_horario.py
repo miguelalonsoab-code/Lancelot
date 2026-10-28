@@ -12,7 +12,8 @@ from datetime import date, datetime, time
 from nucleo.contexto import actividad_de_dict, bloque_de_dict, excepcion_de_dict
 from nucleo.horario import (choque, describir_dias, describir_libre, duracion_minutos, hablar_duracion, huecos,
                             interpretar_excepcion)
-from nucleo.perfil import interpretar_actividad
+from nucleo.horario import Bloque, interpretar_bloque
+from nucleo.perfil import interpretar_actividad, leer_hora
 from nucleo.recomendador import describir_plan, recomendar
 
 F = "%Y-%m-%d %H:%M"
@@ -80,6 +81,21 @@ ACTIVIDADES = [
 ]
 
 
+BLOQUES = [
+    "de lunes a viernes de 9am a 6pm trabajo", "martes y jueves de 7 a 10 de la noche clase de redes",
+    "sábados de 8 a 12 inglés", "lunes, miércoles y viernes de 2 a 4 gimnasio", "todos los días de 13:00 a 14:00 almuerzo",
+    "fines de semana de 10 a 1 fútbol", "de lunes a viernes 8:30-17:30 Trabajo en Sanna", "miércoles de 6 a 8 de la tarde taller",
+    "lunes de 10pm a 12am turno", "los domingos de 9 a 11", "trabajo de 9 a 6", "lunes almuerzo", "lunes de 22 a 2 turno noche",
+    "de lunes a viernes de 8:30 a 5:30 trabajo, traslado 45 min", "martes de 7 a 10 de la noche clases con 1 hora de viaje",
+    "miércoles de 7:30 pm a 10:40 pm Computación Gráfica", "viernes de 9:10 pm a 10:40 pm Computación Gráfica",
+    "sábados de 2:30 pm a 7:20 pm Interacción Humano Computador", "de viernes a lunes de 6 a 7 correr",
+    "Tengo los jueves de 18:00 a 20:00 reunión de grupo", "de lunes a viernes de 9 a 6 trabajo con 30 minutos de traslado",
+]
+HORAS = [("a las 6:30", "despertar"), ("las 11 de la noche", "dormir"), ("11pm", "dormir"), ("a las 11", "dormir"),
+         ("a las 12", "dormir"), ("6", "despertar"), ("7am", "dormir"), ("a las 1 de la mañana", "dormir"),
+         ("10:45 p.m.", "dormir"), ("temprano", "despertar"), ("25", "dormir")]
+
+
 def _f(texto: str | None) -> datetime | None:
     return datetime.strptime(texto, F) if texto else None
 
@@ -138,5 +154,12 @@ def calcular_horario() -> dict:
         actividades.append({"texto": texto, "resultado": a if isinstance(a, str) else {
             "nombre": a.nombre, "minutos": a.minutos, "veces_semana": a.veces_semana, "momento": a.momento},
             "descripcion": None if isinstance(a, str) else a.describir()})
+    bloques = []
+    for texto in BLOQUES:
+        b = interpretar_bloque(texto)
+        bloques.append({"texto": texto, "resultado": b if not isinstance(b, Bloque) else {
+            "dias": list(b.dias), "inicio": f"{b.inicio:%H:%M}", "fin": f"{b.fin:%H:%M}", "titulo": b.titulo,
+            "traslado": b.traslado}})
+    horas = [{"texto": t, "para": p, "hora": (lambda h: h and f"{h:%H:%M}")(leer_hora(t, p))} for t, p in HORAS]
     return {"excepciones": excepciones, "huecos": salida_huecos, "choques": choques, "planes": planes,
-            "textos": textos, "actividades": actividades}
+            "textos": textos, "actividades": actividades, "bloques": bloques, "horas": horas}

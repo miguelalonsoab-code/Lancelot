@@ -11,7 +11,7 @@ from pathlib import Path
 NOMBRE_ASISTENTE = "Lancelot"           # cómo se llama (burbujas, notificaciones, voz)
 NOMBRE_USUARIO = "Miguel"               # cómo te llama al avisarte
 APP_ID_WINDOWS = "miguel.asistente.recordatorios"  # para que Windows agrupe sus notificaciones
-VERSION = "3.20"                         # sale en el panel y en el instalador (súbela en cada versión)
+VERSION = "3.21"                         # sale en el panel y en el instalador (súbela en cada versión)
 MUTEX_WINDOWS = "LancelotEnEjecucion"   # el instalador lo busca para saber si Lancelot está abierto
 
 # --- Rutas -------------------------------------------------------------------

@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (QCalendarWidget, QComboBox, QDateTimeEdit, QFormL
 
 from config import ATAJO_HABLAR, COLORES, VERSION, HORA_POR_DEFECTO, NOMBRE_ASISTENTE, NOMBRES_MODO
 from interfaz.grafico import GraficoSemana
+from interfaz.semana_cal import SemanaCalendario
 from nucleo.almacen import Tarea
 from nucleo.comandos import Comando, interpretar_comando
 from nucleo.estadisticas import ResumenSemana, describir_semana, rango
@@ -399,6 +400,28 @@ class Panel(QWidget):
                 boton.setToolButtonStyle(Qt.ToolButtonTextOnly)
         self.calendario.selectionChanged.connect(self.calendario_pedido.emit)
         self.calendario.currentPageChanged.connect(lambda *_: self.calendario_pedido.emit())
+        # Mes / Semana (v3.21)
+        self.b_mes = QPushButton("Mes", checkable=True, checked=True, cursor=Qt.PointingHandCursor)
+        self.b_semana = QPushButton("Semana", checkable=True, cursor=Qt.PointingHandCursor)
+        self.b_mes.clicked.connect(lambda: self._modo_calendario(False))
+        self.b_semana.clicked.connect(lambda: self._modo_calendario(True))
+        self.b_sem_antes = QPushButton("‹", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Semana anterior")
+        self.b_sem_despues = QPushButton("›", objectName="mini", cursor=Qt.PointingHandCursor, toolTip="Semana siguiente")
+        self.b_sem_antes.clicked.connect(self.semana_anterior)
+        self.b_sem_despues.clicked.connect(self.semana_siguiente)
+        self.rango_semana = QLabel(objectName="rango", alignment=Qt.AlignCenter)
+        fila_modo = QHBoxLayout()
+        fila_modo.addWidget(self.b_mes)
+        fila_modo.addWidget(self.b_semana)
+        fila_modo.addStretch()
+        fila_modo.addWidget(self.b_sem_antes)
+        fila_modo.addWidget(self.rango_semana)
+        fila_modo.addWidget(self.b_sem_despues)
+        self.semana_cal = SemanaCalendario()
+        self.semana_cal.dia_elegido.connect(lambda d: self.calendario.setSelectedDate(QDate(d.year, d.month, d.day)))
+        self.semana_cal.hide()
+        for w in (self.b_sem_antes, self.b_sem_despues, self.rango_semana):
+            w.hide()
         self.agenda_titulo = QLabel(objectName="rango")
         self.lista_agenda = QListWidget()
         self.lista_agenda.setSelectionMode(QListWidget.NoSelection)
@@ -413,7 +436,9 @@ class Panel(QWidget):
         capa_cal = QVBoxLayout(pestana_calendario)
         capa_cal.setContentsMargins(0, 10, 0, 0)
         capa_cal.setSpacing(8)
+        capa_cal.addLayout(fila_modo)
         capa_cal.addWidget(self.calendario)
+        capa_cal.addWidget(self.semana_cal, 2)
         capa_cal.addWidget(self.agenda_titulo)
         capa_cal.addWidget(self.lista_agenda, 1)
         capa_cal.addLayout(fila_sug)
@@ -731,6 +756,30 @@ class Panel(QWidget):
     @property
     def viendo_calendario(self) -> bool:
         return self.isVisible() and self.pestanas.currentIndex() == 4
+
+    @property
+    def modo_semana(self) -> bool:
+        return self.b_semana.isChecked()
+
+    def _modo_calendario(self, semana: bool):
+        self.b_semana.setChecked(semana)
+        self.b_mes.setChecked(not semana)
+        self.calendario.setVisible(not semana)
+        for w in (self.semana_cal, self.b_sem_antes, self.b_sem_despues, self.rango_semana):
+            w.setVisible(semana)
+        self.calendario_pedido.emit()
+
+    def semana_anterior(self):
+        self.calendario.setSelectedDate(self.calendario.selectedDate().addDays(-7))
+
+    def semana_siguiente(self):
+        self.calendario.setSelectedDate(self.calendario.selectedDate().addDays(7))
+
+    def mostrar_semana_cal(self, dias: list, despertar, dormir, hoy: date):
+        self.semana_cal.mostrar(dias, despertar, dormir, self.dia_calendario(), hoy)
+        a, b = dias[0][0], dias[-1][0]
+        meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+        self.rango_semana.setText(f"{a.day} {meses[a.month - 1]} – {b.day} {meses[b.month - 1]}")
 
     def ver_calendario(self, dia: date | None = None):
         if dia:

@@ -4068,6 +4068,322 @@
     },
     "descripcion": "Inglés · 1 h 30 min · 2 veces por semana · en la noche"
    }
+  ],
+  "bloques": [
+   {
+    "texto": "de lunes a viernes de 9am a 6pm trabajo",
+    "resultado": {
+     "dias": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "inicio": "09:00",
+     "fin": "18:00",
+     "titulo": "Trabajo",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "martes y jueves de 7 a 10 de la noche clase de redes",
+    "resultado": {
+     "dias": [
+      1,
+      3
+     ],
+     "inicio": "19:00",
+     "fin": "22:00",
+     "titulo": "Clase de redes",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "sábados de 8 a 12 inglés",
+    "resultado": {
+     "dias": [
+      5
+     ],
+     "inicio": "08:00",
+     "fin": "12:00",
+     "titulo": "Inglés",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "lunes, miércoles y viernes de 2 a 4 gimnasio",
+    "resultado": {
+     "dias": [
+      0,
+      2,
+      4
+     ],
+     "inicio": "14:00",
+     "fin": "16:00",
+     "titulo": "Gimnasio",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "todos los días de 13:00 a 14:00 almuerzo",
+    "resultado": {
+     "dias": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "inicio": "13:00",
+     "fin": "14:00",
+     "titulo": "Almuerzo",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "fines de semana de 10 a 1 fútbol",
+    "resultado": {
+     "dias": [
+      5,
+      6
+     ],
+     "inicio": "10:00",
+     "fin": "13:00",
+     "titulo": "Fútbol",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "de lunes a viernes 8:30-17:30 Trabajo en Sanna",
+    "resultado": {
+     "dias": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "inicio": "08:30",
+     "fin": "17:30",
+     "titulo": "Trabajo en Sanna",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "miércoles de 6 a 8 de la tarde taller",
+    "resultado": {
+     "dias": [
+      2
+     ],
+     "inicio": "18:00",
+     "fin": "20:00",
+     "titulo": "Taller",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "lunes de 10pm a 12am turno",
+    "resultado": {
+     "dias": [
+      0
+     ],
+     "inicio": "22:00",
+     "fin": "23:59",
+     "titulo": "Turno",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "los domingos de 9 a 11",
+    "resultado": {
+     "dias": [
+      6
+     ],
+     "inicio": "09:00",
+     "fin": "11:00",
+     "titulo": "Ocupado",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "trabajo de 9 a 6",
+    "resultado": "¿Qué días? Por ejemplo: «de lunes a viernes», «martes y jueves» o «sábados»."
+   },
+   {
+    "texto": "lunes almuerzo",
+    "resultado": "No entendí las horas. Escribe, por ejemplo: «de lunes a viernes de 9am a 6pm trabajo»."
+   },
+   {
+    "texto": "lunes de 22 a 2 turno noche",
+    "resultado": "Ese bloque termina pasada la medianoche. Anótalo en dos partes, por ejemplo: «lunes de 10pm a 12am turno» y «martes de 12am a 6am turno»."
+   },
+   {
+    "texto": "de lunes a viernes de 8:30 a 5:30 trabajo, traslado 45 min",
+    "resultado": {
+     "dias": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "inicio": "08:30",
+     "fin": "17:30",
+     "titulo": "Trabajo",
+     "traslado": 45
+    }
+   },
+   {
+    "texto": "martes de 7 a 10 de la noche clases con 1 hora de viaje",
+    "resultado": {
+     "dias": [
+      1
+     ],
+     "inicio": "19:00",
+     "fin": "22:00",
+     "titulo": "Clases",
+     "traslado": 60
+    }
+   },
+   {
+    "texto": "miércoles de 7:30 pm a 10:40 pm Computación Gráfica",
+    "resultado": {
+     "dias": [
+      2
+     ],
+     "inicio": "19:30",
+     "fin": "22:40",
+     "titulo": "Computación Gráfica",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "viernes de 9:10 pm a 10:40 pm Computación Gráfica",
+    "resultado": {
+     "dias": [
+      4
+     ],
+     "inicio": "21:10",
+     "fin": "22:40",
+     "titulo": "Computación Gráfica",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "sábados de 2:30 pm a 7:20 pm Interacción Humano Computador",
+    "resultado": {
+     "dias": [
+      5
+     ],
+     "inicio": "14:30",
+     "fin": "19:20",
+     "titulo": "Interacción Humano Computador",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "de viernes a lunes de 6 a 7 correr",
+    "resultado": {
+     "dias": [
+      4,
+      5,
+      6,
+      0
+     ],
+     "inicio": "18:00",
+     "fin": "19:00",
+     "titulo": "Correr",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "Tengo los jueves de 18:00 a 20:00 reunión de grupo",
+    "resultado": {
+     "dias": [
+      3
+     ],
+     "inicio": "18:00",
+     "fin": "20:00",
+     "titulo": "Reunión de grupo",
+     "traslado": 0
+    }
+   },
+   {
+    "texto": "de lunes a viernes de 9 a 6 trabajo con 30 minutos de traslado",
+    "resultado": {
+     "dias": [
+      0,
+      1,
+      2,
+      3,
+      4
+     ],
+     "inicio": "09:00",
+     "fin": "18:00",
+     "titulo": "Trabajo",
+     "traslado": 30
+    }
+   }
+  ],
+  "horas": [
+   {
+    "texto": "a las 6:30",
+    "para": "despertar",
+    "hora": "06:30"
+   },
+   {
+    "texto": "las 11 de la noche",
+    "para": "dormir",
+    "hora": "23:00"
+   },
+   {
+    "texto": "11pm",
+    "para": "dormir",
+    "hora": "23:00"
+   },
+   {
+    "texto": "a las 11",
+    "para": "dormir",
+    "hora": "23:00"
+   },
+   {
+    "texto": "a las 12",
+    "para": "dormir",
+    "hora": "00:00"
+   },
+   {
+    "texto": "6",
+    "para": "despertar",
+    "hora": "06:00"
+   },
+   {
+    "texto": "7am",
+    "para": "dormir",
+    "hora": "07:00"
+   },
+   {
+    "texto": "a las 1 de la mañana",
+    "para": "dormir",
+    "hora": "01:00"
+   },
+   {
+    "texto": "10:45 p.m.",
+    "para": "dormir",
+    "hora": "22:45"
+   },
+   {
+    "texto": "temprano",
+    "para": "despertar",
+    "hora": null
+   },
+   {
+    "texto": "25",
+    "para": "dormir",
+    "hora": null
+   }
   ]
  },
  "con_vocabulario": [

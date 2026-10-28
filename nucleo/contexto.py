@@ -35,13 +35,13 @@ VERSION_CONTEXTO = 1
 
 
 def bloque_a_dict(b: Bloque) -> dict:
-    return {"dias": list(b.dias), "inicio": f"{b.inicio:%H:%M}", "fin": f"{b.fin:%H:%M}", "titulo": b.titulo,
-            "traslado": b.traslado}
+    return {"id": b.id, "dias": list(b.dias), "inicio": f"{b.inicio:%H:%M}", "fin": f"{b.fin:%H:%M}",
+            "titulo": b.titulo, "traslado": b.traslado}
 
 
 def bloque_de_dict(d: dict) -> Bloque:
     return Bloque(tuple(d["dias"]), time.fromisoformat(d["inicio"]), time.fromisoformat(d["fin"]), d["titulo"],
-                  traslado=d.get("traslado", 0))
+                  d.get("id"), d.get("traslado", 0))
 
 
 def excepcion_a_dict(e: Excepcion) -> dict:
